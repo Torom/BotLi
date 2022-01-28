@@ -13,7 +13,7 @@ Not every function of the bot is extensively tested, a faulty or incomplete `con
 
 Install all requirements:
 ```bash
-python3 -m pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 - Customize the `config.yml` according to your needs.
