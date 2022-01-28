@@ -21,13 +21,13 @@ class Chatter:
         elif command == 'eval':
             return lichess_game.last_message
         elif command == 'name':
-            return 'see !engine'
+            return f'{lichess_game.username} running {lichess_game.engine.id["name"]} (Torom\'s BotLi)'
         elif command == 'ram':
             return self.ram
         elif command == 'tb':
             return '6-men syzygy tablebases on SSD'
         else:
-            return 'Supported commands: !cpu, !draw, !engine, !eval, !ram, !tb'
+            return 'Supported commands: !cpu, !draw, !engine, !eval, !name, !ram, !tb'
 
     def _get_cpu(self) -> str:
         if os.path.exists('/proc/cpuinfo'):

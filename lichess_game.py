@@ -15,6 +15,7 @@ class Lichess_Game:
         self.config = config
         self.api = api
         self.board = self._setup_board(gameFull_event)
+        self.username = username
         self.is_white: bool = gameFull_event['white']['name'] == username
         self.initial_time: int = gameFull_event['clock']['initial']
         self.increment: int = gameFull_event['clock']['increment']
