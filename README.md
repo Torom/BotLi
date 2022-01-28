@@ -1,19 +1,10 @@
-## Overview
-
-```
-______       _   _     _ 
-| ___ \     | | | |   (_)
-| |_/ / ___ | |_| |    _ 
-| ___ \/ _ \| __| |   | |
-| |_/ / (_) | |_| |___| |
-\____/ \___/ \__\_____/_|
-```
+# Overview
 
 **BotLi** is a bot for Lichess. Strongly inspired by [ShailChoksi/lichess-bot](https://github.com/ShailChoksi/lichess-bot). It extends its features with a matchmaking mode where the bot automatically challenges other bots with similar ratings.
 
 Not every function of the bot is extensively tested, a faulty or incomplete `config.yml` will lead to unexpected behavior. This bot has only been tested on Linux, other chess variants than Standard and Chess960 are untested. At least Python 3.10 is required.
 
-## How to install
+# How to install
 
 - **NOTE: Only Python 3.10 or later is supported!**
 - Download the repo into BotLi directory: `git clone https://github.com/Torom/BotLi.git`
@@ -27,29 +18,36 @@ python3 -m pip install -r requirements.txt
 
 - Customize the `config.yml` according to your needs.
 
-### Lichess OAuth
+## Lichess OAuth
 - Create an account for your bot on [Lichess.org](https://lichess.org/signup).
 - **NOTE: If you have previously played games on an existing account, you will not be able to use it as a bot account.**
 - Once your account has been created and you are logged in, [create a personal OAuth2 token with the "Play games with the bot API" ('bot:play') scope](https://lichess.org/account/oauth/token/create?scopes[]=bot:play&description=lichess-bot) selected and a description added.
 - A `token` (e.g. `xxxxxxxxxxxxxxxx`) will be displayed. Store this in the `config.yml` file as the `token` field.
 - **NOTE: You won't see this token again on Lichess, so do save it.**
 
-### Setup Engine
+## Setup Engine
 Within the file `config.yml`:
 - Enter the directory containing the engine executable in the `engine: dir` field.
 - Enter the executable name in the `engine: name` field.
 - You need to adjust the settings in `engine: uci_options` depending on your system.
 
-## How to start
+## Setup polyglot opening book
+To use a polyglot opening book the name of the book and the path to the book must be entered at the end of the config in the section `books`.
+
+Several books can be entered here. In the upper area `eninge: polyglot: books` only the name of the book must be entered. In addition, different books can be used for white, black and chess960. If no specific book is defined, the `standard` book is used.
+
+# How to control
+
+To start the bot type
 
 ```bash
 python user_interface.py
 ```
-The bot automatically accepts challenges. Which challenges it accepts is defined in the config in the section `challenge`.
-
-## How to control
+The bot automatically accepts challenges. Which challenges are accepted is defined in the config in the section `challenge`.
 
 Press <kbd>TAB</kbd> <kbd>TAB</kbd> to see all options.
+
+## Matchmaking mode
 
 To challenge other players with similar ratings, type
 ```bash
