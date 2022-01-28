@@ -1,0 +1,79 @@
+token: "XXXXXXXXXXXXXXXXXXXXXXXX"     # Lichess OAuth2 Token.
+
+engine:                               # Engine settings.
+  dir: "/path/to/EngineDir"
+  name: "EngineName"
+  ponder: true                        # Think on opponent's time.
+  polyglot:
+    enabled: true                     # Activate polyglot book.
+    books:
+      white: null
+      black: null
+      standard: "DefaultBook"
+      chess960: null
+    selection: "weighted_random"      # Move selection is one of "weighted_random", "uniform_random" or "best_move".
+  pybook:
+    enabled: false
+    book: "/path/to/pybook"
+  online_moves:
+    chessdb:
+      enabled: false
+      max_depth: 99
+      min_time: 40
+      timeout: 5
+    lichess_cloud:
+      enabled: false
+      max_depth: 99
+      min_time: 40
+      timeout: 5
+    online_egtb:
+      enabled: false
+      min_time: 10
+      timeout: 3
+  offer_draw:
+    enabled: true
+    max_score: 15                     # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
+    consecutive_moves: 5              # How many moves in a row the absolute value of the score has to be below the draw value
+    min_game_length: 35
+  uci_options:                        # Arbitrary UCI options passed to the engine.
+    Move Overhead: 100                # Increase if your bot flags games too often.
+    Threads: 7                        # Max CPU threads the engine can use.
+    Hash: 2048                        # Max memory (in megabytes) the engine can allocate.
+    SyzygyPath: "/path/to/syzygy"
+    
+challenge:                            # Incoming challenges.
+  concurrency: 1                      # Number of games to play simultaneously.
+  variants:                           # Chess variants to accept (https://lichess.org/variant).
+    - standard
+    - chess960
+#   - fromPosition
+#   - antichess
+#   - atomic
+#   - crazyhouse
+#   - horde
+#   - kingOfTheHill
+#   - racingKings
+#   - threeCheck
+  time_controls:                      # Time controls to accept.
+    - bullet
+    - blitz
+    - rapid
+#   - classical
+#   - correspondence
+  bot_modes:                          # Game modes to accept against BOTs.
+#   - casual                          # Unrated games.
+    - rated                           # Rated games
+  human_modes:                        # Game modes to accept against humans.
+    - casual                          # Unrated games.
+    - rated                           # Rated games
+
+matchmaking:
+  initial_time: 60
+  increment: 0
+  rated: true
+  timeout: 20
+  min_rating_diff: 0
+  max_rating_diff: 300
+
+books:
+  DefaultBook: "/path/to/DefaultBook.bin"
