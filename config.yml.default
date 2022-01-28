@@ -5,7 +5,7 @@ engine:                               # Engine settings.
   name: "EngineName"
   ponder: true                        # Think on opponent's time.
   polyglot:
-    enabled: true                     # Activate polyglot book.
+    enabled: false                    # Activate polyglot book.
     books:
       white: null
       black: null
