@@ -14,9 +14,7 @@ class Chatter:
         if command == 'cpu':
             return self.cpu
         elif command == 'draw':
-            return 'The bot offers draw automatically at move 35 or later \
-                    if the eval is within +0.15 to -0.15 for the last 5 moves. \
-                    If there is a pawn advance or a capture the counter will be reset.'
+            return self.draw_message
         elif command == 'engine':
             return lichess_game.engine.id["name"]
         elif command == 'eval':
