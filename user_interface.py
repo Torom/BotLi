@@ -74,17 +74,18 @@ class UserInterface:
             elif command.startswith('challenge'):
                 command_parts = command.split()
                 command_length = len(command_parts)
-                if command_length < 2 or command_length > 5:
-                    print('Usage: challenge USERNAME initial_time increment rated')
+                if command_length < 2 or command_length > 6:
+                    print('Usage: challenge USERNAME initial_time increment color rated')
                     continue
 
                 opponent_username = command_parts[1]
                 initial_time = int(command_parts[2]) if command_length > 2 else 60
                 increment = int(command_parts[3]) if command_length > 3 else 0
-                rated = command_parts[4].lower() == 'true' if command_length > 4 else True
+                color = Challenge_Color(command_parts[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
+                rated = command_parts[5].lower() == 'true' if command_length > 5 else True
 
-                self.api.create_challenge(opponent_username, initial_time, increment, rated,
-                                          Challenge_Color.RANDOM, Variant.STANDARD, 20)
+                self.api.create_challenge(opponent_username, initial_time, increment,
+                                          rated, color, Variant.STANDARD, 20)
 
             else:
                 print('Press <TAB><TAB> to see all valid options!')
