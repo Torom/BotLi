@@ -5,9 +5,10 @@ from lichess_game import Lichess_Game
 
 
 class Chatter:
-    def __init__(self) -> None:
+    def __init__(self, config: dict) -> None:
         self.cpu = self._get_cpu()
-        self.ram = self._get_ram()
+        self.ram_message = self._get_ram()
+        self.draw_message = self._get_draw_message(config)
 
     def react(self, command: str, lichess_game: Lichess_Game) -> str:
         if command == 'cpu':
@@ -23,7 +24,7 @@ class Chatter:
         elif command == 'name':
             return f'{lichess_game.username} running {lichess_game.engine.id["name"]} (Torom\'s BotLi)'
         elif command == 'ram':
-            return self.ram
+            return self.ram_message
         elif command == 'tb':
             return '6-men syzygy tablebases on SSD'
         else:
@@ -46,6 +47,20 @@ class Chatter:
         mem_gib = mem_bytes/(1024.**3)
 
         return f'{mem_gib:.1f} GiB'
+
+    def _get_draw_message(self, config: dict) -> str:
+        draw_enabled = config['engine']['offer_draw']['enabled']
+
+        if not draw_enabled:
+            return 'This bot will neither accept nor offer draws.'
+
+        max_score_cp = config['engine']['offer_draw']['max_score'] / 100
+        consecutive_moves = config['engine']['offer_draw']['consecutive_moves']
+        min_game_length = config['engine']['offer_draw']['min_game_length']
+
+        return f'The bot offers draw automatically at move {min_game_length} or later \
+                if the eval is within +{max_score_cp:.2f} to -{max_score_cp:.2f} for the last {consecutive_moves} moves. \
+                If there is a pawn advance or a capture the counter will be reset.'
 
 
 class Chat_Message:
