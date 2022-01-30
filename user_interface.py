@@ -31,7 +31,7 @@ class UserInterface:
         self.matchmaking_process = None
         self.matchmaking_process_is_running = self.manager.Value(bool, False)
 
-        completer = Autocompleter(['stop', 'quit', 'matchmaking', 'matchmaking chess960', 'abort', 'challenge'])
+        completer = Autocompleter(['abort', 'challenge', 'matchmaking', 'quit', 'stop'])
         readline.set_completer(completer.complete)
         readline.parse_and_bind('tab: complete')
 
@@ -61,11 +61,14 @@ class UserInterface:
                     self.matchmaking_process.join()
                 challenge_handler_process.join()
 
-            elif command == 'matchmaking':
-                self._start_matchmaking(Variant.STANDARD)
-
-            elif command == 'matchmaking chess960':
-                self._start_matchmaking(Variant.CHESS960)
+            elif command.startswith('matchmaking'):
+                command_parts = command.split()
+                if len(command_parts) > 2:
+                    print('Usage: matchmaking [VARIANT]')
+                elif len(command_parts) == 2:
+                    self._start_matchmaking(Variant(command_parts[1]))
+                else:
+                    self._start_matchmaking(Variant.STANDARD)
 
             elif command.startswith('abort'):
                 game_id = command.split()[1]
@@ -75,7 +78,7 @@ class UserInterface:
                 command_parts = command.split()
                 command_length = len(command_parts)
                 if command_length < 2 or command_length > 6:
-                    print('Usage: challenge USERNAME initial_time increment color rated')
+                    print('Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED]')
                     continue
 
                 opponent_username = command_parts[1]
