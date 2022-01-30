@@ -158,3 +158,12 @@ class API:
         except requests.HTTPError as e:
             print(e)
             return False
+
+    def upgrade_account(self) -> bool:
+        try:
+            response = self.session.post('https://lichess.org/api/bot/account/upgrade')
+            response.raise_for_status()
+            return True
+        except requests.HTTPError as e:
+            print(e)
+            return False

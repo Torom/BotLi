@@ -31,7 +31,7 @@ class UserInterface:
         self.matchmaking_process = None
         self.matchmaking_process_is_running = self.manager.Value(bool, False)
 
-        completer = Autocompleter(['abort', 'challenge', 'matchmaking', 'quit', 'stop'])
+        completer = Autocompleter(['abort', 'challenge', 'matchmaking', 'quit', 'stop', 'upgrade'])
         readline.set_completer(completer.complete)
         readline.parse_and_bind('tab: complete')
 
@@ -89,6 +89,18 @@ class UserInterface:
 
                 self.api.create_challenge(opponent_username, initial_time, increment,
                                           rated, color, Variant.STANDARD, 20)
+
+            elif command == 'upgrade':
+                print('This will upgrade your account to a bot account.')
+                print('WARNING: This is irreversible. The account will only be able to play as a Bot.')
+                approval = input('Do you want to continue? [y/N]: ')
+
+                if approval.lower() not in ['y', 'yes']:
+                    print('Upgrade aborted.')
+                    continue
+
+                outcome = 'successful' if self.api.upgrade_account() else 'failed'
+                print(f'Upgrade {outcome}.')
 
             else:
                 print('Press <TAB><TAB> to see all valid options!')
