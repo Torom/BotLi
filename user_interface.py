@@ -1,5 +1,6 @@
 import multiprocessing
 import readline
+import time
 
 from api import API
 from challenge_color import Challenge_Color
@@ -17,13 +18,13 @@ class UserInterface:
         self.manager = multiprocessing.Manager()
         self.is_running = self.manager.Value(bool, True)
         self.accept_challenges = self.manager.Value(bool, True)
+        self.game_count = self.manager.Value(int, 0)
 
     def start(self) -> None:
         print(LOGO)
-        self.game_semaphore = multiprocessing.Semaphore(self.config['challenge']['concurrency'])
 
         self.challenge_handler = Challenge_Handler(
-            self.config, self.is_running, self.accept_challenges, self.game_semaphore)
+            self.config, self.is_running, self.accept_challenges, self.game_count)
 
         challenge_handler_process = multiprocessing.Process(target=self.challenge_handler.start)
         challenge_handler_process.start()
@@ -49,7 +50,7 @@ class UserInterface:
                 print('Stopping matchmaking ...')
                 self.matchmaking_process.join()
                 self.matchmaking_process = None
-                self.game_semaphore.release()
+                self.game_count.value -= 1
                 self.accept_challenges.value = True
                 print('Matchmaking has been stopped. And challenges are resuming ...')
 
@@ -111,9 +112,17 @@ class UserInterface:
             return
 
         self.accept_challenges.value = False
-        print('Waiting for all games to finish ...')
-        self.game_semaphore.acquire()
+
+        concurrency = self.config['challenge']['concurrency']
+        is_max_concurrency = concurrency <= self.game_count.value
+        if is_max_concurrency:
+            print('Waiting for a game to finish ...')
+            while is_max_concurrency:
+                time.sleep(2)
+                is_max_concurrency = concurrency <= self.game_count.value
+
         print('Starting matchmaking ...')
+        self.game_count.value += 1
 
         self.matchmaking_process_is_running.value = True
         self.matchmaking = Matchmaking(self.config, self.matchmaking_process_is_running, variant)

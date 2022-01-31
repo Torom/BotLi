@@ -14,14 +14,14 @@ class Challenge_Handler:
     def __init__(
             self, config: dict, is_running: ValueProxy[bool],
             accept_challenges: ValueProxy[bool],
-            game_semaphore) -> None:
+            game_count: ValueProxy[int]) -> None:
         self.config = config
         self.api = API(self.config['token'])
         self.is_running = is_running
         self.accept_challenges = accept_challenges
         self.manager = multiprocessing.Manager()
         self.count_concurrent_games = 0
-        self.game_semaphore = game_semaphore
+        self.game_count = game_count
 
     def start(self) -> None:
         challenge_queue = self.manager.Queue()
@@ -70,6 +70,7 @@ class Challenge_Handler:
                 if not self.accept_challenges.value:
                     continue
 
+                self.game_count.value += 1
                 game = Game_api(username, game_id, self.config)
                 game_process = multiprocessing.Process(target=game.run_game)
                 self.game_processes[game_id] = game_process
@@ -79,7 +80,7 @@ class Challenge_Handler:
 
                 if game_id in self.game_processes:
                     del self.game_processes[game_id]
-                    self.game_semaphore.release()
+                    self.game_count.value -= 1
             elif event['type'] == 'challengeDeclined':
                 continue
             elif event['type'] == 'challengeCanceled':
@@ -90,7 +91,7 @@ class Challenge_Handler:
 
         for process in self.game_processes.values():
             process.join()
-            self.game_semaphore.release()
+            self.game_count.value -= 1
 
         challenge_queue_process.terminate()
         challenge_queue_process.join()
@@ -147,6 +148,6 @@ class Challenge_Handler:
             print('We are currently not accepting any new challenges!')
             return Decline_Reason.LATER
 
-        if not self.game_semaphore.acquire(block=False):
+        if concurrency <= self.game_count.value:
             print(f'More then {concurrency} concurrend game(s) is not supported!')
             return Decline_Reason.LATER
