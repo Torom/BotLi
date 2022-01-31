@@ -13,7 +13,7 @@ class Game_api:
         self.manager = multiprocessing.Manager()
         self.username = username
         self.game_id = game_id
-        self.chatter = Chatter()
+        self.chatter = Chatter(config)
 
     def run_game(self) -> None:
         game_queue = self.manager.Queue()
