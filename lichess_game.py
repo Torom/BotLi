@@ -275,7 +275,12 @@ class Lichess_Game:
 
     def _get_engine(self) -> chess.engine.SimpleEngine:
         engine = chess.engine.SimpleEngine.popen_uci(self.config['engine']['path'])
-        engine.configure(self.config['engine']['uci_options'])
+        options = self.config['engine']['uci_options']
+
+        def not_managed(key: str): return not chess.engine.Option(key, '', None, None, None, None).is_managed()
+        options = {key: value for key, value in options.items() if not_managed(key)}
+
+        engine.configure(options)
 
         return engine
 
