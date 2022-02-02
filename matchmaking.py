@@ -4,10 +4,9 @@ from datetime import datetime, timedelta
 from multiprocessing.managers import ValueProxy
 
 from api import API
-from challenge_color import Challenge_Color
+from enums import Challenge_Color, Variant
 from game_api import Game_api
 from opponent import Opponent
-from variant import Variant
 
 
 class Matchmaking:

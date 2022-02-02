@@ -4,9 +4,9 @@ import queue
 import sys
 from multiprocessing.context import Process
 from multiprocessing.managers import ValueProxy
-from api import API
 
-from decline_reason import Decline_Reason
+from api import API
+from enums import Decline_Reason
 from game_api import Game_api
 
 

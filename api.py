@@ -4,9 +4,7 @@ from typing import Iterable
 
 import requests
 
-from challenge_color import Challenge_Color
-from decline_reason import Decline_Reason
-from variant import Variant
+from enums import Challenge_Color, Decline_Reason, Variant
 
 
 class API:

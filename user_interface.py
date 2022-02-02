@@ -3,12 +3,11 @@ import readline
 import time
 
 from api import API
-from challenge_color import Challenge_Color
 from challenge_handler import Challenge_Handler
 from config import load_config
+from enums import Challenge_Color, Variant
 from logo import LOGO
 from matchmaking import Matchmaking
-from variant import Variant
 
 
 class UserInterface:

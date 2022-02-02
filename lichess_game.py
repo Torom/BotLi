@@ -7,7 +7,7 @@ import chess.polyglot
 from chess.variant import find_variant
 
 from api import API
-from variant import Variant
+from enums import Variant
 
 
 class Lichess_Game:
