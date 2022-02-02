@@ -56,9 +56,9 @@ class Chatter:
         consecutive_moves = config['engine']['offer_draw']['consecutive_moves']
         min_game_length = config['engine']['offer_draw']['min_game_length']
 
-        return f'The bot offers draw automatically at move {min_game_length} or later \
-                if the eval is within +{max_score_cp:.2f} to -{max_score_cp:.2f} for the last {consecutive_moves} moves. \
-                If there is a pawn advance or a capture the counter will be reset.'
+        return f'The bot offers draw at move {min_game_length} or later ' \
+            f'if the eval is +/- {max_score_cp:.2f} for {consecutive_moves} moves. ' \
+            f'Captures or pawn advances resets the counter.'
 
 
 class Chat_Message:
