@@ -33,7 +33,10 @@ class Chatter:
             with open('/proc/cpuinfo', 'r') as cpuinfo:
                 while line := cpuinfo.readline():
                     if line.startswith('model name'):
-                        return line.split(': ')[1]
+                        cpu = line.split(': ')[1]
+                        cpu = cpu.replace('(R)', '')
+                        cpu = cpu.replace('(TM)', '')
+                        return cpu
 
         if cpu := platform.processor():
             return cpu
@@ -57,7 +60,7 @@ class Chatter:
         min_game_length = config['engine']['offer_draw']['min_game_length']
 
         return f'The bot offers draw at move {min_game_length} or later ' \
-            f'if the eval is +/- {max_score_cp:.2f} for {consecutive_moves} moves. ' \
+            f'if the eval is within +/- {max_score_cp:.2f} for {consecutive_moves} moves. ' \
             f'Captures or pawn advances resets the counter.'
 
 
