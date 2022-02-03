@@ -9,6 +9,12 @@ from enums import Challenge_Color, Variant
 from logo import LOGO
 from matchmaking import Matchmaking
 
+COMMANDS = {'abort': 'Aborts a game. Usage: abort GAME_ID',
+            'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED]',
+            'help': 'Prints this message.', 'matchmaking': 'Starts matchmaking mode. Usage: matchmaking [VARIANT]',
+            'quit': 'Exits the bot.', 'reset': 'Resets matchmaking.', 'stop': 'Stops matchmaking mode.',
+            'upgrade': 'Upgrades your Lichess account to a BOT account.'}
+
 
 class UserInterface:
     def __init__(self) -> None:
@@ -31,7 +37,7 @@ class UserInterface:
         self.matchmaking_process = None
         self.matchmaking_process_is_running = self.manager.Value(bool, False)
 
-        completer = Autocompleter(['abort', 'challenge', 'matchmaking', 'quit', 'stop', 'upgrade'])
+        completer = Autocompleter(list(COMMANDS.keys()))
         readline.set_completer(completer.complete)
         readline.parse_and_bind('tab: complete')
 
@@ -40,18 +46,39 @@ class UserInterface:
         while self.is_running.value:
             command = input()
 
-            if command == 'stop':
-                if not self.matchmaking_process:
-                    print('matchmaking isn\'t currently running ...')
+            if command.startswith('abort'):
+                command_parts = command.split()
+                if len(command_parts) != 2:
+                    print(COMMANDS['abort'])
                     continue
 
-                self.matchmaking_process_is_running.value = False
-                print('Stopping matchmaking ...')
-                self.matchmaking_process.join()
-                self.matchmaking_process = None
-                self.game_count.value -= 1
-                self.accept_challenges.value = True
-                print('Matchmaking has been stopped. And challenges are resuming ...')
+                self.api.abort_game(command_parts[1])
+
+            elif command.startswith('challenge'):
+                command_parts = command.split()
+                command_length = len(command_parts)
+                if command_length < 2 or command_length > 6:
+                    print(COMMANDS['challenge'])
+                    continue
+
+                opponent_username = command_parts[1]
+                initial_time = int(command_parts[2]) if command_length > 2 else 60
+                increment = int(command_parts[3]) if command_length > 3 else 1
+                color = Challenge_Color(command_parts[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
+                rated = command_parts[5].lower() == 'true' if command_length > 5 else True
+
+                self.api.create_challenge(opponent_username, initial_time, increment,
+                                          rated, color, Variant.STANDARD, 20)
+
+            elif command.startswith('matchmaking'):
+                command_parts = command.split()
+                if len(command_parts) > 2:
+                    print(COMMANDS['matchmaking'])
+                    continue
+
+                variant = Variant(command_parts[1]) if len(command_parts) == 2 else Variant.STANDARD
+
+                self._start_matchmaking(variant)
 
             elif command == 'quit':
                 self.is_running.value = False
@@ -61,34 +88,25 @@ class UserInterface:
                     self.matchmaking_process.join()
                 challenge_handler_process.join()
 
-            elif command.startswith('matchmaking'):
-                command_parts = command.split()
-                if len(command_parts) > 2:
-                    print('Usage: matchmaking [VARIANT]')
-                elif len(command_parts) == 2:
-                    self._start_matchmaking(Variant(command_parts[1]))
-                else:
-                    self._start_matchmaking(Variant.STANDARD)
-
-            elif command.startswith('abort'):
-                game_id = command.split()[1]
-                self.api.abort_game(game_id)
-
-            elif command.startswith('challenge'):
-                command_parts = command.split()
-                command_length = len(command_parts)
-                if command_length < 2 or command_length > 6:
-                    print('Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED]')
+            elif command == 'reset':
+                if self.matchmaking_process:
+                    print('Can\'t reset matchmaking while running ...')
                     continue
 
-                opponent_username = command_parts[1]
-                initial_time = int(command_parts[2]) if command_length > 2 else 60
-                increment = int(command_parts[3]) if command_length > 3 else 0
-                color = Challenge_Color(command_parts[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
-                rated = command_parts[5].lower() == 'true' if command_length > 5 else True
+                Matchmaking.reset_matchmaking()
 
-                self.api.create_challenge(opponent_username, initial_time, increment,
-                                          rated, color, Variant.STANDARD, 20)
+            elif command == 'stop':
+                if not self.matchmaking_process:
+                    print('Matchmaking isn\'t currently running ...')
+                    continue
+
+                self.matchmaking_process_is_running.value = False
+                print('Stopping matchmaking ...')
+                self.matchmaking_process.join()
+                self.matchmaking_process = None
+                self.game_count.value -= 1
+                self.accept_challenges.value = True
+                print('Matchmaking has been stopped. And challenges are resuming ...')
 
             elif command == 'upgrade':
                 print('This will upgrade your account to a bot account.')
@@ -103,7 +121,9 @@ class UserInterface:
                 print(f'Upgrade {outcome}.')
 
             else:
-                print('Press <TAB><TAB> to see all valid options!')
+                print('These commands are supported by BotLi:\n')
+                for key, value in COMMANDS.items():
+                    print(f'{key:11}\t\t# {value}')
 
     def _start_matchmaking(self, variant: Variant) -> None:
         if self.matchmaking_process:

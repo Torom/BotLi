@@ -83,6 +83,20 @@ class Matchmaking:
             game = Game_api(self.player['username'], challenge_id, self.config)
             game.run_game()
 
+    @classmethod
+    def reset_matchmaking(cls) -> None:
+        if not os.path.isfile('matchmaking.json'):
+            return
+
+        with open('matchmaking.json', 'r') as input:
+            opponents = [Opponent.from_dict(opponent) for opponent in json.load(input)]
+
+        for opponent in opponents:
+            opponent.release_time = datetime.now()
+
+        with open('matchmaking.json', 'w') as output:
+            json.dump([opponent.__dict__() for opponent in opponents], output, indent=4)
+
     def _challenge_opponent(self, opponent: dict, color: Challenge_Color) -> None | str:
         rated = self.config['matchmaking']['rated']
         initial_time = self.config['matchmaking']['initial_time']
@@ -98,9 +112,7 @@ class Matchmaking:
     def _load(self) -> list[Opponent]:
         if os.path.isfile('matchmaking.json'):
             with open('matchmaking.json', 'r') as input:
-                json_input: list[dict] = json.load(input)
-
-                return [Opponent.from_dict(opponent) for opponent in json_input]
+                return [Opponent.from_dict(opponent) for opponent in json.load(input)]
         else:
             return []
 
