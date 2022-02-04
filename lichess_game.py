@@ -92,8 +92,8 @@ class Lichess_Game:
         max_score = self.config['engine']['offer_draw']['max_score']
         scores = self.scores[-consecutive_moves:]
 
-        def is_draw_score(score: chess.engine.PovScore): return abs(score.relative.score(mate_score=40000)) <= max_score
-        if len(list(filter(is_draw_score, scores))) < len(scores):
+        def not_draw_score(score: chess.engine.PovScore): return abs(score.relative.score(mate_score=40000)) > max_score
+        if list(filter(not_draw_score, scores)):
             return False
 
         return True
