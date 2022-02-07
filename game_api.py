@@ -31,8 +31,8 @@ class Game_api:
                 self.lichess_game = Lichess_Game(self.api, event, self.config, self.username)
 
                 if self.lichess_game.is_our_turn():
-                    uci_move, offering_draw = self.lichess_game.make_move()
-                    self.api.send_move(self.game_id, uci_move, offering_draw)
+                    uci_move, offer_draw = self.lichess_game.make_move()
+                    self.api.send_move(self.game_id, uci_move, offer_draw)
             elif event['type'] == 'gameState':
                 updated = self.lichess_game.update(event)
 
@@ -40,8 +40,8 @@ class Game_api:
                     break
 
                 if self.lichess_game.is_our_turn() and updated:
-                    uci_move, offering_draw = self.lichess_game.make_move()
-                    self.api.send_move(self.game_id, uci_move, offering_draw)
+                    uci_move, offer_draw = self.lichess_game.make_move()
+                    self.api.send_move(self.game_id, uci_move, offer_draw)
             elif event['type'] == 'chatLine':
                 chat_message = Chat_Message(event)
                 print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')

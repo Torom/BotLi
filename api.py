@@ -144,15 +144,15 @@ class API:
             print(e)
             return False
 
-    def send_move(self, game_id: str, uci_move: str, offering_draw: bool) -> bool:
+    def send_move(self, game_id: str, uci_move: str, offer_draw: bool) -> bool:
         try:
             response = self.session.post(
                 f'https://lichess.org/api/bot/game/{game_id}/move/{uci_move}',
-                params={'offeringDraw': str(offering_draw).lower()})
+                params={'offeringDraw': str(offer_draw).lower()})
             response.raise_for_status()
             return True
         except requests.ConnectionError:
-            return self.send_move(game_id, uci_move, offering_draw)
+            return self.send_move(game_id, uci_move, offer_draw)
         except requests.HTTPError as e:
             print(e)
             return False
