@@ -35,6 +35,10 @@ engine:                               # Engine settings.
     score: 15                         # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
     consecutive_moves: 5              # How many moves in a row the absolute value of the score has to be below the draw value
     min_game_length: 35
+  resign:
+    enabled: false
+    score: -1000                      # If the score is less than or equal to this value, the bot resigns (in cp).
+    consecutive_moves: 5              # How many moves in a row the score has to be below the resign value.
   uci_options:                        # Arbitrary UCI options passed to the engine.
     Move Overhead: 100                # Increase if your bot flags games too often.
     Threads: 7                        # Max CPU threads the engine can use.

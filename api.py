@@ -134,6 +134,15 @@ class API:
         response = self.session.get('https://lichess.org/api/bot/online', stream=True)
         return response.iter_lines()
 
+    def resign_game(self, game_id: str) -> bool:
+        try:
+            response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/resign')
+            response.raise_for_status()
+            return True
+        except requests.HTTPError as e:
+            print(e)
+            return False
+
     def send_chat_message(self, game_id: str, room: str, text: str) -> bool:
         try:
             response = self.session.post(

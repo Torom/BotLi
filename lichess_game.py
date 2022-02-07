@@ -14,6 +14,7 @@ CP_Score = int
 Depth = int
 Outcome = str
 Offer_Draw = bool
+Resign = bool
 
 
 class Lichess_Game:
@@ -29,6 +30,7 @@ class Lichess_Game:
         self.black_time: int = gameFull_event['state']['btime']
         self.variant = Variant(gameFull_event['variant']['key'])
         self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
+        self.resign_enabled: bool = config['engine']['resign']['enabled']
         self.move_overhead = self._get_move_overhead()
         self.out_of_polyglot = 0
         self.out_of_pybook = 0
@@ -36,38 +38,44 @@ class Lichess_Game:
         self.engine = self._get_engine()
         self.scores: list[chess.engine.PovScore] = []
 
-    def make_move(self) -> Tuple[UCI_Move, Offer_Draw]:
+    def make_move(self) -> Tuple[UCI_Move, Offer_Draw, Resign]:
         if move := self._make_polyglot_move():
             message = f'Book:    {self._format_move(move):14}'
             offer_draw = False
+            resign = False
         elif uci_move := self._make_pybook_move():
             move = chess.Move.from_uci(uci_move)
             message = f'PyBook:  {self._format_move(move):14}'
             offer_draw = False
+            resign = False
         elif response := self._make_cloud_move():
             uci_move, cp_score, depth = response
             move = chess.Move.from_uci(uci_move)
             message = f'Cloud:   {self._format_move(move):14} {cp_score:+6} {depth}'
             offer_draw = False
+            resign = False
         elif response := self._make_chessdb_move():
             uci_move, cp_score, depth = response
             move = chess.Move.from_uci(uci_move)
             message = f'ChessDB: {self._format_move(move):14} {cp_score:+6} {depth}'
             offer_draw = False
+            resign = False
         elif response := self._make_egtb_move():
-            uci_move, outcome, offer_draw = response
+            uci_move, outcome, offer_draw, resign = response
             offer_draw = offer_draw and self.draw_enabled
+            resign = resign and self.resign_enabled
             move = chess.Move.from_uci(uci_move)
             message = f'EGTB:    {self._format_move(move):14} {outcome}'
         else:
             move, info = self._make_engine_move()
             message = f'Engine:  {self._format_move(move):14} {self._format_info(info)}'
             offer_draw = self._is_drawish()
+            resign = self._is_resignable()
 
         print(message)
         self.last_message = message
         self.board.push(move)
-        return move.uci(), offer_draw
+        return move.uci(), offer_draw, resign
 
     def update(self, gameState_event: dict) -> bool:
         moves = gameState_event['moves'].split()
@@ -111,6 +119,24 @@ class Lichess_Game:
 
         def not_draw_score(score: chess.engine.PovScore): return abs(score.relative.score(mate_score=40000)) > max_score
         if list(filter(not_draw_score, scores)):
+            return False
+
+        return True
+
+    def _is_resignable(self) -> bool:
+        if not self.resign_enabled:
+            return False
+
+        consecutive_moves = self.config['engine']['resign']['consecutive_moves']
+
+        if len(self.scores) < consecutive_moves:
+            return False
+
+        max_score = self.config['engine']['resign']['score']
+        scores = self.scores[-consecutive_moves:]
+
+        def not_resign_score(score: chess.engine.PovScore): return score.relative.score(mate_score=40000) > max_score
+        if list(filter(not_resign_score, scores)):
             return False
 
         return True
@@ -205,7 +231,7 @@ class Lichess_Game:
             else:
                 self._reduce_own_time(timeout * 1000)
 
-    def _make_egtb_move(self) -> Tuple[UCI_Move, Outcome, Offer_Draw] | None:
+    def _make_egtb_move(self) -> Tuple[UCI_Move, Outcome, Offer_Draw, Resign] | None:
         if not self.config['engine']['online_moves']['online_egtb']['enabled']:
             return
 
@@ -215,7 +241,9 @@ class Lichess_Game:
 
         if is_endgame and has_time:
             if response := self.api.get_egtb(self.board.fen(), timeout):
-                return response['moves'][0]['uci'], response['category'], response['category'] == 'draw'
+                uci_move = response['moves'][0]['uci']
+                outcome = response['category']
+                return uci_move, outcome, outcome == 'draw', outcome == 'loss'
             else:
                 self._reduce_own_time(timeout * 1000)
 
