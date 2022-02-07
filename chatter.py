@@ -23,10 +23,8 @@ class Chatter:
             return f'{lichess_game.username} running {lichess_game.engine.id["name"]} (Torom\'s BotLi)'
         elif command == 'ram':
             return self.ram_message
-        elif command == 'tb':
-            return '6-men syzygy tablebases on SSD'
         else:
-            return 'Supported commands: !cpu, !draw, !engine, !eval, !name, !ram, !tb'
+            return 'Supported commands: !cpu, !draw, !engine, !eval, !name, !ram'
 
     def _get_cpu(self) -> str:
         if os.path.exists('/proc/cpuinfo'):
