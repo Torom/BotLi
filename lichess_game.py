@@ -9,6 +9,12 @@ from chess.variant import find_variant
 from api import API
 from enums import Variant
 
+UCI_Move = str
+CP_Score = int
+Depth = int
+Outcome = str
+Offer_Draw = bool
+
 
 class Lichess_Game:
     def __init__(self, api: API, gameFull_event: dict, config: dict, username: str) -> None:
@@ -22,6 +28,7 @@ class Lichess_Game:
         self.white_time: int = gameFull_event['state']['wtime']
         self.black_time: int = gameFull_event['state']['btime']
         self.variant = Variant(gameFull_event['variant']['key'])
+        self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
         self.move_overhead = self._get_move_overhead()
         self.out_of_polyglot = 0
         self.out_of_pybook = 0
@@ -29,29 +36,38 @@ class Lichess_Game:
         self.engine = self._get_engine()
         self.scores: list[chess.engine.PovScore] = []
 
-    def make_move(self) -> Tuple[str, bool]:
+    def make_move(self) -> Tuple[UCI_Move, Offer_Draw]:
         if move := self._make_polyglot_move():
             message = f'Book:    {self._format_move(move):14}'
+            offer_draw = False
         elif uci_move := self._make_pybook_move():
             move = chess.Move.from_uci(uci_move)
             message = f'PyBook:  {self._format_move(move):14}'
+            offer_draw = False
         elif response := self._make_cloud_move():
-            move = chess.Move.from_uci(response['pvs'][0]['moves'].split()[0])
-            message = f'Cloud:   {self._format_move(move):14} {response["pvs"][0]["cp"]:+6} {response["depth"]}'
+            uci_move, cp_score, depth = response
+            move = chess.Move.from_uci(uci_move)
+            message = f'Cloud:   {self._format_move(move):14} {cp_score:+6} {depth}'
+            offer_draw = False
         elif response := self._make_chessdb_move():
-            move = chess.Move.from_uci(response["pv"][0])
-            message = f'ChessDB: {self._format_move(move):14} {response["score"]:+6} {response["depth"]}'
+            uci_move, cp_score, depth = response
+            move = chess.Move.from_uci(uci_move)
+            message = f'ChessDB: {self._format_move(move):14} {cp_score:+6} {depth}'
+            offer_draw = False
         elif response := self._make_egtb_move():
-            move = chess.Move.from_uci(response['moves'][0]['uci'])
-            message = f'EGTB:    {self._format_move(move):14} {response["category"]}'
+            uci_move, outcome, offer_draw = response
+            offer_draw = offer_draw and self.draw_enabled
+            move = chess.Move.from_uci(uci_move)
+            message = f'EGTB:    {self._format_move(move):14} {outcome}'
         else:
             move, info = self._make_engine_move()
             message = f'Engine:  {self._format_move(move):14} {self._format_info(info)}'
+            offer_draw = self._is_drawish()
 
         print(message)
         self.last_message = message
         self.board.push(move)
-        return move.uci(), self._is_drawish()
+        return move.uci(), offer_draw
 
     def update(self, gameState_event: dict) -> bool:
         moves = gameState_event['moves'].split()
@@ -78,7 +94,7 @@ class Lichess_Game:
         self.engine.quit()
 
     def _is_drawish(self) -> bool:
-        if not self.config['engine']['offer_draw']['enabled']:
+        if not self.draw_enabled:
             return False
 
         min_game_length = self.config['engine']['offer_draw']['min_game_length']
@@ -159,7 +175,7 @@ class Lichess_Game:
         else:
             self.out_of_pybook += 1
 
-    def _make_cloud_move(self) -> dict | None:
+    def _make_cloud_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
         if not self.config['engine']['online_moves']['lichess_cloud']['enabled']:
             return
 
@@ -170,11 +186,11 @@ class Lichess_Game:
         if is_opening and has_time:
             if response := self.api.get_cloud_eval(self.board.fen(), self.variant, timeout):
                 if not 'error' in response:
-                    return response
+                    return response['pvs'][0]['moves'].split()[0], response["pvs"][0]["cp"], response["depth"]
             else:
                 self._reduce_own_time(timeout * 1000)
 
-    def _make_chessdb_move(self) -> dict | None:
+    def _make_chessdb_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
         if not self.config['engine']['online_moves']['chessdb']['enabled']:
             return
 
@@ -185,11 +201,11 @@ class Lichess_Game:
         if is_opening and has_time:
             if response := self.api.get_chessdb_eval(self.board.fen(), timeout):
                 if response['status'] == 'ok':
-                    return response
+                    return response["pv"][0], response["score"], response["depth"]
             else:
                 self._reduce_own_time(timeout * 1000)
 
-    def _make_egtb_move(self) -> dict | None:
+    def _make_egtb_move(self) -> Tuple[UCI_Move, Outcome, Offer_Draw] | None:
         if not self.config['engine']['online_moves']['online_egtb']['enabled']:
             return
 
@@ -199,11 +215,7 @@ class Lichess_Game:
 
         if is_endgame and has_time:
             if response := self.api.get_egtb(self.board.fen(), timeout):
-                if response['category'] == 'draw':
-                    self.scores.append(chess.engine.PovScore(chess.engine.Cp(0), self.board.turn))
-                else:
-                    self.scores.append(chess.engine.PovScore(chess.engine.Mate(1), self.board.turn))
-                return response
+                return response['moves'][0]['uci'], response['category'], response['category'] == 'draw'
             else:
                 self._reduce_own_time(timeout * 1000)
 
