@@ -107,9 +107,8 @@ class Lichess_Game:
 
         min_game_length = self.config['engine']['offer_draw']['min_game_length']
         consecutive_moves = self.config['engine']['offer_draw']['consecutive_moves']
-        fullmove_number = self.board.fullmove_number if self.is_white else self.board.fullmove_number - 1
 
-        if fullmove_number < min_game_length or len(self.scores) < consecutive_moves:
+        if self.board.fullmove_number < min_game_length or len(self.scores) < consecutive_moves:
             return False
 
         max_score = self.config['engine']['offer_draw']['score']
