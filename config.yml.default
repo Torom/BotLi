@@ -32,7 +32,7 @@ engine:                               # Engine settings.
       timeout: 3
   offer_draw:
     enabled: true
-    max_score: 15                     # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
+    score: 15                         # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
     consecutive_moves: 5              # How many moves in a row the absolute value of the score has to be below the draw value
     min_game_length: 35
   uci_options:                        # Arbitrary UCI options passed to the engine.
