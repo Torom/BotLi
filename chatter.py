@@ -53,13 +53,12 @@ class Chatter:
         if not draw_enabled:
             return 'This bot will neither accept nor offer draws.'
 
-        max_score_cp = config['engine']['offer_draw']['max_score'] / 100
-        consecutive_moves = config['engine']['offer_draw']['consecutive_moves']
         min_game_length = config['engine']['offer_draw']['min_game_length']
+        max_score = config['engine']['offer_draw']['score'] / 100
+        consecutive_moves = config['engine']['offer_draw']['consecutive_moves']
 
         return f'The bot offers draw at move {min_game_length} or later ' \
-            f'if the eval is within +/- {max_score_cp:.2f} for {consecutive_moves} moves. ' \
-            f'Captures or pawn advances resets the counter.'
+            f'if the eval is within +{max_score:.2f} to -{max_score:.2f} for the last {consecutive_moves} moves.'
 
 
 class Chat_Message:

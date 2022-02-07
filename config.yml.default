@@ -32,8 +32,8 @@ engine:                               # Engine settings.
       timeout: 3
   offer_draw:
     enabled: true
-    score: 15                         # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
-    consecutive_moves: 5              # How many moves in a row the absolute value of the score has to be below the draw value
+    score: 10                         # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
+    consecutive_moves: 10             # How many moves in a row the absolute value of the score has to be below the draw value
     min_game_length: 35
   resign:
     enabled: false
