@@ -61,7 +61,7 @@ class Game_api:
             elif event['type'] == 'ping':
                 self.ping_counter += 1
 
-                if self.ping_counter >= 5 and self.lichess_game.is_abortable() and not self.lichess_game.is_our_turn():
+                if self.ping_counter >= 7 and self.lichess_game.is_abortable() and not self.lichess_game.is_our_turn():
                     self.api.abort_game(self.game_id)
             else:
                 print(event)
