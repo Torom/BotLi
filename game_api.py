@@ -14,6 +14,7 @@ class Game_api:
         self.username = username
         self.game_id = game_id
         self.chatter = Chatter(config)
+        self.ping_counter = 0
 
     def run_game(self) -> None:
         game_queue = self.manager.Queue()
@@ -57,6 +58,11 @@ class Game_api:
                     response = self.chatter.react(command, self.lichess_game)
 
                     self.api.send_chat_message(self.game_id, chat_message.room, response)
+            elif event['type'] == 'ping':
+                self.ping_counter += 1
+
+                if self.ping_counter >= 5 and self.lichess_game.is_abortable() and not self.lichess_game.is_our_turn():
+                    self.api.abort_game(self.game_id)
             else:
                 print(event)
 
@@ -71,4 +77,8 @@ class Game_api:
 
         for line in game_stream:
             if line:
-                game_queue.put_nowait(json.loads(line.decode('utf-8')))
+                event = json.loads(line.decode('utf-8'))
+            else:
+                event = {'type': 'ping'}
+
+            game_queue.put_nowait(event)

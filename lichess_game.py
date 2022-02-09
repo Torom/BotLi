@@ -98,6 +98,9 @@ class Lichess_Game:
             self.board.is_fifty_moves() or \
             self.board.is_repetition()
 
+    def is_abortable(self) -> bool:
+        return self.board.ply() < 2
+
     def quit_engine(self) -> None:
         self.engine.quit()
 
