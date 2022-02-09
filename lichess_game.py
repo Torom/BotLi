@@ -39,13 +39,13 @@ class Lichess_Game:
         self.scores: list[chess.engine.PovScore] = []
 
     def make_move(self) -> Tuple[UCI_Move, Offer_Draw, Resign]:
-        if move := self._make_polyglot_move():
-            message = f'Book:    {self._format_move(move):14}'
-            offer_draw = False
-            resign = False
-        elif uci_move := self._make_pybook_move():
+        if uci_move := self._make_pybook_move():
             move = chess.Move.from_uci(uci_move)
             message = f'PyBook:  {self._format_move(move):14}'
+            offer_draw = False
+            resign = False
+        elif move := self._make_polyglot_move():
+            message = f'Book:    {self._format_move(move):14}'
             offer_draw = False
             resign = False
         elif response := self._make_cloud_move():
@@ -177,7 +177,7 @@ class Lichess_Game:
 
         return books['standard']
 
-    def _make_pybook_move(self) -> str | None:
+    def _make_pybook_move(self) -> UCI_Move | None:
         enabled = self.config['engine']['pybook']['enabled']
         out_of_book = self.out_of_pybook >= 10
 
