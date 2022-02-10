@@ -79,6 +79,7 @@ class Challenge_Handler:
                 game_id = event['game']['id']
 
                 if game_id in self.game_processes:
+                    self.game_processes[game_id].join()
                     del self.game_processes[game_id]
                     self.game_count.value -= 1
             elif event['type'] == 'challengeDeclined':
