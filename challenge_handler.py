@@ -109,8 +109,8 @@ class Challenge_Handler:
         concurrency = self.config['challenge']['concurrency']
         variants = self.config['challenge']['variants']
         time_controls = self.config['challenge']['time_controls']
-        bot_modes = self.config['challenge']['bot_modes']
-        human_modes = self.config['challenge']['human_modes']
+        is_bot = event['challenge']['challenger']['title'] == 'BOT'
+        modes = self.config['challenge']['bot_modes'] if is_bot else self.config['challenge']['human_modes']
 
         variant = event['challenge']['variant']['key']
         if variant not in variants:
@@ -124,31 +124,20 @@ class Challenge_Handler:
 
         is_rated = event['challenge']['rated']
         is_casual = not is_rated
-        if event['challenge']['challenger']['title'] == 'BOT':
-            rated_is_allowed = 'rated' in bot_modes
-            if is_rated and not rated_is_allowed:
-                print(f'Rated is not supported!')
-                return Decline_Reason.CASUAL
+        rated_is_allowed = 'rated' in modes
+        if is_rated and not rated_is_allowed:
+            print(f'Rated is not supported!')
+            return Decline_Reason.CASUAL
 
-            casual_is_allowed = 'casual' in bot_modes
-            if is_casual and not casual_is_allowed:
-                print(f'Casual is not supported!')
-                return Decline_Reason.RATED
-        else:
-            rated_is_allowed = 'rated' in human_modes
-            if is_rated and not rated_is_allowed:
-                print(f'Rated is not supported!')
-                return Decline_Reason.CASUAL
-
-            casual_is_allowed = 'casual' in human_modes
-            if is_casual and not casual_is_allowed:
-                print(f'Casual is not supported!')
-                return Decline_Reason.RATED
+        casual_is_allowed = 'casual' in modes
+        if is_casual and not casual_is_allowed:
+            print(f'Casual is not supported!')
+            return Decline_Reason.RATED
 
         if not self.accept_challenges.value:
             print('We are currently not accepting any new challenges!')
             return Decline_Reason.LATER
 
         if concurrency <= self.game_count.value:
-            print(f'More then {concurrency} concurrend game(s) is not supported!')
+            print(f'Not more then {concurrency} concurrend game(s) supported!')
             return Decline_Reason.LATER
