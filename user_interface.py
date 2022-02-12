@@ -1,5 +1,5 @@
 import multiprocessing
-import readline
+import platform
 import time
 
 from api import API
@@ -37,9 +37,12 @@ class UserInterface:
         self.matchmaking_process = None
         self.matchmaking_process_is_running = self.manager.Value(bool, False)
 
-        completer = Autocompleter(list(COMMANDS.keys()))
-        readline.set_completer(completer.complete)
-        readline.parse_and_bind('tab: complete')
+        if platform.system() != 'Windows':
+            import readline
+
+            completer = Autocompleter(list(COMMANDS.keys()))
+            readline.set_completer(completer.complete)
+            readline.parse_and_bind('tab: complete')
 
         print('accepting challenges ...')
 

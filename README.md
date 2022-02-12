@@ -38,29 +38,32 @@ Several books can be entered here. In the upper area `eninge: polyglot: books` o
 
 # How to control
 
-To start the bot type
+To start the bot, type
 
 ```bash
 python user_interface.py
 ```
 The bot automatically accepts challenges. Which challenges are accepted is defined in the config in the section `challenge`.
 
-Press <kbd>TAB</kbd> <kbd>TAB</kbd> to see all options.
+To see all commands, type
+```
+help
+```
 
 ## Matchmaking mode
 
 To challenge other players with similar ratings, type
-```bash
+```
 matchmaking
 ```
 
 Change the settings in `matchmaking` in the config to change how this bot challenges other players. The bot will not accept challenges in this mode. To exit the matchmaking mode type
-```bash
+```
 stop
 ```
 
-To exit the bot completely type
-```bash
+To exit the bot completely, type
+```
 quit
 ```
 
@@ -72,7 +75,7 @@ Upgrade a lichess player account into a Bot account. Only Bot accounts are allow
 The account **cannot have played any game** before becoming a Bot account. The upgrade is **irreversible**. The account will only be able to play as a Bot.
 
 To upgrade your account type
-```bash
+```
 upgrade
 ```
 
