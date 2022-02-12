@@ -1,53 +1,53 @@
-token: "XXXXXXXXXXXXXXXXXXXXXXXX"     # Lichess OAuth2 Token.
+token: "XXXXXXXXXXXXXXXXXXXXXXXX"         # Lichess OAuth2 Token.
 
-engine:                               # Engine settings.
-  dir: "/path/to/EngineDir"
-  name: "EngineName"
-  ponder: true                        # Think on opponent's time.
+engine:                                   # Engine settings.
+  dir: "/path/to/EngineDir"               # Directory containing the engine.
+  name: "EngineName"                      # Binary name of the engine to use.
+  ponder: true                            # Think on opponent's time.
   polyglot:
-    enabled: false                    # Activate polyglot book.
+    enabled: false                        # Activate polyglot book.
     books:
-      white: null
-      black: null
-      standard: "DefaultBook"
-      chess960: null
-    selection: "weighted_random"      # Move selection is one of "weighted_random", "uniform_random" or "best_move".
+      white: null                         # Name of the book to use as white.
+      black: null                         # Name of the book to use as black.
+      standard: "DefaultBook"             # Name of the book to use if there is no specific book for white, black or chess960.
+      chess960: null                      # Name of the book to use for Chess960.
+    selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
   pybook:
-    enabled: false
-    book: "/path/to/pybook"
+    enabled: false                        # Activate pybook.
+    book: "/path/to/pybook"               # Path to pybook.
   online_moves:
     chessdb:
-      enabled: false
-      max_depth: 99
-      min_time: 40
-      timeout: 5
+      enabled: false                      # Activate online moves from https://chessdb.cn/queryc_en/
+      max_depth: 99                       # Half move max depth.
+      min_time: 40                        # Time the bot must have at least to use the online move.
+      timeout: 5                          # Time the server has to respond.
     lichess_cloud:
-      enabled: false
-      max_depth: 99
-      min_time: 40
-      timeout: 5
+      enabled: false                      # Activate online moves from Lichess cloud eval.
+      max_depth: 99                       # Half move max depth.
+      min_time: 40                        # Time the bot must have at least to use the online move.
+      timeout: 5                          # Time the server has to respond.
     online_egtb:
-      enabled: false
-      min_time: 10
-      timeout: 3
+      enabled: false                      # Activate online endgame tablebases from Lichess.
+      min_time: 10                        # Time the bot must have at least to use the online move.
+      timeout: 3                          # Time the server has to respond.
   offer_draw:
-    enabled: true
-    score: 10                         # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
-    consecutive_moves: 10             # How many moves in a row the absolute value of the score has to be below the draw value
-    min_game_length: 35
+    enabled: true                         # Activate whether the bot should offer draw.
+    score: 10                             # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
+    consecutive_moves: 10                 # How many moves in a row the absolute value of the score has to be below the draw value
+    min_game_length: 35                   # Earliest move in which draw is offered.
   resign:
-    enabled: false
-    score: -1000                      # If the score is less than or equal to this value, the bot resigns (in cp).
-    consecutive_moves: 5              # How many moves in a row the score has to be below the resign value.
-  uci_options:                        # Arbitrary UCI options passed to the engine.
-    Move Overhead: 100                # Increase if your bot flags games too often.
-    Threads: 7                        # Max CPU threads the engine can use.
-    Hash: 2048                        # Max memory (in megabytes) the engine can allocate.
-    SyzygyPath: "/path/to/syzygy"
+    enabled: false                        # Activate whether the bot should resign games.
+    score: -1000                          # If the score is less than or equal to this value, the bot resigns (in cp).
+    consecutive_moves: 5                  # How many moves in a row the score has to be below the resign value.
+  uci_options:                            # Arbitrary UCI options passed to the engine. (Commenting allowed)
+    Move Overhead: 100                    # Increase if your bot flags games too often.
+    Threads: 7                            # Max CPU threads the engine can use.
+    Hash: 2048                            # Max memory (in megabytes) the engine can allocate.
+#   SyzygyPath: "/path/to/syzygy"         # Path to your local syzygy endgame tablebases
     
-challenge:                            # Incoming challenges.
-  concurrency: 1                      # Number of games to play simultaneously.
-  variants:                           # Chess variants to accept (https://lichess.org/variant).
+challenge:                                # Incoming challenges.
+  concurrency: 1                          # Number of games to play simultaneously.
+  variants:                               # Chess variants to accept (https://lichess.org/variant). (Commenting allowed)
     - standard
     - chess960
 #   - fromPosition
@@ -58,26 +58,26 @@ challenge:                            # Incoming challenges.
 #   - kingOfTheHill
 #   - racingKings
 #   - threeCheck
-  time_controls:                      # Time controls to accept.
+  time_controls:                          # Time controls to accept. (Commenting allowed)
     - bullet
     - blitz
     - rapid
 #   - classical
 #   - correspondence
-  bot_modes:                          # Game modes to accept against BOTs.
-#   - casual                          # Unrated games.
-    - rated                           # Rated games
-  human_modes:                        # Game modes to accept against humans.
-    - casual                          # Unrated games.
-    - rated                           # Rated games
+  bot_modes:                              # Game modes to accept against BOTs. (Commenting allowed)
+#   - casual                              # Unrated games.
+    - rated                               # Rated games
+  human_modes:                            # Game modes to accept against humans. (Commenting allowed)
+    - casual                              # Unrated games.
+    - rated                               # Rated games
 
 matchmaking:
-  initial_time: 60
-  increment: 0
-  rated: true
-  timeout: 20
-  min_rating_diff: 0
-  max_rating_diff: 300
+  initial_time: 60                        # Initial time for matchmaking mode.
+  increment: 0                            # Increment time for matchmaking mode.
+  rated: true                             # Activate rated games in matchmaking mode.
+  timeout: 20                             # Time until a challenge is canceled. 
+# min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
+# max_rating_diff: 300                    # Maximum rating distance to opponent. (Commenting allowed)
 
 books:
-  DefaultBook: "/path/to/DefaultBook.bin"
+  DefaultBook: "/path/to/DefaultBook.bin" # Name of the opening book (to be used above in the polyglot section) and path to the polyglot opening book.
