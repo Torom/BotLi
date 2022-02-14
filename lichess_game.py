@@ -58,7 +58,7 @@ class Lichess_Game:
         elif response := self._make_chessdb_move():
             uci_move, cp_score, depth = response
             move = chess.Move.from_uci(uci_move)
-            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), self.is_white)
+            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), self.board.turn)
             message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
             offer_draw = False
             resign = False
@@ -308,13 +308,13 @@ class Lichess_Game:
 
     def _format_score(self, score: chess.engine.PovScore) -> str:
         if not score.is_mate():
-            if cp_score := score.relative.score():
+            if cp_score := score.pov(self.board.turn).score():
                 cp_score /= 100
                 return format(cp_score, '+7.2f')
             else:
                 return '   0.00'
         else:
-            return str(score.relative)
+            return str(score.pov(self.board.turn))
 
     def _get_engine(self) -> chess.engine.SimpleEngine:
         engine = chess.engine.SimpleEngine.popen_uci(self.config['engine']['path'])
