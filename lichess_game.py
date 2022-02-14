@@ -343,6 +343,7 @@ class Lichess_Game:
         return self.initial_time // 60
 
     def _has_time(self, min_time: int) -> bool:
+        min_time *= 1000
         return self.white_time >= min_time if self.is_white else self.black_time >= min_time
 
     def _reduce_own_time(self, milliseconds: int) -> None:
