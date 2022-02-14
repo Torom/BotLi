@@ -51,13 +51,15 @@ class Lichess_Game:
         elif response := self._make_cloud_move():
             uci_move, cp_score, depth = response
             move = chess.Move.from_uci(uci_move)
-            message = f'Cloud:   {self._format_move(move):14} {cp_score:+6} {depth}'
+            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), self.is_white)
+            message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
             offer_draw = False
             resign = False
         elif response := self._make_chessdb_move():
             uci_move, cp_score, depth = response
             move = chess.Move.from_uci(uci_move)
-            message = f'ChessDB: {self._format_move(move):14} {cp_score:+6} {depth}'
+            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), self.is_white)
+            message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
             offer_draw = False
             resign = False
         elif response := self._make_egtb_move():
