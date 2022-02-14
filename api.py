@@ -106,9 +106,8 @@ class API:
         try:
             response = self.session.get('https://lichess.org/api/cloud-eval',
                                         params={'fen': fen, 'variant': variant.value}, timeout=timeout)
-            response.raise_for_status()
             return response.json()
-        except (requests.Timeout, requests.HTTPError) as e:
+        except requests.Timeout as e:
             print(e)
 
     def get_egtb(self, fen: str, timeout: int) -> dict | None:

@@ -51,7 +51,7 @@ class Lichess_Game:
         elif response := self._make_cloud_move():
             uci_move, cp_score, depth = response
             move = chess.Move.from_uci(uci_move)
-            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), self.is_white)
+            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), chess.WHITE)
             message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
             offer_draw = False
             resign = False
