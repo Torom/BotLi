@@ -23,7 +23,7 @@ class Lichess_Game:
         self.api = api
         self.board = self._setup_board(gameFull_event)
         self.username = username
-        self.is_white: bool = gameFull_event['white']['name'] == username if 'name' in gameFull_event['white'] else False
+        self.is_white: bool = gameFull_event['white'].get('name') == username
         self.initial_time: int = gameFull_event['clock']['initial']
         self.increment: int = gameFull_event['clock']['increment']
         self.white_time: int = gameFull_event['state']['wtime']
