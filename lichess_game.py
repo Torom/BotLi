@@ -309,10 +309,10 @@ class Lichess_Game:
         depth = f'{depth_str:6}' if info_depth and info_seldepth else 6 * ' '
 
         info_nps = info.get('nps')
-        nps = f'nps: {info_nps/1000000:4.1f} M' if info_nps else 7 * ' '
+        nps = f'nps: {info_nps/1000000:5.1f} M' if info_nps else 8 * ' '
 
         info_time = info.get('time')
-        time = f'mt: {info_time:4.1f} s' if info_time else 10 * ' '
+        time = f'mt: {info_time:5.1f} s' if info_time else 11 * ' '
 
         info_hashfull = info.get('hashfull')
         hashfull = f'hash: {info_hashfull/10:4.1f} %' if info_hashfull else 12 * ' '
