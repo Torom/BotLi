@@ -219,11 +219,11 @@ class Lichess_Game:
         if has_time:
             if response := self.api.get_cloud_eval(self.board.fen(), self.variant, timeout):
                 if not 'error' in response:
-                    self.out_of_cloud_counter = 0
                     if response["depth"] >= min_depth:
+                        self.out_of_cloud_counter = 0
                         return response['pvs'][0]['moves'].split()[0], response["pvs"][0]["cp"], response["depth"]
-                else:
-                    self.out_of_cloud_counter += 1
+
+                self.out_of_cloud_counter += 1
             else:
                 self._reduce_own_time(timeout * 1000)
 
@@ -241,11 +241,11 @@ class Lichess_Game:
         if has_time:
             if response := self.api.get_chessdb_eval(self.board.fen(), timeout):
                 if response['status'] == 'ok':
-                    self.out_of_chessdb_counter = 0
                     if response["depth"] >= min_depth:
+                        self.out_of_chessdb_counter = 0
                         return response["pv"][0], response["score"], response["depth"]
-                else:
-                    self.out_of_chessdb_counter += 1
+
+                self.out_of_chessdb_counter += 1
             else:
                 self._reduce_own_time(timeout * 1000)
 
