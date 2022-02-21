@@ -32,8 +32,8 @@ class Lichess_Game:
         self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
         self.resign_enabled: bool = config['engine']['resign']['enabled']
         self.move_overhead = self._get_move_overhead()
-        self.out_of_polyglot = 0
-        self.out_of_pybook = 0
+        self.out_of_polyglot_counter = 0
+        self.out_of_pybook_counter = 0
         self.pybook_loaded = False
         self.engine = self._get_engine()
         self.scores: list[chess.engine.PovScore] = []
@@ -146,7 +146,7 @@ class Lichess_Game:
     def _make_polyglot_move(self) -> chess.Move | None:
         enabled = self.config['engine']['polyglot']['enabled']
         selection = self.config['engine']['polyglot']['selection']
-        out_of_book = self.out_of_polyglot >= 10
+        out_of_book = self.out_of_polyglot_counter >= 10
 
         if not enabled or out_of_book:
             return
@@ -160,10 +160,10 @@ class Lichess_Game:
                 else:
                     entry = book_reader.find(self.board)
             except IndexError:
-                self.out_of_polyglot += 1
+                self.out_of_polyglot_counter += 1
                 return
 
-            self.out_of_polyglot = 0
+            self.out_of_polyglot_counter = 0
             new_board = self.board.copy()
             new_board.push(entry.move)
             if not new_board.is_repetition(count=2):
@@ -184,7 +184,7 @@ class Lichess_Game:
 
     def _make_pybook_move(self) -> UCI_Move | None:
         enabled = self.config['engine']['pybook']['enabled']
-        out_of_book = self.out_of_pybook >= 10
+        out_of_book = self.out_of_pybook_counter >= 10
 
         if not enabled or out_of_book:
             return
@@ -195,13 +195,13 @@ class Lichess_Game:
             self.pybook_loaded = True
 
         if uci_move := self.pybook.get(chess.polyglot.zobrist_hash(self.board)):
-            self.out_of_pybook = 0
+            self.out_of_pybook_counter = 0
             new_board = self.board.copy()
             new_board.push(chess.Move.from_uci(uci_move))
             if not new_board.is_repetition(count=2):
                 return uci_move
         else:
-            self.out_of_pybook += 1
+            self.out_of_pybook_counter += 1
 
     def _make_cloud_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
         if not self.config['engine']['online_moves']['lichess_cloud']['enabled']:
