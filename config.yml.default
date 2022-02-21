@@ -18,12 +18,12 @@ engine:                                   # Engine settings.
   online_moves:
     chessdb:
       enabled: false                      # Activate online moves from https://chessdb.cn/queryc_en/
-      max_depth: 99                       # Half move max depth.
+      min_depth: 10                       # Minimum evaluation depth.
       min_time: 40                        # Time the bot must have at least to use the online move.
       timeout: 5                          # Time the server has to respond.
     lichess_cloud:
       enabled: false                      # Activate online moves from Lichess cloud eval.
-      max_depth: 99                       # Half move max depth.
+      min_depth: 10                       # Minimum evaluation depth.
       min_time: 40                        # Time the bot must have at least to use the online move.
       timeout: 5                          # Time the server has to respond.
     online_egtb:

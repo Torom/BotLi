@@ -34,6 +34,8 @@ class Lichess_Game:
         self.move_overhead = self._get_move_overhead()
         self.out_of_polyglot_counter = 0
         self.out_of_pybook_counter = 0
+        self.out_of_cloud_counter = 0
+        self.out_of_chessdb_counter = 0
         self.pybook_loaded = False
         self.engine = self._get_engine()
         self.scores: list[chess.engine.PovScore] = []
@@ -204,32 +206,46 @@ class Lichess_Game:
             self.out_of_pybook_counter += 1
 
     def _make_cloud_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
-        if not self.config['engine']['online_moves']['lichess_cloud']['enabled']:
+        enabled = self.config['engine']['online_moves']['lichess_cloud']['enabled']
+        out_of_book = self.out_of_cloud_counter >= 10
+
+        if not enabled or out_of_book:
             return
 
-        is_opening = self.config['engine']['online_moves']['lichess_cloud']['max_depth'] >= self.board.ply()
         has_time = self._has_time(self.config['engine']['online_moves']['lichess_cloud']['min_time'])
         timeout = self.config['engine']['online_moves']['lichess_cloud']['timeout']
+        min_depth = self.config['engine']['online_moves']['lichess_cloud']['min_depth']
 
-        if is_opening and has_time:
+        if has_time:
             if response := self.api.get_cloud_eval(self.board.fen(), self.variant, timeout):
                 if not 'error' in response:
-                    return response['pvs'][0]['moves'].split()[0], response["pvs"][0]["cp"], response["depth"]
+                    self.out_of_cloud_counter = 0
+                    if response["depth"] >= min_depth:
+                        return response['pvs'][0]['moves'].split()[0], response["pvs"][0]["cp"], response["depth"]
+                else:
+                    self.out_of_cloud_counter += 1
             else:
                 self._reduce_own_time(timeout * 1000)
 
     def _make_chessdb_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
-        if not self.config['engine']['online_moves']['chessdb']['enabled']:
+        enabled = self.config['engine']['online_moves']['chessdb']['enabled']
+        out_of_book = self.out_of_chessdb_counter >= 10
+
+        if not enabled or out_of_book:
             return
 
-        is_opening = self.config['engine']['online_moves']['chessdb']['max_depth'] >= self.board.ply()
         has_time = self._has_time(self.config['engine']['online_moves']['chessdb']['min_time'])
         timeout = self.config['engine']['online_moves']['chessdb']['timeout']
+        min_depth = self.config['engine']['online_moves']['chessdb']['min_depth']
 
-        if is_opening and has_time:
+        if has_time:
             if response := self.api.get_chessdb_eval(self.board.fen(), timeout):
                 if response['status'] == 'ok':
-                    return response["pv"][0], response["score"], response["depth"]
+                    self.out_of_chessdb_counter = 0
+                    if response["depth"] >= min_depth:
+                        return response["pv"][0], response["score"], response["depth"]
+                else:
+                    self.out_of_chessdb_counter += 1
             else:
                 self._reduce_own_time(timeout * 1000)
 
