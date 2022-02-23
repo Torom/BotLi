@@ -119,11 +119,10 @@ class Lichess_Game:
             return False
 
         max_score = self.config['engine']['offer_draw']['score']
-        scores = self.scores[-consecutive_moves:]
 
-        def not_draw_score(score: chess.engine.PovScore): return abs(score.relative.score(mate_score=40000)) > max_score
-        if list(filter(not_draw_score, scores)):
-            return False
+        for score in self.scores[-consecutive_moves:]:
+            if abs(score.relative.score(mate_score=40000)) > max_score:
+                return False
 
         return True
 
@@ -137,11 +136,10 @@ class Lichess_Game:
             return False
 
         max_score = self.config['engine']['resign']['score']
-        scores = self.scores[-consecutive_moves:]
 
-        def not_resign_score(score: chess.engine.PovScore): return score.relative.score(mate_score=40000) > max_score
-        if list(filter(not_resign_score, scores)):
-            return False
+        for score in self.scores[-consecutive_moves:]:
+            if score.relative.score(mate_score=40000) > max_score:
+                return False
 
         return True
 
