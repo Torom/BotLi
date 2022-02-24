@@ -1,4 +1,5 @@
 import multiprocessing
+import sys
 import time
 
 from api import API
@@ -171,5 +172,7 @@ class Autocompleter:
 
 
 if __name__ == '__main__':
+    assert sys.version_info >= (3, 10), 'Python 3.10 or newer required.'
+
     ui = UserInterface()
     ui.start()
