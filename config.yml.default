@@ -47,6 +47,10 @@ engine:                                   # Engine settings.
     
 challenge:                                # Incoming challenges.
   concurrency: 1                          # Number of games to play simultaneously.
+# min_increment: 0                        # Minimum amount of increment to accept a challenge. (Commenting allowed)
+# max_increment: 180                      # Maximum amount of increment to accept a challenge. (Commenting allowed)
+# min_initial: 0                          # Minimum amount of initial time to accept a challenge. (Commenting allowed)
+# max_initial: 315360000                  # Maximum amount of initial time to accept a challenge. (Commenting allowed)
   variants:                               # Chess variants to accept (https://lichess.org/variant). (Commenting allowed)
     - standard
     - chess960

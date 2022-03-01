@@ -109,6 +109,10 @@ class Challenge_Handler:
         concurrency = self.config['challenge']['concurrency']
         variants = self.config['challenge']['variants']
         time_controls = self.config['challenge']['time_controls']
+        min_increment = self.config['challenge'].get('min_increment', 0)
+        max_increment = self.config['challenge'].get('max_increment', 180)
+        min_initial = self.config['challenge'].get('min_initial', 0)
+        max_initial = self.config['challenge'].get('max_initial', 315360000)
         is_bot = event['challenge']['challenger']['title'] == 'BOT'
         modes = self.config['challenge']['bot_modes'] if is_bot else self.config['challenge']['human_modes']
 
@@ -118,8 +122,16 @@ class Challenge_Handler:
             return Decline_Reason.VARIANT
 
         speed = event['challenge']['speed']
+        increment = event['challenge']['timeControl']['increment']
+        initial = event['challenge']['timeControl']['limit']
         if speed not in time_controls:
             print(f'Speed "{speed}" is not supported!')
+            return Decline_Reason.TIME_CONTROL
+        elif increment < min_increment or increment > max_increment:
+            print(f'Increment {increment} is not supported!')
+            return Decline_Reason.TIME_CONTROL
+        elif initial < min_initial or initial > max_initial:
+            print(f'Initial time {initial} is not supported!')
             return Decline_Reason.TIME_CONTROL
 
         is_rated = event['challenge']['rated']
