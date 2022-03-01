@@ -106,7 +106,7 @@ class Challenge_Handler:
                 challenge_queue.put_nowait(event)
 
     def _get_decline_reason(self, event: dict) -> Decline_Reason | None:
-        concurrency = self.config['challenge']['concurrency']
+        concurrency = self.config['challenge'].get('concurrency', 1)
         variants = self.config['challenge']['variants']
         time_controls = self.config['challenge']['time_controls']
         min_increment = self.config['challenge'].get('min_increment', 0)

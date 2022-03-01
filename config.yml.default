@@ -45,13 +45,13 @@ engine:                                   # Engine settings.
     Hash: 2048                            # Max memory (in megabytes) the engine can allocate.
 #   SyzygyPath: "/path/to/syzygy"         # Path to your local syzygy endgame tablebases
     
-challenge:                                # Incoming challenges.
+challenge:                                # Incoming challenges. (Commenting allowed)
   concurrency: 1                          # Number of games to play simultaneously.
-# min_increment: 0                        # Minimum amount of increment to accept a challenge. (Commenting allowed)
-# max_increment: 180                      # Maximum amount of increment to accept a challenge. (Commenting allowed)
-# min_initial: 0                          # Minimum amount of initial time to accept a challenge. (Commenting allowed)
-# max_initial: 315360000                  # Maximum amount of initial time to accept a challenge. (Commenting allowed)
-  variants:                               # Chess variants to accept (https://lichess.org/variant). (Commenting allowed)
+# min_increment: 0                        # Minimum amount of increment to accept a challenge.
+# max_increment: 180                      # Maximum amount of increment to accept a challenge.
+# min_initial: 0                          # Minimum amount of initial time to accept a challenge.
+# max_initial: 315360000                  # Maximum amount of initial time to accept a challenge.
+  variants:                               # Chess variants to accept (https://lichess.org/variant).
     - standard
     - chess960
 #   - fromPosition
@@ -62,16 +62,16 @@ challenge:                                # Incoming challenges.
 #   - kingOfTheHill
 #   - racingKings
 #   - threeCheck
-  time_controls:                          # Time controls to accept. (Commenting allowed)
+  time_controls:                          # Time controls to accept.
     - bullet
     - blitz
     - rapid
 #   - classical
 #   - correspondence
-  bot_modes:                              # Game modes to accept against BOTs. (Commenting allowed)
+  bot_modes:                              # Game modes to accept against BOTs.
 #   - casual                              # Unrated games.
     - rated                               # Rated games
-  human_modes:                            # Game modes to accept against humans. (Commenting allowed)
+  human_modes:                            # Game modes to accept against humans.
     - casual                              # Unrated games.
     - rated                               # Rated games
 

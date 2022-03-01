@@ -137,7 +137,7 @@ class UserInterface:
 
         self.accept_challenges.value = False
 
-        concurrency = self.config['challenge']['concurrency']
+        concurrency = self.config['challenge'].get('concurrency', 1)
         is_max_concurrency = concurrency <= self.game_count.value
         if is_max_concurrency:
             print('Waiting for a game to finish ...')
