@@ -118,32 +118,32 @@ class Challenge_Handler:
 
         variant = event['challenge']['variant']['key']
         if variant not in variants:
-            print(f'Variant "{variant}" is not supported!')
+            print(f'Variant "{variant}" is not allowed by config!')
             return Decline_Reason.VARIANT
 
         speed = event['challenge']['speed']
         increment = event['challenge']['timeControl']['increment']
         initial = event['challenge']['timeControl']['limit']
         if speed not in time_controls:
-            print(f'Speed "{speed}" is not supported!')
+            print(f'Speed "{speed}" is not allowed by config!')
             return Decline_Reason.TIME_CONTROL
         elif increment < min_increment or increment > max_increment:
-            print(f'Increment {increment} is not supported!')
+            print(f'Increment {increment} is not allowed by config!')
             return Decline_Reason.TIME_CONTROL
         elif initial < min_initial or initial > max_initial:
-            print(f'Initial time {initial} is not supported!')
+            print(f'Initial time {initial} is not allowed by config!')
             return Decline_Reason.TIME_CONTROL
 
         is_rated = event['challenge']['rated']
         is_casual = not is_rated
         rated_is_allowed = 'rated' in modes
         if is_rated and not rated_is_allowed:
-            print(f'Rated is not supported!')
+            print(f'Rated is not allowed by config!')
             return Decline_Reason.CASUAL
 
         casual_is_allowed = 'casual' in modes
         if is_casual and not casual_is_allowed:
-            print(f'Casual is not supported!')
+            print(f'Casual is not allowed by config!')
             return Decline_Reason.RATED
 
         if not self.accept_challenges.value:
@@ -151,5 +151,5 @@ class Challenge_Handler:
             return Decline_Reason.LATER
 
         if concurrency <= self.game_count.value:
-            print(f'Not more then {concurrency} concurrend game(s) supported!')
+            print(f'Not more then {concurrency} concurrend game(s) allowed by config!')
             return Decline_Reason.LATER
