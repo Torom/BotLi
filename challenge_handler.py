@@ -136,13 +136,10 @@ class Challenge_Handler:
 
         is_rated = event['challenge']['rated']
         is_casual = not is_rated
-        rated_is_allowed = 'rated' in modes
-        if is_rated and not rated_is_allowed:
+        if is_rated and 'rated' not in modes:
             print(f'Rated is not allowed by config!')
             return Decline_Reason.CASUAL
-
-        casual_is_allowed = 'casual' in modes
-        if is_casual and not casual_is_allowed:
+        elif is_casual and 'casual' not in modes:
             print(f'Casual is not allowed by config!')
             return Decline_Reason.RATED
 
