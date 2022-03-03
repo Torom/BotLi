@@ -1,7 +1,8 @@
-import yaml
 import os
 import os.path
 import sys
+
+import yaml
 
 
 def load_config() -> dict:
@@ -32,17 +33,17 @@ def load_config() -> dict:
             if not isinstance(CONFIG['engine'][subsection[0]], subsection[1]):
                 raise Exception(f'`engine` subsection {subsection[2]}')
 
-        if not os.path.isdir(CONFIG["engine"]["dir"]):
-            raise Exception(f'Your engine directory `{CONFIG["engine"]["dir"]}` is not a directory.')
+        if not os.path.isdir(CONFIG['engine']['dir']):
+            raise Exception(f'Your engine directory "{CONFIG["engine"]["dir"]}" is not a directory.')
 
-        CONFIG['engine']['path'] = os.path.join(CONFIG["engine"]["dir"], CONFIG["engine"]["name"])
+        CONFIG['engine']['path'] = os.path.join(CONFIG['engine']['dir'], CONFIG['engine']['name'])
 
         if not os.path.isfile(CONFIG['engine']['path']):
-            raise Exception(f'The engine {CONFIG["engine"]["path"]} file does not exist.')
+            raise Exception(f'The engine "{CONFIG["engine"]["path"]}" file does not exist.')
 
-        if not os.access(CONFIG["engine"]["path"], os.X_OK):
+        if not os.access(CONFIG['engine']['path'], os.X_OK):
             raise Exception(
-                f'The engine {CONFIG["engine"]["path"]} doesnt have execute (x) permission. Try: chmod +x {CONFIG["engine"]["path"]}')
+                f'The engine "{CONFIG["engine"]["path"]}" doesnt have execute (x) permission. Try: chmod +x {CONFIG["engine"]["path"]}')
 
         if CONFIG['engine']['polyglot']['enabled']:
             for key, book in CONFIG['engine']['polyglot']['books'].items():
