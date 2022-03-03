@@ -28,12 +28,12 @@ def load_config() -> dict:
                            ['name', str, '"name" must be a string wrapped in quotes.']]
         for subsection in engine_sections:
             if subsection[0] not in CONFIG['engine']:
-                raise Exception(f'Your config.yml does not have required `engine` subsection `{subsection}`.')
+                raise Exception(f'Your config.yml does not have required `engine` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine'][subsection[0]], subsection[1]):
-                raise Exception(f'"engine" subsection {subsection[2]}')
+                raise Exception(f'`engine` subsection {subsection[2]}')
 
         if not os.path.isdir(CONFIG["engine"]["dir"]):
-            raise Exception("Your engine directory `{}` is not a directory.")
+            raise Exception(f'Your engine directory `{CONFIG["engine"]["dir"]}` is not a directory.')
 
         CONFIG['engine']['path'] = os.path.join(CONFIG["engine"]["dir"], CONFIG["engine"]["name"])
 
