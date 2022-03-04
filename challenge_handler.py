@@ -3,38 +3,48 @@ import multiprocessing
 import queue
 import sys
 from multiprocessing.context import Process
-from multiprocessing.managers import ValueProxy
+from queue import Queue
+from threading import Thread
 
 from api import API
 from enums import Decline_Reason
 from game_api import Game_api
+from game_counter import Game_Counter
 
 
-class Challenge_Handler:
-    def __init__(
-            self, config: dict, is_running: ValueProxy[bool],
-            accept_challenges: ValueProxy[bool],
-            game_count: ValueProxy[int]) -> None:
+class Challenge_Handler(Thread):
+    def __init__(self, config: dict, game_count: Game_Counter) -> None:
+        Thread.__init__(self)
         self.config = config
         self.api = API(self.config['token'])
-        self.is_running = is_running
-        self.accept_challenges = accept_challenges
-        self.manager = multiprocessing.Manager()
+        self.is_running = True
         self.count_concurrent_games = 0
         self.game_count = game_count
+        self.challenge_queue = Queue()
+        self.accept_challenges = True
 
-    def start(self) -> None:
-        challenge_queue = self.manager.Queue()
-        challenge_queue_process = multiprocessing.Process(
-            target=self._watch_challenge_stream, args=(challenge_queue,))
-        challenge_queue_process.start()
+    def start_accepting_challenges(self):
+        self.accept_challenges = True
+
+    def stop_accepting_challenges(self):
+        self.accept_challenges = False
+
+    def start(self):
+        Thread.start(self)
+
+    def stop(self):
+        self.is_running = False
+
+    def run(self) -> None:
+        challenge_queue_thread = Thread(target=self._watch_challenge_stream, daemon=True)
+        challenge_queue_thread.start()
 
         username = self.api.get_account()['username']
         self.game_processes: dict[str, Process] = {}
 
-        while self.is_running.value:
+        while self.is_running:
             try:
-                event = challenge_queue.get(timeout=2)
+                event = self.challenge_queue.get(timeout=2)
             except queue.Empty:
                 continue
 
@@ -67,10 +77,13 @@ class Challenge_Handler:
             elif event['type'] == 'gameStart':
                 game_id = event['game']['id']
 
-                if not self.accept_challenges.value:
+                if not self.accept_challenges:
                     continue
 
-                self.game_count.value += 1
+                if not self.game_count.increment():
+                    print('Max number of concurrent games reached. Not starting the already accepted game.')
+                    continue
+
                 game = Game_api(username, game_id, self.config)
                 game_process = multiprocessing.Process(target=game.run_game)
                 self.game_processes[game_id] = game_process
@@ -81,29 +94,28 @@ class Challenge_Handler:
                 if game_id in self.game_processes:
                     self.game_processes[game_id].join()
                     del self.game_processes[game_id]
-                    self.game_count.value -= 1
+                    self.game_count.decrement()
             elif event['type'] == 'challengeDeclined':
                 continue
             elif event['type'] == 'challengeCanceled':
                 continue
             else:
-                print('Type not caught! Torsten do something:', file=sys.stderr)
+                print('Event type not caught:', file=sys.stderr)
                 print(event)
 
         for process in self.game_processes.values():
             process.join()
-            self.game_count.value -= 1
+            self.game_count.decrement()
 
-        challenge_queue_process.terminate()
-        challenge_queue_process.join()
-
-    def _watch_challenge_stream(self, challenge_queue: multiprocessing.Queue) -> None:
+    def _watch_challenge_stream(self) -> None:
         event_stream = self.api.get_event_stream()
 
         for line in event_stream:
+            if not self.is_running:
+                return
             if line:
                 event = json.loads(line.decode('utf-8'))
-                challenge_queue.put_nowait(event)
+                self.challenge_queue.put_nowait(event)
 
     def _get_decline_reason(self, event: dict) -> Decline_Reason | None:
         concurrency = self.config['challenge'].get('concurrency', 1)
@@ -143,10 +155,10 @@ class Challenge_Handler:
             print(f'Casual is not allowed by config!')
             return Decline_Reason.RATED
 
-        if not self.accept_challenges.value:
+        if not self.accept_challenges:
             print('We are currently not accepting any new challenges!')
             return Decline_Reason.LATER
 
-        if concurrency <= self.game_count.value:
+        if self.game_count.is_max():
             print(f'Not more then {concurrency} concurrend game(s) allowed by config!')
             return Decline_Reason.LATER

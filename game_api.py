@@ -1,5 +1,6 @@
 import json
-import multiprocessing
+from threading import Thread
+from queue import Queue
 
 from api import API
 from chatter import Chat_Message, Chatter
@@ -10,19 +11,18 @@ class Game_api:
     def __init__(self, username: str, game_id: str, config: dict) -> None:
         self.config: dict = config
         self.api = API(self.config['token'])
-        self.manager = multiprocessing.Manager()
         self.username = username
         self.game_id = game_id
         self.chatter = Chatter(config)
         self.ping_counter = 0
+        self.game_queue = Queue()
 
     def run_game(self) -> None:
-        game_queue = self.manager.Queue()
-        game_queue_process = multiprocessing.Process(target=self._watch_game_stream, args=(game_queue,))
-        game_queue_process.start()
+        game_queue_thread = Thread(target=self._watch_game_stream, daemon=True)
+        game_queue_thread.start()
 
         while True:
-            event = game_queue.get()
+            event = self.game_queue.get()
 
             if event['type'] == 'aborted':
                 print(f'Game "{self.game_id}" was aborted.')
@@ -68,11 +68,9 @@ class Game_api:
 
         print('Game over')
 
-        game_queue_process.terminate()
-        game_queue_process.join()
         self.lichess_game.quit_engine()
 
-    def _watch_game_stream(self, game_queue: multiprocessing.Queue) -> None:
+    def _watch_game_stream(self) -> None:
         game_stream = self.api.get_game_stream(self.game_id)
 
         for line in game_stream:
@@ -81,4 +79,4 @@ class Game_api:
             else:
                 event = {'type': 'ping'}
 
-            game_queue.put_nowait(event)
+            self.game_queue.put_nowait(event)
