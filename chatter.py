@@ -1,6 +1,8 @@
 import os
 import platform
 
+import psutil
+
 from lichess_game import Lichess_Game
 
 
@@ -42,7 +44,7 @@ class Chatter:
         return 'Unknown'
 
     def _get_ram(self) -> str:
-        mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
+        mem_bytes = psutil.virtual_memory().total
         mem_gib = mem_bytes/(1024.**3)
 
         return f'{mem_gib:.1f} GiB'

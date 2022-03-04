@@ -1,3 +1,4 @@
-requests
 chess
+psutil
 pyyaml
+requests
