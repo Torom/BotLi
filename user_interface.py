@@ -1,8 +1,4 @@
-import multiprocessing
 import sys
-import time
-from queue import Queue
-from threading import Lock
 
 from api import API
 from challenge_handler import Challenge_Handler
@@ -23,9 +19,9 @@ class UserInterface:
     def __init__(self) -> None:
         self.config = load_config()
         self.api = API(self.config['token'])
-        self.manager = multiprocessing.Manager()
         self.game_count = Game_Counter(self.config['challenge'].get('concurrency', 1))
         self.is_running = True
+        self.matchmaking: Matchmaking | None = None
 
     def start(self) -> None:
         print(LOGO)
@@ -33,9 +29,6 @@ class UserInterface:
         self.challenge_handler = Challenge_Handler(self.config, self.game_count)
 
         self.challenge_handler.start()
-
-        self.matchmaking_process = None
-        self.matchmaking_process_is_running = self.manager.Value(bool, False)
 
         try:
             import readline
@@ -88,28 +81,28 @@ class UserInterface:
             elif command == 'quit':
                 self.is_running = False
                 self.challenge_handler.stop()
-                self.matchmaking_process_is_running.value = False
                 print('Terminating programm ...')
-                if self.matchmaking_process:
-                    self.matchmaking_process.join()
+                if self.matchmaking:
+                    self.matchmaking.stop()
+                    self.matchmaking.join()
                 self.challenge_handler.join()
 
             elif command == 'reset':
-                if self.matchmaking_process:
+                if self.matchmaking:
                     print('Can\'t reset matchmaking while running ...')
                     continue
 
                 Matchmaking.reset_matchmaking()
 
             elif command == 'stop':
-                if not self.matchmaking_process:
+                if not self.matchmaking:
                     print('Matchmaking isn\'t currently running ...')
                     continue
 
-                self.matchmaking_process_is_running.value = False
+                self.matchmaking.stop()
                 print('Stopping matchmaking ...')
-                self.matchmaking_process.join()
-                self.matchmaking_process = None
+                self.matchmaking.join()
+                self.matchmaking = None
                 self.game_count.decrement()
                 self.challenge_handler.start_accepting_challenges()
                 print('Matchmaking has been stopped. And challenges are resuming ...')
@@ -132,7 +125,7 @@ class UserInterface:
                     print(f'{key:11}\t\t# {value}')
 
     def _start_matchmaking(self, variant: Variant) -> None:
-        if self.matchmaking_process:
+        if self.matchmaking:
             print('matchmaking already running ...')
             return
 
@@ -143,10 +136,8 @@ class UserInterface:
 
         print('Starting matchmaking ...')
 
-        self.matchmaking_process_is_running.value = True
-        self.matchmaking = Matchmaking(self.config, self.matchmaking_process_is_running, variant)
-        self.matchmaking_process = multiprocessing.Process(target=self.matchmaking.start)
-        self.matchmaking_process.start()
+        self.matchmaking = Matchmaking(self.config, variant)
+        self.matchmaking.start()
 
 
 class Autocompleter:

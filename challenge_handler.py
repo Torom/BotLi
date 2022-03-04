@@ -1,8 +1,6 @@
 import json
-import multiprocessing
 import queue
 import sys
-from multiprocessing.context import Process
 from queue import Queue
 from threading import Thread
 
@@ -40,7 +38,7 @@ class Challenge_Handler(Thread):
         challenge_queue_thread.start()
 
         username = self.api.get_account()['username']
-        self.game_processes: dict[str, Process] = {}
+        self.game_threads: dict[str, Thread] = {}
 
         while self.is_running:
             try:
@@ -85,15 +83,15 @@ class Challenge_Handler(Thread):
                     continue
 
                 game = Game_api(username, game_id, self.config)
-                game_process = multiprocessing.Process(target=game.run_game)
-                self.game_processes[game_id] = game_process
-                game_process.start()
+                game_thread = Thread(target=game.run_game)
+                self.game_threads[game_id] = game_thread
+                game_thread.start()
             elif event['type'] == 'gameFinish':
                 game_id = event['game']['id']
 
-                if game_id in self.game_processes:
-                    self.game_processes[game_id].join()
-                    del self.game_processes[game_id]
+                if game_id in self.game_threads:
+                    self.game_threads[game_id].join()
+                    del self.game_threads[game_id]
                     self.game_count.decrement()
             elif event['type'] == 'challengeDeclined':
                 continue
@@ -103,8 +101,8 @@ class Challenge_Handler(Thread):
                 print('Event type not caught:', file=sys.stderr)
                 print(event)
 
-        for process in self.game_processes.values():
-            process.join()
+        for thread in self.game_threads.values():
+            thread.join()
             self.game_count.decrement()
 
     def _watch_challenge_stream(self) -> None:

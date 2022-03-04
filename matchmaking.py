@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime, timedelta
-from multiprocessing.managers import ValueProxy
+from threading import Thread
 
 from api import API
 from enums import Challenge_Color, Variant
@@ -9,11 +9,12 @@ from game_api import Game_api
 from opponent import Opponent
 
 
-class Matchmaking:
-    def __init__(self, config: dict, is_running: ValueProxy[bool], variant: Variant) -> None:
+class Matchmaking(Thread):
+    def __init__(self, config: dict, variant: Variant) -> None:
+        Thread.__init__(self)
         self.config = config
         self.api = API(self.config['token'])
-        self.is_running = is_running
+        self.is_running = True
         self.next_update = datetime.now()
         self.variant = variant
         self.tc = self._get_tc()
@@ -22,8 +23,14 @@ class Matchmaking:
         self.player = self.api.get_account()
         self.bots = self._get_bots()
 
-    def start(self) -> None:
-        while self.is_running.value:
+    def start(self):
+        Thread.start(self)
+
+    def stop(self):
+        self.is_running = False
+
+    def run(self) -> None:
+        while self.is_running:
             self._call_update()
             opponent = self._next_opponent()
 
@@ -37,7 +44,7 @@ class Matchmaking:
             game = Game_api(self.player['username'], challenge_id, self.config)
             game.run_game()
 
-            if not self.is_running.value:
+            if not self.is_running:
                 break
 
             challenge_id = self._challenge_opponent(opponent, Challenge_Color.BLACK)
