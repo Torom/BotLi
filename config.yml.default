@@ -67,7 +67,6 @@ challenge:                                # Incoming challenges. (Commenting all
     - blitz
     - rapid
 #   - classical
-#   - correspondence
   bot_modes:                              # Game modes to accept against BOTs.
 #   - casual                              # Unrated games.
     - rated                               # Rated games
