@@ -1,6 +1,6 @@
 import json
-from threading import Thread
 from queue import Queue
+from threading import Thread
 
 from api import API
 from chatter import Chat_Message, Chatter
@@ -8,9 +8,9 @@ from lichess_game import Lichess_Game
 
 
 class Game_api:
-    def __init__(self, username: str, game_id: str, config: dict) -> None:
+    def __init__(self, config: dict, api: API, username: str, game_id: str) -> None:
         self.config: dict = config
-        self.api = API(self.config['token'])
+        self.api = api
         self.username = username
         self.game_id = game_id
         self.chatter = Chatter(config)

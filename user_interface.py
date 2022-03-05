@@ -26,8 +26,7 @@ class UserInterface:
     def start(self) -> None:
         print(LOGO)
 
-        self.challenge_handler = Challenge_Handler(self.config, self.game_count)
-
+        self.challenge_handler = Challenge_Handler(self.config, self.api, self.game_count)
         self.challenge_handler.start()
 
         try:
@@ -136,7 +135,7 @@ class UserInterface:
 
         print('Starting matchmaking ...')
 
-        self.matchmaking = Matchmaking(self.config, variant)
+        self.matchmaking = Matchmaking(self.config, self.api, variant)
         self.matchmaking.start()
 
 

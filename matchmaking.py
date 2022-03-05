@@ -10,10 +10,10 @@ from opponent import Opponent
 
 
 class Matchmaking(Thread):
-    def __init__(self, config: dict, variant: Variant) -> None:
+    def __init__(self, config: dict, api: API, variant: Variant) -> None:
         Thread.__init__(self)
         self.config = config
-        self.api = API(self.config['token'])
+        self.api = api
         self.is_running = True
         self.next_update = datetime.now()
         self.variant = variant
@@ -41,7 +41,7 @@ class Matchmaking(Thread):
             if challenge_id is None:
                 continue
 
-            game = Game_api(self.player['username'], challenge_id, self.config)
+            game = Game_api(self.config, self.api, self.player['username'], challenge_id)
             game.run_game()
 
             if not self.is_running:
@@ -54,7 +54,7 @@ class Matchmaking(Thread):
             if challenge_id is None:
                 continue
 
-            game = Game_api(self.player['username'], challenge_id, self.config)
+            game = Game_api(self.config, self.api, self.player['username'], challenge_id)
             game.run_game()
 
     @classmethod

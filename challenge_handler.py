@@ -11,10 +11,10 @@ from game_counter import Game_Counter
 
 
 class Challenge_Handler(Thread):
-    def __init__(self, config: dict, game_count: Game_Counter) -> None:
+    def __init__(self, config: dict, api: API, game_count: Game_Counter) -> None:
         Thread.__init__(self)
         self.config = config
-        self.api = API(self.config['token'])
+        self.api = api
         self.is_running = True
         self.count_concurrent_games = 0
         self.game_count = game_count
@@ -82,7 +82,7 @@ class Challenge_Handler(Thread):
                     print('Max number of concurrent games reached. Not starting the already accepted game.')
                     continue
 
-                game = Game_api(username, game_id, self.config)
+                game = Game_api(self.config, self.api, username, game_id)
                 game_thread = Thread(target=game.run_game)
                 self.game_threads[game_id] = game_thread
                 game_thread.start()
@@ -116,7 +116,6 @@ class Challenge_Handler(Thread):
                 self.challenge_queue.put_nowait(event)
 
     def _get_decline_reason(self, event: dict) -> Decline_Reason | None:
-        concurrency = self.config['challenge'].get('concurrency', 1)
         variants = self.config['challenge']['variants']
         time_controls = self.config['challenge']['time_controls']
         min_increment = self.config['challenge'].get('min_increment', 0)
@@ -158,5 +157,5 @@ class Challenge_Handler(Thread):
             return Decline_Reason.LATER
 
         if self.game_count.is_max():
-            print(f'Not more then {concurrency} concurrend game(s) allowed by config!')
+            print(f'Not more then {self.game_count.max_games} concurrend game(s) allowed by config!')
             return Decline_Reason.LATER

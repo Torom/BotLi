@@ -19,7 +19,7 @@ class Game_Counter:
         with self.lock:
             self.counter -= 1
             if self.counter < 0:
-                raise RuntimeError('This should not have happened! The counter should not be negative!')
+                raise RuntimeError
 
     def is_max(self) -> bool:
         with self.lock:
