@@ -41,8 +41,8 @@ engine:                                   # Engine settings.
     consecutive_moves: 5                  # How many moves in a row the score has to be below the resign value.
   uci_options:                            # Arbitrary UCI options passed to the engine. (Commenting allowed)
     Move Overhead: 100                    # Increase if your bot flags games too often.
-    Threads: 7                            # Max CPU threads the engine can use.
-    Hash: 2048                            # Max memory (in megabytes) the engine can allocate.
+    Threads: 4                            # Max CPU threads the engine can use.
+    Hash: 512                             # Max memory (in megabytes) the engine can allocate.
 #   SyzygyPath: "/path/to/syzygy"         # Path to your local syzygy endgame tablebases
     
 challenge:                                # Incoming challenges. (Commenting allowed)
@@ -76,7 +76,7 @@ challenge:                                # Incoming challenges. (Commenting all
 
 matchmaking:
   initial_time: 60                        # Initial time for matchmaking mode.
-  increment: 0                            # Increment time for matchmaking mode.
+  increment: 1                            # Increment time for matchmaking mode.
   rated: true                             # Activate rated games in matchmaking mode.
   timeout: 20                             # Time until a challenge is canceled. 
 # min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
