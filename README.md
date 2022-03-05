@@ -2,7 +2,7 @@
 
 **BotLi** is a bot for Lichess. Strongly inspired by [ShailChoksi/lichess-bot](https://github.com/ShailChoksi/lichess-bot). It extends its features with a matchmaking mode where the bot automatically challenges other bots with similar ratings.
 
-Not every function of the bot is extensively tested, a faulty or incomplete `config.yml` will lead to unexpected behavior. This bot has only been tested on Linux, other chess variants than Standard and Chess960 are untested. At least Python 3.10 is required.
+Not every function of the bot is extensively tested, a faulty or incomplete `config.yml` will lead to unexpected behavior. Other chess variants than Standard and Chess960 are untested. At least Python 3.10 is required.
 
 # How to install
 
