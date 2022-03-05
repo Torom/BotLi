@@ -44,6 +44,8 @@ engine:                                   # Engine settings.
     Threads: 4                            # Max CPU threads the engine can use.
     Hash: 512                             # Max memory (in megabytes) the engine can allocate.
 #   SyzygyPath: "/path/to/syzygy"         # Path to your local syzygy endgame tablebases
+
+move_overhead_multiplier: 1.0             # Increase if your bot flags games too often. Default move overhead is 1 second per 1 minute initital time.
     
 challenge:                                # Incoming challenges. (Commenting allowed)
   concurrency: 1                          # Number of games to play simultaneously.

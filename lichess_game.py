@@ -356,7 +356,8 @@ class Lichess_Game:
         return board
 
     def _get_move_overhead(self) -> int:
-        return self.initial_time // 60
+        multiplier = self.config.get('move_overhead_multiplier', 1.0)
+        return int(self.initial_time / 60 * multiplier)
 
     def _has_time(self, min_time: int) -> bool:
         min_time *= 1000
