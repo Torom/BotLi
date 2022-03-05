@@ -131,8 +131,8 @@ class Challenge_Handler(Thread):
             return Decline_Reason.VARIANT
 
         speed = event['challenge']['speed']
-        increment = event['challenge']['timeControl']['increment']
-        initial = event['challenge']['timeControl']['limit']
+        increment = event['challenge']['timeControl'].get('increment')
+        initial = event['challenge']['timeControl'].get('limit')
         if speed not in time_controls:
             print(f'Speed "{speed}" is not allowed by config!')
             return Decline_Reason.TIME_CONTROL
