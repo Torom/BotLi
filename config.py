@@ -48,6 +48,8 @@ def load_config() -> dict:
         if CONFIG['engine']['polyglot']['enabled']:
             for key, book in CONFIG['engine']['polyglot']['books'].items():
                 if book:
+                    if book not in CONFIG['books']:
+                        raise Exception(f'The book "{book}" is not defined in the books section.')
                     if not os.path.isfile(CONFIG['books'][book]):
                         raise Exception(f'The book "{book}" at "{CONFIG["books"][book]}" does not exist.')
                     CONFIG['engine']['polyglot']['books'][key] = CONFIG['books'][book]
