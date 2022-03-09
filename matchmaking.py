@@ -17,6 +17,9 @@ class Matchmaking(Thread):
         self.is_running = True
         self.next_update = datetime.now()
         self.variant = variant
+        initial_time: int = self.config['matchmaking']['initial_time']
+        increment: int = self.config['matchmaking']['increment']
+        self.estimated_game_duration = (initial_time + increment * 80) * 2
         self.tc = self._get_tc()
 
         self.opponents = self._load()
@@ -36,26 +39,30 @@ class Matchmaking(Thread):
 
             challenge_id = self._challenge_opponent(opponent, Challenge_Color.WHITE)
 
-            self._set_timeout(opponent, bool(challenge_id))
-
-            if challenge_id is None:
+            if challenge_id is not None:
+                start_time = datetime.now()
+                game = Game_api(self.config, self.api, self.player['username'], challenge_id)
+                game.run_game()
+                game_duration = datetime.now() - start_time
+            else:
+                self._set_timeout(opponent, False, timedelta(seconds=self.estimated_game_duration * 2))
                 continue
 
-            game = Game_api(self.config, self.api, self.player['username'], challenge_id)
-            game.run_game()
-
             if not self.is_running:
+                self._set_timeout(opponent, True, game_duration)
                 break
 
             challenge_id = self._challenge_opponent(opponent, Challenge_Color.BLACK)
 
-            self._set_timeout(opponent, bool(challenge_id))
+            if challenge_id is not None:
+                start_time = datetime.now()
+                game = Game_api(self.config, self.api, self.player['username'], challenge_id)
+                game.run_game()
+                game_duration += datetime.now() - start_time
+            else:
+                game_duration += timedelta(seconds=self.estimated_game_duration)
 
-            if challenge_id is None:
-                continue
-
-            game = Game_api(self.config, self.api, self.player['username'], challenge_id)
-            game.run_game()
+            self._set_timeout(opponent, challenge_id is not None, game_duration)
 
     @classmethod
     def reset_matchmaking(cls) -> None:
@@ -171,18 +178,14 @@ class Matchmaking(Thread):
         print('matchmaking reseted')
         return self._next_opponent()
 
-    def _set_timeout(self, bot: dict, success: bool) -> None:
-        initial_time = self.config['matchmaking']['initial_time']
-        increment = self.config['matchmaking']['increment']
-        estimated_game_duration = (initial_time + increment * 80) * 2
-
+    def _set_timeout(self, bot: dict, success: bool, game_duration: timedelta) -> None:
         opponent = self._find(bot['username'])
         if success and opponent.multiplier > 1:
-            opponent.multiplier = opponent.multiplier // 2
+            opponent.multiplier //= 2
         elif not success:
             opponent.multiplier += 1
-        timeout = estimated_game_duration * 45 * opponent.multiplier
-        opponent.release_time = datetime.now() + timedelta(seconds=timeout)
+        timeout = game_duration * 25 * opponent.multiplier
+        opponent.release_time = datetime.now() + timeout
         if not opponent in self.opponents:
             self.opponents.append(opponent)
         self._save()
