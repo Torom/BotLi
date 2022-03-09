@@ -148,9 +148,7 @@ class Matchmaking(Thread):
         estimated_game_duration = self.config['matchmaking']['initial_time'] + \
             self.config['matchmaking']['increment'] * 40
 
-        if estimated_game_duration < 29:
-            return 'ultrabullet'
-        elif estimated_game_duration < 179:
+        if estimated_game_duration < 179:
             return 'bullet'
         elif estimated_game_duration < 479:
             return 'blitz'
