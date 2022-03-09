@@ -19,9 +19,9 @@ class Matchmaking(Thread):
         self.variant = variant
         initial_time: int = self.config['matchmaking']['initial_time']
         increment: int = self.config['matchmaking']['increment']
-        self.estimated_game_duration = (initial_time + increment * 80) * 2
-        self.tc = self._get_tc()
+        self.estimated_game_duration = timedelta(seconds=(initial_time + increment * 80) * 2)
 
+        self.tc = self._get_tc()
         self.opponents = self._load()
         self.player = self.api.get_account()
         self.bots = self._get_bots()
@@ -45,7 +45,7 @@ class Matchmaking(Thread):
                 game.run_game()
                 game_duration = datetime.now() - start_time
             else:
-                self._set_timeout(opponent, False, timedelta(seconds=self.estimated_game_duration * 2))
+                self._set_timeout(opponent, False, self.estimated_game_duration * 2)
                 continue
 
             if not self.is_running:
@@ -60,7 +60,7 @@ class Matchmaking(Thread):
                 game.run_game()
                 game_duration += datetime.now() - start_time
             else:
-                game_duration += timedelta(seconds=self.estimated_game_duration)
+                game_duration += self.estimated_game_duration
 
             self._set_timeout(opponent, challenge_id is not None, game_duration)
 
