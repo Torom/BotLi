@@ -1,7 +1,7 @@
 token: "XXXXXXXXXXXXXXXXXXXXXXXX"         # Lichess OAuth2 Token.
 
 engine:                                   # Engine settings.
-  dir: "/path/to/EngineDir"               # Directory containing the engine.
+  dir: "./engines"                        # Directory containing the engine.
   name: "EngineName"                      # Binary name of the engine to use.
   ponder: true                            # Think on opponent's time.
   polyglot:
