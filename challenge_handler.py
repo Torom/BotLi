@@ -53,8 +53,8 @@ class Challenge_Handler(Thread):
                     continue
 
                 challenge_id = event['challenge']['id']
-                challenger_title = event['challenge']['challenger']['title'] if event['challenge']['challenger'][
-                    'title'] else ''
+                challenger_title = event['challenge']['challenger']['title']
+                challenger_title = challenger_title if challenger_title else ''
                 challenger_rating = event['challenge']['challenger']['rating']
                 tc = event['challenge']['timeControl'].get('show')
                 rated = event['challenge']['rated']
