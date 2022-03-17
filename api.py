@@ -1,8 +1,11 @@
 import json
-import time
 from typing import Iterable
 
 import requests
+from tenacity import retry
+from tenacity.retry import retry_if_exception_type
+from tenacity.stop import stop_after_attempt
+from tenacity.wait import wait_fixed
 
 from enums import Challenge_Color, Decline_Reason, Variant
 
@@ -39,6 +42,7 @@ class API:
             print(e)
             return False
 
+    @retry(retry=retry_if_exception_type(requests.HTTPError), stop=stop_after_attempt(10), wait=wait_fixed(60))
     def create_challenge(
         self, username: str, inital_time: int, increment: int, rated: bool, color: Challenge_Color,
             variant: Variant, timeout: int) -> str | None:
@@ -68,10 +72,10 @@ class API:
                 return
             elif e.response.status_code == 429:
                 print(e)
-                time.sleep(60)
-                return self.create_challenge(username, inital_time, increment, rated, color, variant, timeout)
-            else:
                 raise e
+            else:
+                print(e)
+                raise RuntimeError('Unexpected status code.')
 
         except requests.ConnectionError as e:
             self.cancel_challenge(challenge_id)
@@ -152,6 +156,7 @@ class API:
             print(e)
             return False
 
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def send_move(self, game_id: str, uci_move: str, offer_draw: bool) -> bool:
         try:
             response = self.session.post(
@@ -159,8 +164,6 @@ class API:
                 params={'offeringDraw': str(offer_draw).lower()})
             response.raise_for_status()
             return True
-        except requests.ConnectionError:
-            return self.send_move(game_id, uci_move, offer_draw)
         except requests.HTTPError as e:
             print(e)
             return False
