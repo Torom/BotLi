@@ -151,36 +151,38 @@ class Lichess_Game:
         if not enabled or out_of_book:
             return
 
-        with chess.polyglot.open_reader(self._get_book()) as book_reader:
-            try:
-                if selection == 'weighted_random':
-                    entry = book_reader.weighted_choice(self.board)
-                elif selection == 'uniform_random':
-                    entry = book_reader.choice(self.board)
-                else:
-                    entry = book_reader.find(self.board)
-            except IndexError:
-                self.out_of_polyglot_counter += 1
-                return
+        for book in self._get_books():
+            with chess.polyglot.open_reader(book) as book_reader:
+                try:
+                    if selection == 'weighted_random':
+                        entry = book_reader.weighted_choice(self.board)
+                    elif selection == 'uniform_random':
+                        entry = book_reader.choice(self.board)
+                    else:
+                        entry = book_reader.find(self.board)
+                except IndexError:
+                    continue
 
-            self.out_of_polyglot_counter = 0
-            new_board = self.board.copy()
-            new_board.push(entry.move)
-            if not new_board.is_repetition(count=2):
-                return entry.move
+                self.out_of_polyglot_counter = 0
+                new_board = self.board.copy()
+                new_board.push(entry.move)
+                if not new_board.is_repetition(count=2):
+                    return entry.move
 
-    def _get_book(self) -> str:
+        self.out_of_polyglot_counter += 1
+
+    def _get_books(self) -> list[str]:
         books = self.config['engine']['polyglot']['books']
 
-        if self.board.chess960 and books['chess960']:
+        if self.board.chess960 and 'chess960' in books:
             return books['chess960']
         else:
-            if self.is_white and books['white']:
+            if self.is_white and 'white' in books:
                 return books['white']
-            elif not self.is_white and books['black']:
+            elif not self.is_white and 'black' in books:
                 return books['black']
 
-        return books['standard']
+        return books['standard'] if 'standard' in books else []
 
     def _make_pybook_move(self) -> UCI_Move | None:
         enabled = self.config['engine']['pybook']['enabled']

@@ -7,10 +7,14 @@ engine:                                   # Engine settings.
   polyglot:
     enabled: false                        # Activate polyglot book.
     books:
-      white: null                         # Name of the book to use as white.
-      black: null                         # Name of the book to use as black.
-      standard: "DefaultBook"             # Name of the book to use if there is no specific book for white, black or chess960.
-      chess960: null                      # Name of the book to use for Chess960.
+#     white:                              # List of names of books to use as white.
+#       - "WhiteBook"
+#     black:                              # List of names of books to use as black.
+#       - "BlackBook"
+      standard:                           # List of names of books to use if there is no specific book for white, black or chess960.
+        - "DefaultBook" 
+#     chess960:                           # List of names of books to use for Chess960.
+#       - "Chess960Book"
     selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
   pybook:
     enabled: false                        # Activate pybook.
@@ -84,5 +88,5 @@ matchmaking:
 # min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
 # max_rating_diff: 300                    # Maximum rating distance to opponent. (Commenting allowed)
 
-books:
-  DefaultBook: "/path/to/DefaultBook.bin" # Name of the opening book (to be used above in the polyglot section) and path to the polyglot opening book.
+books:                                    # Names of the opening books (to be used above in the polyglot section) and paths to the polyglot opening books.
+  DefaultBook: "/path/to/DefaultBook.bin"

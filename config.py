@@ -46,13 +46,18 @@ def load_config() -> dict:
                 f'The engine "{CONFIG["engine"]["path"]}" doesnt have execute (x) permission. Try: chmod +x {CONFIG["engine"]["path"]}')
 
         if CONFIG['engine']['polyglot']['enabled']:
-            for key, book in CONFIG['engine']['polyglot']['books'].items():
-                if book:
+            for key, book_list in CONFIG['engine']['polyglot']['books'].items():
+                if not isinstance(book_list, list):
+                    raise Exception(
+                        f'The `engine: polyglot: books: {key}` section must be a list of book names or commented.')
+
+                for book in book_list:
                     if book not in CONFIG['books']:
                         raise Exception(f'The book "{book}" is not defined in the books section.')
                     if not os.path.isfile(CONFIG['books'][book]):
                         raise Exception(f'The book "{book}" at "{CONFIG["books"][book]}" does not exist.')
-                    CONFIG['engine']['polyglot']['books'][key] = CONFIG['books'][book]
+
+                CONFIG['engine']['polyglot']['books'][key] = [CONFIG['books'][book] for book in book_list]
 
         if CONFIG['engine']['pybook']['enabled']:
             if not os.path.isfile(CONFIG['engine']['pybook']['book']):
