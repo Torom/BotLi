@@ -125,6 +125,14 @@ class Challenge_Handler(Thread):
         is_bot = event['challenge']['challenger']['title'] == 'BOT'
         modes = self.config['challenge']['bot_modes'] if is_bot else self.config['challenge']['human_modes']
 
+        if modes is None:
+            if is_bot:
+                print('Bots are not allowed by config!')
+                return Decline_Reason.NO_BOT
+            else:
+                print('Only bots are allowed by config!')
+                return Decline_Reason.ONLY_BOT
+
         variant = event['challenge']['variant']['key']
         if variant not in variants:
             print(f'Variant "{variant}" is not allowed by config!')

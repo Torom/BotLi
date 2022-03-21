@@ -18,7 +18,7 @@ class Decline_Reason(Enum):
     STANDARD = 'standard'
     VARIANT = 'variant'
     NO_BOT = 'noBot'
-    ONYL_BOT = 'onlyBot'
+    ONLY_BOT = 'onlyBot'
 
 
 class Variant(Enum):
