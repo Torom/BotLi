@@ -32,21 +32,15 @@ class Lichess_Game:
         self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
         self.resign_enabled: bool = config['engine']['resign']['enabled']
         self.move_overhead = self._get_move_overhead()
-        self.out_of_polyglot_counter = 0
-        self.out_of_pybook_counter = 0
+        self.out_of_book_counter = 0
         self.out_of_cloud_counter = 0
         self.out_of_chessdb_counter = 0
-        self.pybook_loaded = False
+        self.loaded_pybooks: dict[str, dict[int, str]] = {}
         self.engine = self._get_engine()
         self.scores: list[chess.engine.PovScore] = []
 
     def make_move(self) -> Tuple[UCI_Move, Offer_Draw, Resign]:
-        if uci_move := self._make_pybook_move():
-            move = chess.Move.from_uci(uci_move)
-            message = f'PyBook:  {self._format_move(move):14}'
-            offer_draw = False
-            resign = False
-        elif move := self._make_polyglot_move():
+        if move := self._make_book_move():
             message = f'Book:    {self._format_move(move):14}'
             offer_draw = False
             resign = False
@@ -143,36 +137,31 @@ class Lichess_Game:
 
         return True
 
-    def _make_polyglot_move(self) -> chess.Move | None:
-        enabled = self.config['engine']['polyglot']['enabled']
-        selection = self.config['engine']['polyglot']['selection']
-        out_of_book = self.out_of_polyglot_counter >= 10
+    def _make_book_move(self) -> chess.Move | None:
+        enabled = self.config['engine']['opening_books']['enabled']
+        selection = self.config['engine']['opening_books']['selection']
+        out_of_book = self.out_of_book_counter >= 10
 
         if not enabled or out_of_book:
             return
 
         for book in self._get_books():
-            with chess.polyglot.open_reader(book) as book_reader:
-                try:
-                    if selection == 'weighted_random':
-                        entry = book_reader.weighted_choice(self.board)
-                    elif selection == 'uniform_random':
-                        entry = book_reader.choice(self.board)
-                    else:
-                        entry = book_reader.find(self.board)
-                except IndexError:
-                    continue
+            if book.lower().endswith('.pybook'):
+                move = self._get_pybook_move(book)
+            else:
+                move = self._get_polyglot_move(book, selection)
 
-                self.out_of_polyglot_counter = 0
+            if move:
+                self.out_of_book_counter = 0
                 new_board = self.board.copy()
-                new_board.push(entry.move)
+                new_board.push(move)
                 if not new_board.is_repetition(count=2):
-                    return entry.move
+                    return move
 
-        self.out_of_polyglot_counter += 1
+        self.out_of_book_counter += 1
 
     def _get_books(self) -> list[str]:
-        books = self.config['engine']['polyglot']['books']
+        books = self.config['engine']['opening_books']['books']
 
         if self.board.chess960 and 'chess960' in books:
             return books['chess960']
@@ -184,26 +173,25 @@ class Lichess_Game:
 
         return books['standard'] if 'standard' in books else []
 
-    def _make_pybook_move(self) -> UCI_Move | None:
-        enabled = self.config['engine']['pybook']['enabled']
-        out_of_book = self.out_of_pybook_counter >= 10
+    def _get_pybook_move(self, book: str) -> chess.Move | None:
+        if book not in self.loaded_pybooks:
+            with open(book, 'rb') as input:
+                self.loaded_pybooks[book] = pickle.load(input)
 
-        if not enabled or out_of_book:
-            return
+        if uci_move := self.loaded_pybooks[book].get(chess.polyglot.zobrist_hash(self.board)):
+            return chess.Move.from_uci(uci_move)
 
-        if not self.pybook_loaded:
-            with open(self.config['engine']['pybook']['book'], 'rb') as input:
-                self.pybook: dict[int, str] = pickle.load(input)
-            self.pybook_loaded = True
-
-        if uci_move := self.pybook.get(chess.polyglot.zobrist_hash(self.board)):
-            self.out_of_pybook_counter = 0
-            new_board = self.board.copy()
-            new_board.push(chess.Move.from_uci(uci_move))
-            if not new_board.is_repetition(count=2):
-                return uci_move
-        else:
-            self.out_of_pybook_counter += 1
+    def _get_polyglot_move(self, book: str, selection: str) -> chess.Move | None:
+        with chess.polyglot.open_reader(book) as book_reader:
+            try:
+                if selection == 'weighted_random':
+                    return book_reader.weighted_choice(self.board).move
+                elif selection == 'uniform_random':
+                    return book_reader.choice(self.board).move
+                else:
+                    return book_reader.find(self.board).move
+            except IndexError:
+                return
 
     def _make_cloud_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
         enabled = self.config['engine']['online_moves']['lichess_cloud']['enabled']

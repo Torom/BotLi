@@ -4,8 +4,8 @@ engine:                                   # Engine settings.
   dir: "./engines"                        # Directory containing the engine.
   name: "EngineName"                      # Binary name of the engine to use.
   ponder: true                            # Think on opponent's time.
-  polyglot:
-    enabled: false                        # Activate polyglot book.
+  opening_books:
+    enabled: false                        # Activate opening books.
     books:
 #     white:                              # List of names of books to use as white.
 #       - "WhiteBook"
@@ -16,9 +16,6 @@ engine:                                   # Engine settings.
 #     chess960:                           # List of names of books to use for Chess960.
 #       - "Chess960Book"
     selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
-  pybook:
-    enabled: false                        # Activate pybook.
-    book: "/path/to/pybook"               # Path to pybook.
   online_moves:
     chessdb:
       enabled: false                      # Activate online moves from https://chessdb.cn/queryc_en/
