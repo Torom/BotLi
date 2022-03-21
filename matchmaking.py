@@ -84,7 +84,7 @@ class Matchmaking(Thread):
         increment = self.config['matchmaking']['increment']
         timeout = self.config['matchmaking']['timeout']
 
-        print(f'challenging {opponent["username"]} ({opponent["rating_diff"]}) as {color.value} color')
+        print(f'challenging {opponent["username"]} ({opponent["rating_diff"]}) as {color.value}')
 
         return self.api.create_challenge(
             opponent['username'],
