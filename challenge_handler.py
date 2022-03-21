@@ -134,14 +134,20 @@ class Challenge_Handler(Thread):
         increment = event['challenge']['timeControl'].get('increment')
         initial = event['challenge']['timeControl'].get('limit')
         if speed not in time_controls:
-            print(f'Speed "{speed}" is not allowed by config!')
+            print(f'Time control "{speed}" is not allowed by config!')
             return Decline_Reason.TIME_CONTROL
-        elif increment < min_increment or increment > max_increment:
-            print(f'Increment {increment} is not allowed by config!')
-            return Decline_Reason.TIME_CONTROL
-        elif initial < min_initial or initial > max_initial:
-            print(f'Initial time {initial} is not allowed by config!')
-            return Decline_Reason.TIME_CONTROL
+        elif increment < min_increment:
+            print(f'Increment {increment} is too short!')
+            return Decline_Reason.TOO_FAST
+        elif increment > max_increment:
+            print(f'Increment {increment} is too long!')
+            return Decline_Reason.TOO_SLOW
+        elif initial < min_initial:
+            print(f'Initial time {initial} is too short!')
+            return Decline_Reason.TOO_FAST
+        elif initial > max_initial:
+            print(f'Initial time {initial} is too long!')
+            return Decline_Reason.TOO_SLOW
 
         is_rated = event['challenge']['rated']
         is_casual = not is_rated
