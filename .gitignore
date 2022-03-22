@@ -129,5 +129,4 @@ dmypy.json
 .pyre/
 
 # Project specific
-config.yml
 matchmaking.json
