@@ -4,19 +4,35 @@
 
 Not every function of the bot is extensively tested, a faulty or incomplete `config.yml` will lead to unexpected behavior. Other chess variants than Standard and Chess960 are untested. At least Python 3.10 is required.
 
-# How to install
+# Heroku
 
-- **NOTE: Only Python 3.10 or later is supported!**
-- Download the repo into BotLi directory: `git clone https://github.com/Torom/BotLi.git`
-- Navigate to the directory in cmd/Terminal: `cd BotLi`
-- Copy `config.yml.default` to `config.yml`
+### Chess Engines
 
-Install all requirements:
-```bash
-python -m pip install -r requirements.txt
-```
+- [Stockfish](https://github.com/official-stockfish/Stockfish)
+- [Stockfish Multi Variant (dev)](https://github.com/ddugovic/Stockfish)
 
-- Customize the `config.yml` according to your needs.
+### Heroku Buildpack
+
+- [`heroku/python`](https://elements.heroku.com/buildpacks/heroku/heroku-buildpack-python)
+
+### Heroku Stack
+
+- [`heroku-20`](https://devcenter.heroku.com/articles/heroku-20-stack)
+
+## How to install
+
+- [Fork](https://github.com/Torom/BotLi/fork) this repository.
+- Copy `config.yml.default` to `config.yml` __DON'T INSERT YOUR TOKEN__
+- Create a [new heroku app](https://dashboard.heroku.com/new-app).
+- Go to the `Deploy` tab and click `Connect to GitHub`.
+- Click on `search` and then select your fork of this repository.
+- Then `Enable Automatic Deploys` and then select the `heroku` branch and Click `Deploy`.
+- Once it has been deployed, go to `Settings` tab on heroku and create a variable, set `LICHESS_BOT_TOKEN` as key and your token as value.
+- Go to `Resources` tab on heroku and enable `worker (bash startbot.sh)` dynos. (Do note that if you don't see any dynos in the `Resources` tab, then you must wait for about 5 minutes and then refresh your heroku page.)
+
+You're now connected to lichess and awaiting challenges! Your bot is up and ready! You can activate the matchmaking mode in your `startbot.sh` file.
+
+__CAUTION:__ Be careful with matchmaking mode, lichess will rate limit you if you let it run for to long!
 
 ## Lichess OAuth
 - Create an account for your bot on [Lichess.org](https://lichess.org/signup).
@@ -36,48 +52,11 @@ To use a polyglot opening book the name of the book and the path to the book mus
 
 Several books can be entered here. In the upper area `eninge: polyglot: books` only the name of the book must be entered. In addition, different books can be used for white, black and chess960. If no specific book is defined, the `standard` book is used.
 
-# How to control
-
-To start the bot, type
-
-```bash
-python user_interface.py
-```
-The bot automatically accepts challenges. Which challenges are accepted is defined in the config in the section `challenge`.
-
-To see all commands, type
-```
-help
-```
-
 ## Matchmaking mode
 
-To challenge other players with similar ratings, type
-```
-matchmaking
-```
+You can activate the matchmaking mode in your `startbot.sh` file.
 
-Change the settings in `matchmaking` in the config to change how this bot challenges other players. The bot will not accept challenges in this mode. To exit the matchmaking mode type
-```
-stop
-```
-
-To exit the bot completely, type
-```
-quit
-```
-
-The bot will always wait until the current game is finished.
-
-## Upgrade to Bot account
-Upgrade a lichess player account into a Bot account. Only Bot accounts are allowed to use an engine.
-
-The account **cannot have played any game** before becoming a Bot account. The upgrade is **irreversible**. The account will only be able to play as a Bot.
-
-To upgrade your account type
-```
-upgrade
-```
+__CAUTION:__ Be careful with matchmaking mode, lichess will rate limit you if you let it run for to long!
 
 ## Acknowledgements
 Thanks to the Lichess team, especially T. Alexander Lystad and Thibault Duplessis for working with the LeelaChessZero team to get this API up. Thanks to the [Niklas Fiekas](https://github.com/niklasf) and his [python-chess](https://github.com/niklasf/python-chess) code which allows engine communication seamlessly. In addition, the idea of this bot is based on [ShailChoksi/lichess-bot](https://github.com/ShailChoksi/lichess-bot).
