@@ -32,7 +32,7 @@ Not every function of the bot is extensively tested, a faulty or incomplete `con
 
 You're now connected to lichess and awaiting challenges! Your bot is up and ready! You can activate the matchmaking mode in your `startbot.sh` file.
 
-__CAUTION:__ Be careful with matchmaking mode, lichess will rate limit you if you let it run for to long!
+__CAUTION:__ Be careful with matchmaking mode, lichess will rate limit you if you let it run for too long!
 
 ## Lichess OAuth
 - Create an account for your bot on [Lichess.org](https://lichess.org/signup).
@@ -56,7 +56,7 @@ Several books can be entered here. In the upper area `eninge: polyglot: books` o
 
 You can activate the matchmaking mode in your `startbot.sh` file.
 
-__CAUTION:__ Be careful with matchmaking mode, lichess will rate limit you if you let it run for to long!
+__CAUTION:__ Be careful with matchmaking mode, lichess will rate limit you if you let it run for too long!
 
 ## Acknowledgements
 Thanks to the Lichess team, especially T. Alexander Lystad and Thibault Duplessis for working with the LeelaChessZero team to get this API up. Thanks to the [Niklas Fiekas](https://github.com/niklasf) and his [python-chess](https://github.com/niklasf/python-chess) code which allows engine communication seamlessly. In addition, the idea of this bot is based on [ShailChoksi/lichess-bot](https://github.com/ShailChoksi/lichess-bot).
