@@ -51,7 +51,13 @@ class Game_api:
                         self.api.send_move(self.game_id, uci_move, offer_draw)
             elif event['type'] == 'chatLine':
                 chat_message = Chat_Message(event)
-                print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
+
+                if chat_message.username == 'lichess':
+                    if chat_message.room == 'player':
+                        print(f'{chat_message.username}: {chat_message.text}')
+                    continue
+                else:
+                    print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
 
                 if chat_message.text.startswith('!'):
                     command = chat_message.text[1:].lower()
