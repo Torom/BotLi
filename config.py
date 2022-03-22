@@ -13,8 +13,8 @@ def load_config() -> dict:
             print('There appears to be a syntax problem with your config.yml', file=sys.stderr)
             raise e
 
-        if "LICHESS_BOT_TOKEN" in os.environ:
-            CONFIG["token"] = os.environ["LICHESS_BOT_TOKEN"]
+        if 'LICHESS_BOT_TOKEN' in os.environ:
+            CONFIG['token'] = os.environ['LICHESS_BOT_TOKEN']
 
         # [section, type, error message]
         sections = [
