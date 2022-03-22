@@ -1,5 +1,3 @@
-import sys
-
 from api import API
 from challenge_handler import Challenge_Handler
 from config import load_config
