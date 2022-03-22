@@ -81,7 +81,8 @@ matchmaking:
   initial_time: 60                        # Initial time for matchmaking mode.
   increment: 1                            # Increment time for matchmaking mode.
   rated: true                             # Activate rated games in matchmaking mode.
-  timeout: 20                             # Time until a challenge is canceled. 
+  timeout: 20                             # Time until a challenge is canceled.
+  variant: standard                       # Chess variants to challenge (https://lichess.org/variant).
 # min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
 # max_rating_diff: 300                    # Maximum rating distance to opponent. (Commenting allowed)
 
