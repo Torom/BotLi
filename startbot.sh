@@ -1,6 +1,6 @@
 #!/bin/bash
-chmod +x engines/stockfish_22031913_x64_modern
-chmod +x engines/multi_variant_stockfish
+chmod +x engines/stockfish
+chmod +x engines/multivariant_stockfish
 
 ### ONLY UNCOMMENT ONE START POINT ###
 
