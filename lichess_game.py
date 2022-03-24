@@ -97,7 +97,7 @@ class Lichess_Game:
             self.board.is_repetition()
 
     def is_abortable(self) -> bool:
-        return self.board.ply() < 2
+        return len(self.board.move_stack) < 2
 
     def quit_engine(self) -> None:
         self.engine.quit()
@@ -254,7 +254,7 @@ class Lichess_Game:
                 self._reduce_own_time(timeout * 1000)
 
     def _make_engine_move(self) -> Tuple[chess.Move, chess.engine.InfoDict]:
-        if self.board.ply() < 2:
+        if len(self.board.move_stack) < 2:
             limit = chess.engine.Limit(time=10)
             ponder = False
         else:
