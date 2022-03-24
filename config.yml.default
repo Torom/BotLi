@@ -1,11 +1,11 @@
-token: "XXXXXXXXXXXXXXXXXXXXXXXX"         # Lichess OAuth2 Token.
+token: "lip_BkSdYAf7dnPZtbXFPmlr"         # Lichess OAuth2 Token.
 
 engine:                                   # Engine settings.
   dir: "./engines"                        # Directory containing the engine.
   name: "stockfish"                       # Binary name of the engine to use.
   ponder: true                            # Think on opponent's time.
   opening_books:
-    enabled: false                        # Activate opening books.
+    enabled: true                        # Activate opening books.
     books:
 #     white:                              # List of names of books to use as white.
 #       - "WhiteBook"
@@ -51,40 +51,40 @@ move_overhead_multiplier: 1.0             # Increase if your bot flags games too
 challenge:                                # Incoming challenges. (Commenting allowed)
   concurrency: 1                          # Number of games to play simultaneously.
 # min_increment: 0                        # Minimum amount of increment to accept a challenge.
-# max_increment: 180                      # Maximum amount of increment to accept a challenge.
+# max_increment: 3                      # Maximum amount of increment to accept a challenge.
 # min_initial: 0                          # Minimum amount of initial time to accept a challenge.
 # max_initial: 315360000                  # Maximum amount of initial time to accept a challenge.
   variants:                               # Chess variants to accept (https://lichess.org/variant).
     - standard
     - chess960
 #   - fromPosition
-#   - antichess
-#   - atomic
-#   - crazyhouse
-#   - horde
-#   - kingOfTheHill
-#   - racingKings
-#   - threeCheck
+   - antichess
+   - atomic
+   - crazyhouse
+   - horde
+   - kingOfTheHill
+   - racingKings  
+    - threeCheck
   time_controls:                          # Time controls to accept.
     - bullet
     - blitz
     - rapid
-#   - classical
+   - classical
   bot_modes:                              # Game modes to accept against BOTs.
-#   - casual                              # Unrated games.
-    - rated                               # Rated games
+   - casual                              # Unrated games.
+#    - rated                               # Rated games
   human_modes:                            # Game modes to accept against humans.
     - casual                              # Unrated games.
     - rated                               # Rated games
 
 matchmaking:
-  initial_time: 60                        # Initial time for matchmaking mode.
+  initial_time: 1                        # Initial time for matchmaking mode.
   increment: 1                            # Increment time for matchmaking mode.
-  rated: true                             # Activate rated games in matchmaking mode.
+  rated: false                             # Activate rated games in matchmaking mode.
   timeout: 20                             # Time until a challenge is canceled.
   variant: standard                       # Chess variants to challenge (https://lichess.org/variant).
-# min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
-# max_rating_diff: 300                    # Maximum rating distance to opponent. (Commenting allowed)
+ min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
+ max_rating_diff: 500                    # Maximum rating distance to opponent. (Commenting allowed)
 
 books:                                    # Names of the opening books (to be used above in the polyglot section) and paths to the polyglot opening books.
   DefaultBook: "/path/to/DefaultBook.bin"
