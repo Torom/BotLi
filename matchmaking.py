@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from threading import Thread
 
 from api import API
-from enums import Challenge_Color, Game_Status, Variant
+from enums import Challenge_Color, Variant
 from game_api import Game_api
 from opponent import Opponent
 
@@ -46,7 +46,7 @@ class Matchmaking(Thread):
                 game.run_game()
                 game_duration = datetime.now() - start_time
 
-                if game.termination == Game_Status.ABORTED:
+                if game.was_aborted:
                     game_duration += self.estimated_game_duration
             else:
                 self._set_timeout(opponent, False, self.estimated_game_pair_duration)
@@ -64,7 +64,7 @@ class Matchmaking(Thread):
                 game.run_game()
                 game_duration += datetime.now() - start_time
 
-                if game.termination == Game_Status.ABORTED:
+                if game.was_aborted:
                     game_duration += self.estimated_game_duration
             else:
                 game_duration += self.estimated_game_duration

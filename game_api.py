@@ -17,6 +17,7 @@ class Game_api:
         self.chatter = Chatter(config)
         self.ping_counter = 0
         self.game_queue = Queue()
+        self.was_aborted = False
 
     def run_game(self) -> None:
         game_queue_thread = Thread(target=self._watch_game_stream, daemon=True)
@@ -39,8 +40,8 @@ class Game_api:
                 updated = self.lichess_game.update(event)
 
                 if self.lichess_game.status != Game_Status.STARTED:
-                    self.termination = self.lichess_game.status
-                    self.winner = event.get('winner')
+                    self.was_aborted = self.lichess_game.status == Game_Status.ABORTED
+                    print(self.lichess_game.get_result_message(event.get('winner')))
                     break
 
                 if self.lichess_game.is_game_over():
@@ -74,8 +75,6 @@ class Game_api:
                     self.api.abort_game(self.game_id)
             else:
                 print(event)
-
-        print('Game over')
 
         self.lichess_game.quit_engine()
 

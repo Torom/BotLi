@@ -23,6 +23,8 @@ class Lichess_Game:
         self.api = api
         self.board = self._setup_board(gameFull_event)
         self.username = username
+        self.white_name: str = gameFull_event['white'].get('name', 'AI')
+        self.black_name: str = gameFull_event['black'].get('name', 'AI')
         self.is_white: bool = gameFull_event['white'].get('name') == username
         self.initial_time: int = gameFull_event['clock']['initial']
         self.increment: int = gameFull_event['clock']['increment']
@@ -88,6 +90,35 @@ class Lichess_Game:
         self.black_time = gameState_event['btime']
 
         return True
+
+    def get_result_message(self, winner: str | None) -> str:
+        winning_name = self.white_name if winner == 'white' else self.black_name
+        losing_name = self.white_name if winner == 'black' else self.black_name
+
+        if winner:
+            message = f'{winning_name} won'
+
+            if self.status == Game_Status.MATE:
+                message += ' by checkmate!'
+            elif self.status == Game_Status.OUT_OF_TIME:
+                message += f'! {losing_name} run out of time.'
+            elif self.status == Game_Status.RESIGN:
+                message += f'! {losing_name} resigned.'
+        elif self.status == Game_Status.DRAW:
+            if self.board.is_fifty_moves():
+                message = 'Game drawn by 50-move rule.'
+            elif self.board.is_repetition():
+                message = 'Game drawn by threefold repetition.'
+            elif self.board.is_insufficient_material():
+                message = 'Game drawn due to insufficient material.'
+            else:
+                message = 'Game drawn by agreement.'
+        elif self.status == Game_Status.STALEMATE:
+            message = 'Game drawn by stalemate.'
+        else:
+            message = 'Game aborted.'
+
+        return message
 
     def is_our_turn(self) -> bool:
         return self.is_white == self.board.turn
