@@ -7,7 +7,7 @@ import chess.polyglot
 from chess.variant import find_variant
 
 from api import API
-from enums import Variant
+from enums import Game_Status, Variant
 
 UCI_Move = str
 CP_Score = int
@@ -29,6 +29,7 @@ class Lichess_Game:
         self.white_time: int = gameFull_event['state']['wtime']
         self.black_time: int = gameFull_event['state']['btime']
         self.variant = Variant(gameFull_event['variant']['key'])
+        self.status = Game_Status(gameFull_event['state']['status'])
         self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
         self.resign_enabled: bool = config['engine']['resign']['enabled']
         self.move_overhead = self._get_move_overhead()
@@ -76,6 +77,8 @@ class Lichess_Game:
         return move.uci(), offer_draw, resign
 
     def update(self, gameState_event: dict) -> bool:
+        self.status = Game_Status(gameState_event['status'])
+
         moves = gameState_event['moves'].split()
         if len(moves) <= len(self.board.move_stack):
             return False

@@ -4,6 +4,7 @@ from threading import Thread
 
 from api import API
 from chatter import Chat_Message, Chatter
+from enums import Game_Status
 from lichess_game import Lichess_Game
 
 
@@ -40,8 +41,13 @@ class Game_api:
             elif event['type'] == 'gameState':
                 updated = self.lichess_game.update(event)
 
-                if event['status'] != 'started' or self.lichess_game.is_game_over():
+                if self.lichess_game.status != Game_Status.STARTED:
+                    self.termination = self.lichess_game.status
+                    self.winner = event.get('winner')
                     break
+
+                if self.lichess_game.is_game_over():
+                    continue
 
                 if self.lichess_game.is_our_turn() and updated:
                     uci_move, offer_draw, resign = self.lichess_game.make_move()
@@ -56,8 +62,8 @@ class Game_api:
                     if chat_message.room == 'player':
                         print(f'{chat_message.username}: {chat_message.text}')
                     continue
-                else:
-                    print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
+
+                print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
 
                 if chat_message.text.startswith('!'):
                     command = chat_message.text[1:].lower()
