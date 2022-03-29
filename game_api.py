@@ -25,10 +25,7 @@ class Game_api:
         while True:
             event = self.game_queue.get()
 
-            if event['type'] == 'aborted':
-                print(f'Game "{self.game_id}" was aborted.')
-                break
-            elif event['type'] == 'gameFull':
+            if event['type'] == 'gameFull':
                 print(f'Game "{self.game_id}" was started.')
                 self.lichess_game = Lichess_Game(self.api, event, self.config, self.username)
 
