@@ -195,7 +195,8 @@ class Matchmaking(Thread):
         timeout = duration_ratio ** 2 * self.estimated_game_pair_duration * 25 * opponent.multiplier
 
         opponent.release_time = datetime.now() + timeout
-        print(f'not challenging {opponent.username} until {opponent.release_time}')
+        release_str = opponent.release_time.isoformat(sep=" ", timespec="seconds")
+        print(f'not challenging {opponent.username} until {release_str}')
 
         if opponent not in self.opponents:
             self.opponents.append(opponent)
