@@ -95,7 +95,7 @@ class Matchmaking(Thread):
 
         return self.api.create_challenge(
             opponent['username'],
-            initial_time, increment, rated, color, Variant.STANDARD, timeout)
+            initial_time, increment, rated, color, self.variant, timeout)
 
     def _load(self) -> list[Opponent]:
         if os.path.isfile('matchmaking.json'):
