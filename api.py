@@ -14,6 +14,8 @@ class API:
     def __init__(self, token: str) -> None:
         self.session = requests.session()
         self.session.headers.update({'Authorization': f'Bearer {token}'})
+        self.user = self.get_account()
+        self.session.headers.update({'User-Agent': f'BotLi user:{self.user["username"]}'})
 
     def abort_game(self, game_id: str) -> bool:
         try:
