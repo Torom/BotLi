@@ -9,8 +9,7 @@ from matchmaking import Matchmaking
 COMMANDS = {'abort': 'Aborts a game. Usage: abort GAME_ID',
             'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED]',
             'help': 'Prints this message.', 'matchmaking': 'Starts matchmaking mode. Usage: matchmaking [VARIANT]',
-            'quit': 'Exits the bot.', 'reset': 'Resets matchmaking.', 'stop': 'Stops matchmaking mode.',
-            'upgrade': 'Upgrades your Lichess account to a BOT account.'}
+            'quit': 'Exits the bot.', 'reset': 'Resets matchmaking.', 'stop': 'Stops matchmaking mode.'}
 
 
 class UserInterface:
@@ -23,6 +22,8 @@ class UserInterface:
 
     def start(self) -> None:
         print(LOGO)
+
+        self._check_bot_status()
 
         self.challenge_handler = Challenge_Handler(self.config, self.api, self.game_count)
         self.challenge_handler.start()
@@ -53,10 +54,29 @@ class UserInterface:
                 self._reset()
             elif command == 'stop':
                 self._stop()
-            elif command == 'upgrade':
-                self._upgrade()
             else:
                 self._help()
+
+    def _check_bot_status(self) -> None:
+        if self.api.user.get('title') == 'BOT':
+            return
+
+        print('\nBotLi can only be used by BOT accounts!\n')
+        print('This will upgrade your account to a BOT account.')
+        print('WARNING: This is irreversible. The account will only be able to play as a BOT.')
+        approval = input('Do you want to continue? [y/N]: ')
+
+        if approval.lower() not in ['y', 'yes']:
+            print('Upgrade aborted.')
+            exit()
+
+        outcome = self.api.upgrade_account()
+
+        if outcome:
+            print('Upgrade successful.')
+        else:
+            print('Upgrade failed.')
+            exit()
 
     def _abort(self, command: str) -> None:
         command_parts = command.split()
@@ -131,18 +151,6 @@ class UserInterface:
         self.game_count.decrement()
         self.challenge_handler.start_accepting_challenges()
         print('Matchmaking has been stopped. And challenges are resuming ...')
-
-    def _upgrade(self) -> None:
-        print('This will upgrade your account to a bot account.')
-        print('WARNING: This is irreversible. The account will only be able to play as a Bot.')
-        approval = input('Do you want to continue? [y/N]: ')
-
-        if approval.lower() not in ['y', 'yes']:
-            print('Upgrade aborted.')
-            return
-
-        outcome = 'successful' if self.api.upgrade_account() else 'failed'
-        print(f'Upgrade {outcome}.')
 
     def _help(self) -> None:
         print('These commands are supported by BotLi:\n')
