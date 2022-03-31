@@ -9,10 +9,9 @@ from lichess_game import Lichess_Game
 
 
 class Game_api:
-    def __init__(self, config: dict, api: API, username: str, game_id: str) -> None:
+    def __init__(self, config: dict, api: API, game_id: str) -> None:
         self.config: dict = config
         self.api = api
-        self.username = username
         self.game_id = game_id
         self.chatter = Chatter(config)
         self.ping_counter = 0
@@ -28,7 +27,7 @@ class Game_api:
 
             if event['type'] == 'gameFull':
                 print(f'Game "{self.game_id}" was started.')
-                self.lichess_game = Lichess_Game(self.api, event, self.config, self.username)
+                self.lichess_game = Lichess_Game(self.api, event, self.config)
 
                 if self.lichess_game.is_our_turn():
                     uci_move, offer_draw, resign = self.lichess_game.make_move()

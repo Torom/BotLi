@@ -42,7 +42,7 @@ class Matchmaking(Thread):
 
             if challenge_id is not None:
                 start_time = datetime.now()
-                game = Game_api(self.config, self.api, self.player['username'], challenge_id)
+                game = Game_api(self.config, self.api, challenge_id)
                 game.run_game()
                 game_duration = datetime.now() - start_time
 
@@ -60,7 +60,7 @@ class Matchmaking(Thread):
 
             if challenge_id is not None:
                 start_time = datetime.now()
-                game = Game_api(self.config, self.api, self.player['username'], challenge_id)
+                game = Game_api(self.config, self.api, challenge_id)
                 game.run_game()
                 game_duration += datetime.now() - start_time
 

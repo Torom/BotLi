@@ -16,7 +16,6 @@ class Challenge_Handler(Thread):
         self.config = config
         self.api = api
         self.is_running = True
-        self.count_concurrent_games = 0
         self.game_count = game_count
         self.challenge_queue = Queue()
         self.accept_challenges = True
@@ -37,7 +36,7 @@ class Challenge_Handler(Thread):
         challenge_queue_thread = Thread(target=self._watch_challenge_stream, daemon=True)
         challenge_queue_thread.start()
 
-        username = self.api.get_account()['username']
+        username = self.api.user['username']
         self.game_threads: dict[str, Thread] = {}
 
         while self.is_running:
@@ -82,7 +81,7 @@ class Challenge_Handler(Thread):
                     print('Max number of concurrent games reached. Not starting the already accepted game.')
                     continue
 
-                game = Game_api(self.config, self.api, username, game_id)
+                game = Game_api(self.config, self.api, game_id)
                 game_thread = Thread(target=game.run_game)
                 self.game_threads[game_id] = game_thread
                 game_thread.start()
