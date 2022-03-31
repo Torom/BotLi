@@ -85,17 +85,33 @@ class Matchmaking(Thread):
         with open('matchmaking.json', 'w') as output:
             json.dump([opponent.__dict__() for opponent in opponents], output, indent=4)
 
-    def _challenge_opponent(self, opponent: dict, color: Challenge_Color) -> None | str:
+    def _challenge_opponent(self, opponent: dict, color: Challenge_Color) -> str | None:
         rated = self.config['matchmaking']['rated']
         initial_time = self.config['matchmaking']['initial_time']
         increment = self.config['matchmaking']['increment']
         timeout = self.config['matchmaking']['timeout']
 
-        print(f'challenging {opponent["username"]} ({opponent["rating_diff"]:.1f}) as {color.value}')
+        print(f'challenging {opponent["username"]} ({opponent["rating_diff"]:+.1f}) as {color.value}')
 
-        return self.api.create_challenge(
+        challenge_lines = self.api.create_challenge(
             opponent['username'],
             initial_time, increment, rated, color, self.variant, timeout)
+
+        line = challenge_lines[0]
+        if 'challenge' in line and 'id' in line['challenge']:
+            challenge_id = line['challenge']['id']
+        else:
+            print(line['error'])
+            return
+
+        line = challenge_lines[1]
+        if 'done' in line and line['done'] == 'accepted':
+            return challenge_id
+        elif 'done' in line and line['done'] == 'timeout':
+            print('challenge timed out.')
+            self.api.cancel_challenge(challenge_id)
+        elif 'done' in line and line['done'] == 'declined':
+            print('challenge was declined.')
 
     def _load(self) -> list[Opponent]:
         if os.path.isfile('matchmaking.json'):

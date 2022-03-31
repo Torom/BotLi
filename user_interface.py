@@ -99,7 +99,22 @@ class UserInterface:
         color = Challenge_Color(command_parts[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
         rated = command_parts[5].lower() == 'true' if command_length > 5 else True
 
-        self.api.create_challenge(opponent_username, initial_time, increment, rated, color, Variant.STANDARD, 20)
+        challenge_lines = self.api.create_challenge(
+            opponent_username, initial_time, increment, rated, color, Variant.STANDARD, 20)
+
+        line = challenge_lines[0]
+        if 'challenge' in line and 'id' in line['challenge']:
+            challenge_id = line['challenge']['id']
+        else:
+            print(line['error'])
+            return
+
+        line = challenge_lines[1]
+        if 'done' in line and line['done'] == 'timeout':
+            print('challenge timed out.')
+            self.api.cancel_challenge(challenge_id)
+        elif 'done' in line and line['done'] == 'declined':
+            print('challenge was declined.')
 
     def _matchmaking(self, command: str) -> None:
         if self.matchmaking:
