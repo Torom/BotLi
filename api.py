@@ -7,7 +7,7 @@ from tenacity.retry import retry_if_exception_type
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 
-from enums import Challenge_Color, Decline_Reason, Variant
+from enums import Challenge_Color, Decline_Reason, Perf_Type, Variant
 
 
 class API:
@@ -138,6 +138,10 @@ class API:
     def get_online_bots_stream(self) -> Iterable:
         response = self.session.get('https://lichess.org/api/bot/online', stream=True)
         return response.iter_lines()
+
+    def get_perfomance(self, username: str, perf_type: Perf_Type) -> dict:
+        response = self.session.get(f'https://lichess.org/api/user/{username}/perf/{perf_type.value}')
+        return response.json()
 
     def resign_game(self, game_id: str) -> bool:
         try:

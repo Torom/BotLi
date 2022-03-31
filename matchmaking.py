@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from threading import Thread
 
 from api import API
-from enums import Challenge_Color, Variant
+from enums import Challenge_Color, Perf_Type, Variant
 from game_api import Game_api
 from opponent import Opponent
 
@@ -22,9 +22,9 @@ class Matchmaking(Thread):
         self.estimated_game_duration = timedelta(seconds=(initial_time + increment * 80) * 2)
         self.estimated_game_pair_duration = self.estimated_game_duration * 2
 
-        self.tc = self._get_tc()
         self.opponents = self._load()
-        self.player = self.api.get_account()
+        self.perf_type = self._get_perf_type()
+        self.player_rating = self._get_rating()
         self.bots = self._get_bots()
 
     def start(self):
@@ -91,7 +91,7 @@ class Matchmaking(Thread):
         increment = self.config['matchmaking']['increment']
         timeout = self.config['matchmaking']['timeout']
 
-        print(f'challenging {opponent["username"]} ({opponent["rating_diff"]}) as {color.value}')
+        print(f'challenging {opponent["username"]} ({opponent["rating_diff"]:.1f}) as {color.value}')
 
         return self.api.create_challenge(
             opponent['username'],
@@ -110,7 +110,7 @@ class Matchmaking(Thread):
 
     def _call_update(self) -> None:
         if self.next_update <= datetime.now():
-            self.player = self.api.get_account()
+            self.player_rating = self._get_rating()
             self.bots = self._get_bots()
             print('updated online bots and rankings')
 
@@ -119,24 +119,19 @@ class Matchmaking(Thread):
         min_rating_diff = self.config['matchmaking'].get('min_rating_diff', 0)
         max_rating_diff = self.config['matchmaking'].get('max_rating_diff', float('inf'))
 
-        if self.tc in self.player['perfs']:
-            player_rating = self.player['perfs'][self.tc]['rating']
-        else:
-            player_rating = 1500
-
         bots: list[dict] = []
         for line in online_bots_stream:
             if line:
                 bot = json.loads(line)
-                if bot['username'] == self.player['username'] or 'disabled' in bot:
+                if bot['username'] == self.api.user['username'] or 'disabled' in bot:
                     continue
 
-                if self.tc in bot['perfs']:
-                    bot_rating = bot['perfs'][self.tc]['rating']
+                if self.perf_type.value in bot['perfs']:
+                    bot_rating = bot['perfs'][self.perf_type.value]['rating']
                 else:
                     bot_rating = 1500
 
-                bot['rating_diff'] = bot_rating - player_rating
+                bot['rating_diff'] = bot_rating - self.player_rating
                 if abs(bot['rating_diff']) >= min_rating_diff and abs(bot['rating_diff']) <= max_rating_diff:
                     bots.append(bot)
 
@@ -148,21 +143,30 @@ class Matchmaking(Thread):
         self.next_update = datetime.now() + timedelta(minutes=30)
         return bots
 
-    def _get_tc(self) -> str:
-        if self.variant != Variant.STANDARD and self.variant != Variant.FROM_POSITION:
-            return self.variant.value
+    def _get_rating(self) -> float:
+        perfomance = self.api.get_perfomance(self.api.user['username'], self.perf_type)
+        provisional: bool = perfomance['perf']['glicko']['provisional']
+        rating: float = perfomance['perf']['glicko']['rating']
+        deviation: float = perfomance['perf']['glicko']['deviation']
 
-        estimated_game_duration = self.config['matchmaking']['initial_time'] + \
-            self.config['matchmaking']['increment'] * 40
+        return rating + deviation if provisional else rating
+
+    def _get_perf_type(self) -> Perf_Type:
+        if self.variant not in [Variant.STANDARD, Variant.FROM_POSITION]:
+            return Perf_Type(self.variant.value)
+
+        initial_time: int = self.config['matchmaking']['initial_time']
+        increment: int = self.config['matchmaking']['increment']
+        estimated_game_duration = initial_time + increment * 40
 
         if estimated_game_duration < 179:
-            return 'bullet'
+            return Perf_Type.BULLET
         elif estimated_game_duration < 479:
-            return 'blitz'
+            return Perf_Type.BLITZ
         elif estimated_game_duration < 1499:
-            return 'rapid'
+            return Perf_Type.RAPID
         else:
-            return 'classical'
+            return Perf_Type.CLASSICAL
 
     def _find(self, username: str) -> Opponent:
         try:
