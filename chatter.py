@@ -29,6 +29,7 @@ class Chatter:
             return 'Supported commands: !cpu, !draw, !engine, !eval, !name, !ram'
 
     def _get_cpu(self) -> str:
+        cpu = ''
         if os.path.exists('/proc/cpuinfo'):
             with open('/proc/cpuinfo', 'r') as cpuinfo:
                 while line := cpuinfo.readline():
@@ -36,12 +37,19 @@ class Chatter:
                         cpu = line.split(': ')[1]
                         cpu = cpu.replace('(R)', '')
                         cpu = cpu.replace('(TM)', '')
-                        return cpu
 
-        if cpu := platform.processor():
-            return cpu
+                        if len(cpu.split()) > 1:
+                            return cpu
 
-        return 'Unknown'
+        if processor := platform.processor():
+            cpu = processor.split()[0]
+            cpu = cpu.replace('GenuineIntel', 'Intel')
+
+        cores = psutil.cpu_count(logical=False)
+        threads = psutil.cpu_count(logical=True)
+        cpu_freq = psutil.cpu_freq().max / 1000
+
+        return f'{cpu} {cores}c/{threads}t @ {cpu_freq:.2f}GHz'
 
     def _get_ram(self) -> str:
         mem_bytes = psutil.virtual_memory().total
