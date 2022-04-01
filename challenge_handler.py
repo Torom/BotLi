@@ -117,6 +117,7 @@ class Challenge_Handler(Thread):
     def _get_decline_reason(self, event: dict) -> Decline_Reason | None:
         variants = self.config['challenge']['variants']
         time_controls = self.config['challenge']['time_controls']
+        bullet_with_increment_only = self.config['challenge'].get('bullet_with_increment_only', False)
         min_increment = self.config['challenge'].get('min_increment', 0)
         max_increment = self.config['challenge'].get('max_increment', 180)
         min_initial = self.config['challenge'].get('min_initial', 0)
@@ -155,6 +156,9 @@ class Challenge_Handler(Thread):
         elif initial > max_initial:
             print(f'Initial time {initial} is too long according to config.')
             return Decline_Reason.TOO_SLOW
+        elif speed == 'bullet' and increment == 0 and bullet_with_increment_only:
+            print('Bullet is only allowed with increment according to config.')
+            return Decline_Reason.TOO_FAST
 
         is_rated = event['challenge']['rated']
         is_casual = not is_rated
