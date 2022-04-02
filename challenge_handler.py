@@ -70,7 +70,6 @@ class Challenge_Handler(Thread):
                     print('Challenge could not be accepted!', file=sys.stderr)
                     continue
 
-                print('Accepted challenge ...')
             elif event['type'] == 'gameStart':
                 game_id = event['game']['id']
 

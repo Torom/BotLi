@@ -126,9 +126,9 @@ class Matchmaking(Thread):
 
     def _call_update(self) -> None:
         if self.next_update <= datetime.now():
+            print('updating online bots and rankings ...')
             self.player_rating = self._get_rating()
             self.bots = self._get_bots()
-            print('updated online bots and rankings')
 
     def _get_bots(self) -> list[dict]:
         online_bots_stream = self.api.get_online_bots_stream()
