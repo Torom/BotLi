@@ -69,7 +69,7 @@ class Matchmaking(Thread):
             else:
                 game_duration += self.estimated_game_duration
 
-            self._set_timeout(opponent, challenge_id is not None, game_duration)
+            self._set_timeout(opponent, True, game_duration)
 
     @classmethod
     def reset_matchmaking(cls) -> None:
