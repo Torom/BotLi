@@ -1,15 +1,17 @@
 from api import API
 from challenge_handler import Challenge_Handler
 from config import load_config
-from enums import Challenge_Color, Variant
+from enums import Challenge_Color, Perf_Type, Variant
 from game_counter import Game_Counter
 from logo import LOGO
 from matchmaking import Matchmaking
+from opponents import Opponents
 
 COMMANDS = {'abort': 'Aborts a game. Usage: abort GAME_ID',
             'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED]',
             'help': 'Prints this message.', 'matchmaking': 'Starts matchmaking mode. Usage: matchmaking [VARIANT]',
-            'quit': 'Exits the bot.', 'reset': 'Resets matchmaking.', 'stop': 'Stops matchmaking mode.'}
+            'quit': 'Exits the bot.', 'reset': 'Resets matchmaking. Usage: reset PERF_TYPE',
+            'stop': 'Stops matchmaking mode.'}
 
 
 class UserInterface:
@@ -50,8 +52,8 @@ class UserInterface:
                 self._matchmaking(command)
             elif command == 'quit':
                 self._quit()
-            elif command == 'reset':
-                self._reset()
+            elif command.startswith('reset'):
+                self._reset(command)
             elif command == 'stop':
                 self._stop()
             else:
@@ -147,12 +149,17 @@ class UserInterface:
             self.matchmaking.join()
         self.challenge_handler.join()
 
-    def _reset(self) -> None:
+    def _reset(self, command: str) -> None:
         if self.matchmaking:
             print('Can\'t reset matchmaking while running ...')
             return
 
-        Matchmaking.reset_matchmaking()
+        command_parts = command.split()
+        if len(command_parts) != 2:
+            print(COMMANDS['reset'])
+            return
+
+        Opponents(Perf_Type(command_parts[1])).reset_release_time(full_reset=True, save_to_file=True)
 
     def _stop(self) -> None:
         if not self.matchmaking:
