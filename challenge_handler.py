@@ -78,6 +78,7 @@ class Challenge_Handler(Thread):
 
                 if not self.game_count.increment():
                     print('Max number of concurrent games reached. Not starting the already accepted game.')
+                    self.api.abort_game(game_id)
                     continue
 
                 game = Game_api(self.config, self.api, game_id)
