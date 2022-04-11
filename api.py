@@ -59,6 +59,7 @@ class API:
                 timeout=timeout, stream=True)
 
             if response.status_code == 429:
+                print('429 - Rate limiting by Lichess')
                 raise Too_Many_Requests_Exception
 
             for line in response.iter_lines():
