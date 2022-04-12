@@ -41,6 +41,7 @@ class Lichess_Game:
         self.loaded_pybooks: dict[str, dict[int, str]] = {}
         self.engine = self._get_engine()
         self.scores: list[chess.engine.PovScore] = []
+        self.last_message = 'No eval available yet.'
 
     def make_move(self) -> Tuple[UCI_Move, Offer_Draw, Resign]:
         if move := self._make_book_move():
