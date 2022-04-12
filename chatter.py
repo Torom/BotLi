@@ -20,7 +20,10 @@ class Chatter:
         elif command == 'engine':
             return lichess_game.engine.id["name"]
         elif command == 'eval':
-            return lichess_game.last_message
+            try:
+                return lichess_game.last_message
+            except:
+                return 'My opponent must make the first move for me to give you eval.'
         elif command == 'name':
             return f'{lichess_game.username} running {lichess_game.engine.id["name"]} (Torom\'s BotLi)'
         elif command == 'ram':
