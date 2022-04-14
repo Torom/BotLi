@@ -22,7 +22,7 @@ python -m pip install -r requirements.txt
 - Create an account for your bot on [Lichess.org](https://lichess.org/signup).
 - **NOTE: If you have previously played games on an existing account, you will not be able to use it as a bot account.**
 - Once your account has been created and you are logged in, [create a personal OAuth2 token with the "Play games with the bot API" ('bot:play') scope](https://lichess.org/account/oauth/token/create?scopes[]=bot:play&description=lichess-bot) selected and a description added.
-- A `token` (e.g. `xxxxxxxxxxxxxxxx`) will be displayed. Store this in the `config.yml` file as the `token` field.
+- A `token` will be displayed. Store this in the `config.yml` file as the `token` field.
 - **NOTE: You won't see this token again on Lichess, so do save it.**
 
 ## Setup Engine
@@ -38,6 +38,12 @@ Several books can be entered here. In the upper area `eninge: polyglot: books` o
 
 # How to control
 
+## Interacitve mode
+
+In this mode you control the bot with commands you write into the console.
+
+### Start
+
 To start the bot, type
 
 ```bash
@@ -50,7 +56,7 @@ To see all commands, type
 help
 ```
 
-## Matchmaking mode
+### Matchmaking
 
 To challenge other players with similar ratings, type
 ```
@@ -69,15 +75,39 @@ quit
 
 The bot will always wait until the current game is finished.
 
+## Non interactive mode
+
+In this mode you set flags at the start of the bot. You can't change the modes after the start. This is usefull when the bot runs as a service or on Heroku.
+
+### Start
+
+To start the bot in the non interactive mode you type:
+
+```bash
+python user_interface.py --non_interactive
+```
+
+### Matchmaking
+
+To let the bot challenge other bots in non interactive mode you start it like this:
+
+```bash
+python user_interface.py --non_interactive --matchmaking
+```
+
+**CAUTION**: Lichess will rate limit you if you let matchmaking run for too long.
+
 ## Upgrade to Bot account
-Upgrade a lichess player account into a Bot account. Only Bot accounts are allowed to use an engine.
+
+When you running the bot in interactive mode, you will be asked if you want to upgrade your account if needed.
+
+In non interactive mode you have to add the `--upgrade` flag at the start of the bot to upgrade it if needed. For example:
+
+```bash
+python user_interface.py --non_interactive --upgrade
+```
 
 The account **cannot have played any game** before becoming a Bot account. The upgrade is **irreversible**. The account will only be able to play as a Bot.
-
-To upgrade your account type
-```
-upgrade
-```
 
 ## Acknowledgements
 Thanks to the Lichess team, especially T. Alexander Lystad and Thibault Duplessis for working with the LeelaChessZero team to get this API up. Thanks to the [Niklas Fiekas](https://github.com/niklasf) and his [python-chess](https://github.com/niklasf/python-chess) code which allows engine communication seamlessly. In addition, the idea of this bot is based on [ShailChoksi/lichess-bot](https://github.com/ShailChoksi/lichess-bot).
