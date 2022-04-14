@@ -1,3 +1,5 @@
+import argparse
+
 from api import API
 from challenge_handler import Challenge_Handler
 from config import load_config
@@ -22,13 +24,28 @@ class UserInterface:
         self.is_running = True
         self.matchmaking: Matchmaking | None = None
 
-    def start(self) -> None:
+    def main(self) -> None:
         print(LOGO)
 
-        self._check_bot_status()
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--non_interactive', '-n', action='store_true',
+                            help='Set if run as a service or on Heroku.')
+        parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
+        parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
+        args = parser.parse_args()
+
+        self._handle_bot_status(args.non_interactive, args.upgrade)
 
         self.challenge_handler = Challenge_Handler(self.config, self.api, self.game_count)
+
+        if args.matchmaking:
+            self._matchmaking(Variant(self.config['matchmaking']['variant']))
+
+        print('handling challenges ...')
         self.challenge_handler.start()
+
+        if args.non_interactive:
+            return
 
         try:
             import readline
@@ -39,8 +56,6 @@ class UserInterface:
         except ImportError:
             pass
 
-        print('accepting challenges ...')
-
         while self.is_running:
             command = input()
 
@@ -49,7 +64,12 @@ class UserInterface:
             elif command.startswith('challenge'):
                 self._challenge(command)
             elif command.startswith('matchmaking'):
-                self._matchmaking(command)
+                command_parts = command.split()
+                if len(command_parts) > 2:
+                    print(COMMANDS['matchmaking'])
+                    continue
+
+                self._matchmaking(Variant(command_parts[1]) if len(command_parts) == 2 else Variant.STANDARD)
             elif command == 'quit':
                 self._quit()
             elif command.startswith('reset'):
@@ -59,18 +79,22 @@ class UserInterface:
             else:
                 self._help()
 
-    def _check_bot_status(self) -> None:
+    def _handle_bot_status(self, non_interactive: bool, upgrade_account: bool) -> None:
         if self.api.user.get('title') == 'BOT':
             return
 
         print('\nBotLi can only be used by BOT accounts!\n')
-        print('This will upgrade your account to a BOT account.')
-        print('WARNING: This is irreversible. The account will only be able to play as a BOT.')
-        approval = input('Do you want to continue? [y/N]: ')
 
-        if approval.lower() not in ['y', 'yes']:
-            print('Upgrade aborted.')
-            exit()
+        if non_interactive and not upgrade_account:
+            exit(1)
+        elif not non_interactive:
+            print('This will upgrade your account to a BOT account.')
+            print('WARNING: This is irreversible. The account will only be able to play as a BOT.')
+            approval = input('Do you want to continue? [y/N]: ')
+
+            if approval.lower() not in ['y', 'yes']:
+                print('Upgrade aborted.')
+                exit()
 
         outcome = self.api.upgrade_account()
 
@@ -118,17 +142,10 @@ class UserInterface:
         elif 'done' in line and line['done'] == 'declined':
             print('challenge was declined.')
 
-    def _matchmaking(self, command: str) -> None:
+    def _matchmaking(self, variant: Variant) -> None:
         if self.matchmaking:
             print('matchmaking already running ...')
             return
-
-        command_parts = command.split()
-        if len(command_parts) > 2:
-            print(COMMANDS['matchmaking'])
-            return
-
-        variant = Variant(command_parts[1]) if len(command_parts) == 2 else Variant.STANDARD
 
         self.challenge_handler.stop_accepting_challenges()
 
@@ -199,4 +216,4 @@ class Autocompleter:
 
 if __name__ == '__main__':
     ui = UserInterface()
-    ui.start()
+    ui.main()
