@@ -2,8 +2,6 @@
 
 **BotLi** is a bot for Lichess. Strongly inspired by [ShailChoksi/lichess-bot](https://github.com/ShailChoksi/lichess-bot). It extends its features with a matchmaking mode where the bot automatically challenges other bots with similar ratings.
 
-Not every function of the bot is extensively tested, a faulty or incomplete `config.yml` will lead to unexpected behavior. Other chess variants than Standard and Chess960 are untested. At least Python 3.10 is required.
-
 # How to install
 
 - **NOTE: Only Python 3.10 or later is supported!**
@@ -40,35 +38,35 @@ Several books can be entered here. In the upper area `eninge: polyglot: books` o
 
 ## Interacitve mode
 
-In this mode you control the bot with commands you write into the console.
+In this mode the bot is controlled by commands entered into the console.
 
 ### Start
 
-To start the bot, type
+To start the bot, type:
 
 ```bash
 python user_interface.py
 ```
 The bot automatically accepts challenges. Which challenges are accepted is defined in the config in the section `challenge`.
 
-To see all commands, type
+To see all commands, type:
 ```
 help
 ```
 
 ### Matchmaking
 
-To challenge other players with similar ratings, type
+To challenge other players with similar ratings, type:
 ```
 matchmaking
 ```
 
-Change the settings in `matchmaking` in the config to change how this bot challenges other players. The bot will not accept challenges in this mode. To exit the matchmaking mode type
+Change the settings in `matchmaking` in the config to change how this bot challenges other players. The bot will not accept challenges in this mode. To exit the matchmaking mode type:
 ```
 stop
 ```
 
-To exit the bot completely, type
+To exit the bot completely, type:
 ```
 quit
 ```
@@ -77,19 +75,20 @@ The bot will always wait until the current game is finished.
 
 ## Non interactive mode
 
-In this mode you set flags at the start of the bot. You can't change the modes after the start. This is usefull when the bot runs as a service or on Heroku.
+In this mode, the bot is controlled by flags that are set at the start. This is useful when the bot is running as a service or on Heroku.
 
 ### Start
 
-To start the bot in the non interactive mode you type:
+To start the bot in the non interactive mode, type:
 
 ```bash
 python user_interface.py --non_interactive
 ```
+The bot automatically accepts challenges. Which challenges are accepted is defined in the config in the section `challenge`.
 
 ### Matchmaking
 
-To let the bot challenge other bots in non interactive mode you start it like this:
+To let the bot challenge other bots in non interactive mode, start it like this:
 
 ```bash
 python user_interface.py --non_interactive --matchmaking
@@ -99,9 +98,10 @@ python user_interface.py --non_interactive --matchmaking
 
 ## Upgrade to Bot account
 
-When you running the bot in interactive mode, you will be asked if you want to upgrade your account if needed.
+When the bot is running in interactive mode it will ask for an account upgrade if necessary.
 
-In non interactive mode you have to add the `--upgrade` flag at the start of the bot to upgrade it if needed. For example:
+In non interactive mode the `--upgrade` flag must be set at start.
+
 
 ```bash
 python user_interface.py --non_interactive --upgrade
