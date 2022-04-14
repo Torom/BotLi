@@ -57,24 +57,42 @@ class UserInterface:
             pass
 
         while self.is_running:
-            command = input()
+            command = input().split()
 
-            if command.startswith('abort'):
-                self._abort(command)
-            elif command.startswith('challenge'):
-                self._challenge(command)
-            elif command.startswith('matchmaking'):
-                command_parts = command.split()
-                if len(command_parts) > 2:
+            if command[0] == 'abort':
+                if len(command) != 2:
+                    print(COMMANDS['abort'])
+                    continue
+
+                self._abort(command[1])
+            elif command[0] == 'challenge':
+                command_length = len(command)
+                if command_length < 2 or command_length > 6:
+                    print(COMMANDS['challenge'])
+                    continue
+
+                opponent_username = command[1]
+                initial_time = int(command[2]) if command_length > 2 else 60
+                increment = int(command[3]) if command_length > 3 else 1
+                color = Challenge_Color(command[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
+                rated = command[5].lower() == 'true' if command_length > 5 else True
+
+                self._challenge(opponent_username, initial_time, increment, rated, color)
+            elif command[0] == 'matchmaking':
+                if len(command) > 2:
                     print(COMMANDS['matchmaking'])
                     continue
 
-                self._matchmaking(Variant(command_parts[1]) if len(command_parts) == 2 else Variant.STANDARD)
-            elif command == 'quit':
+                self._matchmaking(Variant(command[1]) if len(command) == 2 else Variant.STANDARD)
+            elif command[0] == 'quit':
                 self._quit()
-            elif command.startswith('reset'):
-                self._reset(command)
-            elif command == 'stop':
+            elif command[0] == 'reset':
+                if len(command) != 2:
+                    print(COMMANDS['reset'])
+                    return
+
+                self._reset(Perf_Type(command[1]))
+            elif command[0] == 'stop':
                 self._stop()
             else:
                 self._help()
@@ -104,27 +122,10 @@ class UserInterface:
             print('Upgrade failed.')
             exit()
 
-    def _abort(self, command: str) -> None:
-        command_parts = command.split()
-        if len(command_parts) != 2:
-            print(COMMANDS['abort'])
-            return
+    def _abort(self, game_id: str) -> None:
+        self.api.abort_game(game_id)
 
-        self.api.abort_game(command_parts[1])
-
-    def _challenge(self, command: str) -> None:
-        command_parts = command.split()
-        command_length = len(command_parts)
-        if command_length < 2 or command_length > 6:
-            print(COMMANDS['challenge'])
-            return
-
-        opponent_username = command_parts[1]
-        initial_time = int(command_parts[2]) if command_length > 2 else 60
-        increment = int(command_parts[3]) if command_length > 3 else 1
-        color = Challenge_Color(command_parts[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
-        rated = command_parts[5].lower() == 'true' if command_length > 5 else True
-
+    def _challenge(self, opponent_username: str, initial_time: int, increment: int, rated: bool, color: Challenge_Color) -> None:
         challenge_lines = self.api.create_challenge(
             opponent_username, initial_time, increment, rated, color, Variant.STANDARD, 20)
 
@@ -166,17 +167,12 @@ class UserInterface:
             self.matchmaking.join()
         self.challenge_handler.join()
 
-    def _reset(self, command: str) -> None:
+    def _reset(self, perf_type: Perf_Type) -> None:
         if self.matchmaking:
             print('Can\'t reset matchmaking while running ...')
             return
 
-        command_parts = command.split()
-        if len(command_parts) != 2:
-            print(COMMANDS['reset'])
-            return
-
-        Opponents(Perf_Type(command_parts[1])).reset_release_time(full_reset=True, save_to_file=True)
+        Opponents(perf_type).reset_release_time(full_reset=True, save_to_file=True)
 
     def _stop(self) -> None:
         if not self.matchmaking:
