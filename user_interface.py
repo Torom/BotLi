@@ -59,7 +59,9 @@ class UserInterface:
         while self.is_running:
             command = input().split()
 
-            if command[0] == 'abort':
+            if len(command) == 0:
+                continue
+            elif command[0] == 'abort':
                 if len(command) != 2:
                     print(COMMANDS['abort'])
                     continue
