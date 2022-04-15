@@ -36,7 +36,7 @@ In the upper `eninge: opening_books: books` section only the name you just choos
 
 For example, the `books` section could look like this:
 ```yaml
-books:                                    # Names of the opening books (to be used above in the opening_books section) and paths to the opening books.
+books:
   Goi: "./engines/Goi.bin"
   Perfect: "/home/Books/Perfect2021.bin"
   Cerebellum: "Cerebellum.bin"
@@ -44,18 +44,18 @@ books:                                    # Names of the opening books (to be us
 A corresponding `engine: opening_books:` section could look like this:
 ```yaml
   opening_books:
-    enabled: true                         # Activate opening books.
+    enabled: true
     books:
-      white:                              # List of names of books to use as white.
+      white:
         - "Perfect"
         - "Goi"
-#     black:                              # List of names of books to use as black.
+#     black:
 #       - "BlackBook"
-      standard:                           # List of names of books to use if there is no specific book for white, black or chess960.
+      standard:
         - "Cerebellum" 
-#     chess960:                           # List of names of books to use for Chess960.
+#     chess960:
 #       - "Chess960Book"
-    selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
+    selection: "weighted_random"
 ```
 
 # How to control
