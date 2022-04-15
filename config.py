@@ -19,9 +19,10 @@ def load_config() -> dict:
         # [section, type, error message]
         sections = [
             ['token', str, 'Section `token` must be a string wrapped in quotes.'],
-            ['engine', dict, 'Section `engine` must be a dictionary with indented keys followed by colons..'],
-            ['challenge', dict, 'Section `challenge` must be a dictionary with indented keys followed by colons..'],
-            ['matchmaking', dict, 'Section `matchmaking` must be a dictionary with indented keys followed by colons..']]
+            ['engine', dict, 'Section `engine` must be a dictionary with indented keys followed by colons.'],
+            ['challenge', dict, 'Section `challenge` must be a dictionary with indented keys followed by colons.'],
+            ['matchmaking', dict, 'Section `matchmaking` must be a dictionary with indented keys followed by colons.'],
+            ['books', dict, 'Section `books` must be a dictionary with indented keys followed by colons.']]
         for section in sections:
             if section[0] not in CONFIG:
                 raise Exception(f'Your config.yml does not have required section `{section[0]}`.')
