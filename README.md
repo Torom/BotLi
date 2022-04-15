@@ -29,10 +29,34 @@ Within the file `config.yml`:
 - Enter the executable name in the `engine: name` field.
 - You need to adjust the settings in `engine: uci_options` depending on your system.
 
-## Setup polyglot opening book
-To use a polyglot opening book the name of the book and the path to the book must be entered at the end of the config in the section `books`.
+## Setup opening book
+To use a opening book a name of your choice and the path to the book must be entered at the end of the config in the section `books`.
 
-Several books can be entered here. In the upper area `eninge: polyglot: books` only the name of the book must be entered. In addition, different books can be used for white, black and chess960. If no specific book is defined, the `standard` book is used.
+In the upper `eninge: opening_books: books` section only the name you just choose must be entered. In addition, different books can be used for white, black and chess960. If no specific book is defined, the `standard` books are used.
+
+For example, the `books` section could look like this:
+```yaml
+books:                                    # Names of the opening books (to be used above in the opening_books section) and paths to the opening books.
+  Goi: "./engines/Goi.bin"
+  Perfect: "/home/Books/Perfect2021.bin"
+  Cerebellum: "Cerebellum.bin"
+```
+A corresponding `engine: opening_books:` section could look like this:
+```yaml
+  opening_books:
+    enabled: true                         # Activate opening books.
+    books:
+      white:                              # List of names of books to use as white.
+        - "Perfect"
+        - "Goi"
+#     black:                              # List of names of books to use as black.
+#       - "BlackBook"
+      standard:                           # List of names of books to use if there is no specific book for white, black or chess960.
+        - "Cerebellum" 
+#     chess960:                           # List of names of books to use for Chess960.
+#       - "Chess960Book"
+    selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
+```
 
 # How to control
 
