@@ -30,9 +30,9 @@ Within the file `config.yml`:
 - You need to adjust the settings in `engine: uci_options` depending on your system.
 
 ## Setup opening book
-To use a opening book a name of your choice and the path to the book must be entered at the end of the config in the section `books`.
+To use an opening book you have to enter a name of your choice and the path to the book at the end of the config in the `books` section.
 
-In the upper `eninge: opening_books: books` section only the name you just choose must be entered. In addition, different books can be used for white, black and chess960. If no specific book is defined, the `standard` books are used.
+In the upper `eninge: opening_books: books` section you only have to enter the name you just chose. In addition, different books can be used for white, black and chess960. If no specific book is defined, the `standard` books are used.
 
 For example, the `books` section could look like this:
 ```yaml
