@@ -105,14 +105,15 @@ class Challenge_Handler(Thread):
             self.game_count.decrement()
 
     def _watch_challenge_stream(self) -> None:
-        event_stream = self.api.get_event_stream()
-
-        for line in event_stream:
-            if not self.is_running:
-                return
-            if line:
-                event = json.loads(line.decode('utf-8'))
-                self.challenge_queue.put_nowait(event)
+        while True:
+            try:
+                event_stream = self.api.get_event_stream()
+                for line in event_stream:
+                    if line:
+                        event = json.loads(line.decode('utf-8'))
+                        self.challenge_queue.put_nowait(event)
+            except Exception as e:
+                print(e)
 
     def _get_decline_reason(self, event: dict) -> Decline_Reason | None:
         variants = self.config['challenge']['variants']
