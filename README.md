@@ -140,7 +140,7 @@ The account **cannot have played any game** before becoming a Bot account. The u
 - Create a new app on heroku.
 - Download and install (heroku cli)[https://devcenter.heroku.com/articles/heroku-cli].
 - Run this command in cmd or powershell ``heroku stack:set container -a appname`` where appname is replaced with your Heroku app's name.
-- Go to your heroku app's settings and add a config var key must be ``LICHESS_BOT_TOKEN`` and add you lichess token as value.
+- Go to your heroku app's settings and add a config var. key must be ``LICHESS_BOT_TOKEN`` and add you lichess token as value.
 - Adjust settings on your config.yml.default on your forked repository  and commit them **do not rename it to config.yml**.
 - Now connect your repository to heroku and deploy it
    **Your bot is now ready to play**
