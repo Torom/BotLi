@@ -133,6 +133,18 @@ python user_interface.py --non_interactive --upgrade
 
 The account **cannot have played any game** before becoming a Bot account. The upgrade is **irreversible**. The account will only be able to play as a Bot.
 
+# Deploy the bot in heroku
+- Create an account on (heroku)[https://heroku.com].
+- Create an account on GitHub.
+- Fork this repository.
+- Create a new app on heroku.
+- Download and install (heroku cli)[https://devcenter.heroku.com/articles/heroku-cli].
+- Run this command in cmd or powershell ``heroku stack:set container -a appname`` where appname is replaced with your Heroku app's name.
+- Go to your heroku app's settings and add a config var key must be ``LICHESS_BOT_TOKEN`` and add you lichess token as value.
+- Adjust settings on your config.yml.default on your forked repository  and commit them **do not rename it to config.yml**.
+- Now connect your repository to heroku and deploy it
+   **Your bot is now ready to play**
+   
 ## Acknowledgements
 Thanks to the Lichess team, especially T. Alexander Lystad and Thibault Duplessis for working with the LeelaChessZero team to get this API up. Thanks to the [Niklas Fiekas](https://github.com/niklasf) and his [python-chess](https://github.com/niklasf/python-chess) code which allows engine communication seamlessly. In addition, the idea of this bot is based on [ShailChoksi/lichess-bot](https://github.com/ShailChoksi/lichess-bot).
 
