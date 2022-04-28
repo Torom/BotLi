@@ -9,6 +9,7 @@ RUN python3 -m pip install --no-cache-dir -r requirements.txt > pip.log
 
 RUN mv config.yml.default config.yml
 RUN bash sf.sh
+RUN mv sf /engines
 
 COPY requirements.txt .
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
