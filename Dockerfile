@@ -7,6 +7,7 @@ COPY requirements.txt .
 RUN apt update > aptud.log && apt install -y wget python3 python3-pip p7zip-full > apti.log
 RUN python3 -m pip install --no-cache-dir -r requirements.txt > pip.log
 
+RUN mv config.yml.default config.yml
 RUN bash sf.sh
 
 COPY requirements.txt .
