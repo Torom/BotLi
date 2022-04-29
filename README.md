@@ -135,20 +135,13 @@ The account **cannot have played any game** before becoming a Bot account. The u
 
 # How to deploy to Heroku
 
-**Prerequisites**: Installed [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli#install-the-heroku-cli)
-
 - [Fork](https://github.com/Torom/BotLi/fork) this repository.
-- [Clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) your fork.
 - Create a [new heroku app](https://dashboard.heroku.com/new-app).
-- Run this command in a terminal: `heroku stack:set container -a APPNAME` where `APPNAME` is replaced with your Heroku app name. (Log in to Heroku when asked)
-- Go to `Settings` tab on Heroku and create a variable, set `LICHESS_BOT_TOKEN` as key and your token as value.
+- Insert your app name and your heroku email adress into the [.github/workflows/main.yml](/.github/workflows/main.yml) of your fork.
+- Go to [Account Settings](https://dashboard.heroku.com/account) on Heroku, scoll down to `API Key` and copy it.
+- In your fork go to `Settings` -> `Secrets` and create a `New repository secret`. Name is `HEROKU_API_KEY` and value is the api key from Heroku.
+- Go to `Settings` tab on Heroku and create a variable, set `LICHESS_BOT_TOKEN` as key and your Lichess token as value.
 - **Do NOT rename `config.yml.default` to `config.yml`!**
-
-Now go to the BotLi directory in a terminal and run these commands, replace `APPNAME` with your Heroku app name:
-```bash
-heroku git:remote -a APPNAME
-git push heroku main
-```
 
 Now the docker container gets deployed. This may take a moment. After the successful deployment, the worker needs to be activated in the `Resources` tab on Heroku.
 
