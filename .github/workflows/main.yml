@@ -15,3 +15,6 @@ jobs:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
           heroku_app_name: "APPNAME" # Insert your Heroku app name here.
           heroku_email: "YOUR EMAIL" # Insert your Heroku email here.
+          usedocker: true
+          docker_heroku_process_type: "worker"
+          
