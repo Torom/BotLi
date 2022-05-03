@@ -141,9 +141,10 @@ The account **cannot have played any game** before becoming a Bot account. The u
 - Create a [new heroku app](https://dashboard.heroku.com/new-app).
 - Go to [Account Settings](https://dashboard.heroku.com/account) on Heroku, scoll down to `API Key` and copy it.
 - In your fork go to `Settings` -> `Secrets` and create a `New repository secret`. Name is `HEROKU_API_KEY` and value is the api key from Heroku.
+- Create another `New repository secret`. Name is `HEROKU_EMAIL` and value is the email adress you use for Heroku.
 - Go to `Settings` tab on Heroku and create a variable, set `LICHESS_BOT_TOKEN` as key and your Lichess token as value.
 - Go to the `Actions` tab on your fork and enable them.
-- Insert your app name and your heroku email adress into the [.github/workflows/main.yml](/.github/workflows/main.yml) of your fork and commit it.
+- Insert your app name into the [.github/workflows/main.yml](/.github/workflows/main.yml) of your fork and commit it.
 
 Now the docker container gets deployed. This may take a moment. After the successful deployment, the worker needs to be activated in the `Resources` tab on Heroku.
 
