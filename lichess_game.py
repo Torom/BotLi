@@ -359,9 +359,6 @@ class Lichess_Game:
         engine = chess.engine.SimpleEngine.popen_uci(self.config['engine']['path'])
         options = self.config['engine']['uci_options']
 
-        if 'Move Overhead' in options and options['Move Overhead'] > self.increment:
-            options['Move Overhead'] = self.increment
-
         def not_managed(key: str): return not chess.engine.Option(key, '', None, None, None, None).is_managed()
         options = {key: value for key, value in options.items() if not_managed(key)}
 
