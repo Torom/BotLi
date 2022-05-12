@@ -175,9 +175,10 @@ class Lichess_Game:
     def _make_book_move(self) -> chess.Move | None:
         enabled = self.config['engine']['opening_books']['enabled']
         selection = self.config['engine']['opening_books']['selection']
+        too_deep = self.board.ply() >= self.config['engine']['opening_books'].get('max_depth', float('inf'))
         out_of_book = self.out_of_book_counter >= 10
 
-        if not enabled or out_of_book:
+        if not enabled or out_of_book or too_deep:
             return
 
         for book in self._get_books():

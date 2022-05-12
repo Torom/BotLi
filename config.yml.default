@@ -16,6 +16,7 @@ engine:                                   # Engine settings.
 #     chess960:                           # List of names of books to use for Chess960.
 #       - "Chess960Book"
     selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
+#   max_depth: 16                         # Half move max depth. (Comment this line for max depth)
   online_moves:
     chessdb:
       enabled: false                      # Activate online moves from https://chessdb.cn/queryc_en/
