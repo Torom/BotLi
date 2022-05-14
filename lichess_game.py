@@ -55,11 +55,9 @@ class Lichess_Game:
             message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
             offer_draw = False
             resign = False
-        elif response := self._make_chessdb_move():
-            uci_move, cp_score, depth = response
+        elif uci_move := self._make_chessdb_move():
             move = chess.Move.from_uci(uci_move)
-            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), self.board.turn)
-            message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
+            message = f'ChessDB: {self._format_move(move):14}'
             offer_draw = False
             resign = False
         elif response := self._make_egtb_move():
@@ -251,27 +249,38 @@ class Lichess_Game:
             else:
                 self._reduce_own_time(timeout * 1000)
 
-    def _make_chessdb_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
+    def _make_chessdb_move(self) -> UCI_Move | None:
         enabled = self.config['engine']['online_moves']['chessdb']['enabled']
-        out_of_book = self.out_of_chessdb_counter >= 10
 
-        if not enabled or out_of_book:
+        if not enabled:
             return
 
+        out_of_book = self.out_of_chessdb_counter >= 10
         has_time = self._has_time(self.config['engine']['online_moves']['chessdb']['min_time'])
+
+        if out_of_book or not has_time:
+            return
+
         timeout = self.config['engine']['online_moves']['chessdb']['timeout']
         min_depth = self.config['engine']['online_moves']['chessdb']['min_depth']
+        selection = self.config['engine']['online_moves']['chessdb']['selection']
 
-        if has_time:
-            if response := self.api.get_chessdb_eval(self.board.fen(), timeout):
-                if response['status'] == 'ok':
-                    if response["depth"] >= min_depth:
-                        self.out_of_chessdb_counter = 0
-                        return response["pv"][0], response["score"], response["depth"]
+        if selection == 'good':
+            action = 'querybest'
+        elif selection == 'all':
+            action = 'query'
+        else:
+            action = 'querypv'
 
-                self.out_of_chessdb_counter += 1
-            else:
-                self._reduce_own_time(timeout * 1000)
+        if response := self.api.get_chessdb_eval(self.board.fen(), action, timeout):
+            if response['status'] == 'ok':
+                if response.get('depth', 50) >= min_depth:
+                    self.out_of_chessdb_counter = 0
+                    return response.get('move', response['pv'][0])
+
+            self.out_of_chessdb_counter += 1
+        else:
+            self._reduce_own_time(timeout * 1000)
 
     def _make_egtb_move(self) -> Tuple[UCI_Move, Outcome, Offer_Draw, Resign] | None:
         if not self.config['engine']['online_moves']['online_egtb']['enabled']:
