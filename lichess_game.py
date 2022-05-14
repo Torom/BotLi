@@ -236,14 +236,14 @@ class Lichess_Game:
 
         has_time = self._has_time(self.config['engine']['online_moves']['lichess_cloud']['min_time'])
         timeout = self.config['engine']['online_moves']['lichess_cloud']['timeout']
-        min_depth = self.config['engine']['online_moves']['lichess_cloud']['min_depth']
+        min_eval_depth = self.config['engine']['online_moves']['lichess_cloud']['min_eval_depth']
 
         if has_time:
             if response := self.api.get_cloud_eval(self.board.fen(), self.variant, timeout):
-                if not 'error' in response:
-                    if response["depth"] >= min_depth:
+                if 'error' not in response:
+                    if response['depth'] >= min_eval_depth:
                         self.out_of_cloud_counter = 0
-                        return response['pvs'][0]['moves'].split()[0], response["pvs"][0]["cp"], response["depth"]
+                        return response['pvs'][0]['moves'].split()[0], response['pvs'][0]['cp'], response['depth']
 
                 self.out_of_cloud_counter += 1
             else:
@@ -262,7 +262,7 @@ class Lichess_Game:
             return
 
         timeout = self.config['engine']['online_moves']['chessdb']['timeout']
-        min_depth = self.config['engine']['online_moves']['chessdb']['min_depth']
+        min_eval_depth = self.config['engine']['online_moves']['chessdb']['min_eval_depth']
         selection = self.config['engine']['online_moves']['chessdb']['selection']
 
         if selection == 'good':
@@ -274,7 +274,7 @@ class Lichess_Game:
 
         if response := self.api.get_chessdb_eval(self.board.fen(), action, timeout):
             if response['status'] == 'ok':
-                if response.get('depth', 50) >= min_depth:
+                if response.get('depth', 50) >= min_eval_depth:
                     self.out_of_chessdb_counter = 0
                     return response.get('move', response['pv'][0])
 
