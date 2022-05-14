@@ -24,11 +24,13 @@ engine:                                   # Engine settings.
       min_time: 40                        # Time the bot must have at least to use the online move.
       timeout: 5                          # Time the server has to respond.
       selection: "best"                   # Move selection is one of "best", "good" or "all".
+#     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
     lichess_cloud:
       enabled: false                      # Activate online moves from Lichess cloud eval.
       min_eval_depth: 10                  # Minimum evaluation depth.
       min_time: 40                        # Time the bot must have at least to use the online move.
       timeout: 5                          # Time the server has to respond.
+#     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
     online_egtb:
       enabled: false                      # Activate online endgame tablebases from Lichess.
       min_time: 10                        # Time the bot must have at least to use the online move.

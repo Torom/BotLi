@@ -229,25 +229,30 @@ class Lichess_Game:
 
     def _make_cloud_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
         enabled = self.config['engine']['online_moves']['lichess_cloud']['enabled']
-        out_of_book = self.out_of_cloud_counter >= 10
 
-        if not enabled or out_of_book:
+        if not enabled:
             return
 
+        out_of_book = self.out_of_cloud_counter >= 10
         has_time = self._has_time(self.config['engine']['online_moves']['lichess_cloud']['min_time'])
+        max_depth = self.config['engine']['online_moves']['lichess_cloud'].get('max_depth', float('inf'))
+        too_deep = self.board.ply() >= max_depth
+
+        if out_of_book or too_deep or not has_time:
+            return
+
         timeout = self.config['engine']['online_moves']['lichess_cloud']['timeout']
         min_eval_depth = self.config['engine']['online_moves']['lichess_cloud']['min_eval_depth']
 
-        if has_time:
-            if response := self.api.get_cloud_eval(self.board.fen(), self.variant, timeout):
-                if 'error' not in response:
-                    if response['depth'] >= min_eval_depth:
-                        self.out_of_cloud_counter = 0
-                        return response['pvs'][0]['moves'].split()[0], response['pvs'][0]['cp'], response['depth']
+        if response := self.api.get_cloud_eval(self.board.fen(), self.variant, timeout):
+            if 'error' not in response:
+                if response['depth'] >= min_eval_depth:
+                    self.out_of_cloud_counter = 0
+                    return response['pvs'][0]['moves'].split()[0], response['pvs'][0]['cp'], response['depth']
 
-                self.out_of_cloud_counter += 1
-            else:
-                self._reduce_own_time(timeout * 1000)
+            self.out_of_cloud_counter += 1
+        else:
+            self._reduce_own_time(timeout * 1000)
 
     def _make_chessdb_move(self) -> UCI_Move | None:
         enabled = self.config['engine']['online_moves']['chessdb']['enabled']
@@ -257,8 +262,10 @@ class Lichess_Game:
 
         out_of_book = self.out_of_chessdb_counter >= 10
         has_time = self._has_time(self.config['engine']['online_moves']['chessdb']['min_time'])
+        max_depth = self.config['engine']['online_moves']['chessdb'].get('max_depth', float('inf'))
+        too_deep = self.board.ply() >= max_depth
 
-        if out_of_book or not has_time:
+        if out_of_book or too_deep or not has_time:
             return
 
         timeout = self.config['engine']['online_moves']['chessdb']['timeout']
