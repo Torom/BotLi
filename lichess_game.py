@@ -283,7 +283,7 @@ class Lichess_Game:
             if response['status'] == 'ok':
                 if response.get('depth', 50) >= min_eval_depth:
                     self.out_of_chessdb_counter = 0
-                    return response.get('move', response['pv'][0])
+                    return response['move'] if 'move' in response else response['pv'][0]
 
             self.out_of_chessdb_counter += 1
         else:
