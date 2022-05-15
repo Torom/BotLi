@@ -1,21 +1,24 @@
 import json
 from datetime import datetime, timedelta
 from threading import Thread
+from typing import Tuple
 
 from api import API
 from enums import Challenge_Color, Perf_Type, Variant
 from game_api import Game_api
+from game_counter import Game_Counter
 from opponents import Opponents
 
 
 class Matchmaking(Thread):
-    def __init__(self, config: dict, api: API, variant: Variant) -> None:
+    def __init__(self, config: dict, api: API, variant: Variant, game_counter: Game_Counter) -> None:
         Thread.__init__(self)
         self.config = config
         self.api = api
         self.is_running = True
         self.next_update = datetime.now()
         self.variant = variant
+        self.game_counter = game_counter
         initial_time: int = self.config['matchmaking']['initial_time']
         increment: int = self.config['matchmaking']['increment']
         self.estimated_game_duration = timedelta(seconds=(initial_time + increment * 80) * 2)
@@ -34,43 +37,61 @@ class Matchmaking(Thread):
 
     def run(self) -> None:
         while self.is_running:
+            self.game_counter.wait_for_increment(10)
+
             self._call_update()
             bot = self.opponents.next_opponent(self.online_bots)
 
-            challenge_id = self._challenge_bot(bot, Challenge_Color.WHITE)
+            white_success, white_game_duration = self._start_game(bot, Challenge_Color.WHITE)
+            self.game_counter.decrement()
 
-            if challenge_id is not None:
-                start_time = datetime.now()
-                game = Game_api(self.config, self.api, challenge_id)
-                game.run_game()
-                game_duration = datetime.now() - start_time
-
-                if game.was_aborted:
-                    game_duration += self.estimated_game_duration
-            else:
+            if not white_success:
                 self.opponents.set_timeout(
                     bot['username'],
-                    False, self.estimated_game_pair_duration, self.estimated_game_pair_duration)
+                    False,
+                    self.estimated_game_pair_duration,
+                    self.estimated_game_pair_duration
+                )
                 continue
 
+            self.game_counter.wait_for_increment(10)
+
             if not self.is_running:
-                self.opponents.set_timeout(bot['username'], True, game_duration, self.estimated_game_pair_duration)
+                self.game_counter.decrement()
+                self.opponents.set_timeout(
+                    bot['username'],
+                    True,
+                    white_game_duration,
+                    self.estimated_game_pair_duration
+                )
                 break
 
-            challenge_id = self._challenge_bot(bot, Challenge_Color.BLACK)
+            black_success, black_game_duration = self._start_game(bot, Challenge_Color.BLACK)
+            self.game_counter.decrement()
 
-            if challenge_id is not None:
-                start_time = datetime.now()
-                game = Game_api(self.config, self.api, challenge_id)
-                game.run_game()
-                game_duration += datetime.now() - start_time
+            total_game_duration = white_game_duration + black_game_duration
 
-                if game.was_aborted:
-                    game_duration += self.estimated_game_duration
-            else:
-                game_duration += self.estimated_game_duration
+            if not black_success:
+                total_game_duration += self.estimated_game_duration
 
-            self.opponents.set_timeout(bot['username'], True, game_duration, self.estimated_game_pair_duration)
+            self.opponents.set_timeout(bot['username'], True, total_game_duration, self.estimated_game_pair_duration)
+
+    def _start_game(self, bot: dict, color: Challenge_Color) -> Tuple[bool, timedelta]:
+        challenge_id = self._challenge_bot(bot, color)
+
+        if challenge_id is None:
+            return False, timedelta()
+
+        start_time = datetime.now()
+        game = Game_api(self.config, self.api, challenge_id)
+        game.run_game()
+        game_duration = datetime.now() - start_time
+
+        if game.was_aborted:
+            game_duration += self.estimated_game_duration
+            return False, game_duration
+
+        return True, game_duration
 
     def _challenge_bot(self, bot: dict, color: Challenge_Color) -> str | None:
         rated = self.config['matchmaking']['rated']

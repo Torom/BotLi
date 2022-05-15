@@ -1,6 +1,7 @@
 import json
 import queue
 import sys
+from collections import deque
 from queue import Queue
 from threading import Thread
 
@@ -18,13 +19,8 @@ class Challenge_Handler(Thread):
         self.is_running = True
         self.game_count = game_count
         self.challenge_queue = Queue()
-        self.accept_challenges = True
-
-    def start_accepting_challenges(self):
-        self.accept_challenges = True
-
-    def stop_accepting_challenges(self):
-        self.accept_challenges = False
+        self.open_challenge_ids: deque[str] = deque()
+        self.outgoing_challenge_ids: list[str] = []
 
     def start(self):
         Thread.start(self)
@@ -40,6 +36,8 @@ class Challenge_Handler(Thread):
         self.game_threads: dict[str, Thread] = {}
 
         while self.is_running:
+            self.check_challenges()
+
             try:
                 event = self.challenge_queue.get(timeout=2)
             except queue.Empty:
@@ -47,11 +45,12 @@ class Challenge_Handler(Thread):
 
             if event['type'] == 'challenge':
                 challenger_name = event['challenge']['challenger']['name']
+                challenge_id = event['challenge']['id']
 
                 if challenger_name == username:
+                    self.outgoing_challenge_ids.append(challenge_id)
                     continue
 
-                challenge_id = event['challenge']['id']
                 challenger_title = event['challenge']['challenger']['title']
                 challenger_title = challenger_title if challenger_title else ''
                 challenger_rating = event['challenge']['challenger']['rating']
@@ -61,23 +60,21 @@ class Challenge_Handler(Thread):
                 print(
                     f'ID: {challenge_id}\tChallenger: {challenger_title} {challenger_name} ({challenger_rating})\tTC: {tc}\tRated: {rated}\tVariant: {variant}')
 
-                decline_reason = self._get_decline_reason(event)
-                if decline_reason:
+                if decline_reason := self._get_decline_reason(event):
                     self.api.decline_challenge(challenge_id, decline_reason)
                     continue
 
-                if not self.api.accept_challenge(challenge_id):
-                    print('Challenge could not be accepted!', file=sys.stderr)
-                    continue
-
+                self.open_challenge_ids.append(challenge_id)
+                print(f'Challenge "{challenge_id}" added to queue.')
             elif event['type'] == 'gameStart':
                 game_id = event['game']['id']
 
-                if not self.accept_challenges:
+                if game_id in self.outgoing_challenge_ids:
+                    self.outgoing_challenge_ids.remove(game_id)
                     continue
 
                 if not self.game_count.increment():
-                    print('Max number of concurrent games reached. Aborting a already accepted game.')
+                    print(f'Max number of concurrent games reached. Aborting a already started game "{game_id}".')
                     self.api.abort_game(game_id)
                     continue
 
@@ -95,10 +92,18 @@ class Challenge_Handler(Thread):
             elif event['type'] == 'challengeDeclined':
                 continue
             elif event['type'] == 'challengeCanceled':
-                continue
+                challenge_id = event['challenge']['id']
+                try:
+                    self.open_challenge_ids.remove(challenge_id)
+                    print(f'Challenge "{challenge_id}" has been canceled.')
+                except ValueError:
+                    pass
             else:
                 print('Event type not caught:', file=sys.stderr)
                 print(event)
+
+        for challenge_id in self.open_challenge_ids:
+            self.api.decline_challenge(challenge_id, Decline_Reason.GENERIC)
 
         for thread in self.game_threads.values():
             thread.join()
@@ -170,10 +175,14 @@ class Challenge_Handler(Thread):
             print(f'Casual is not allowed according to config.')
             return Decline_Reason.RATED
 
-        if not self.accept_challenges:
-            print('We are currently not accepting any new challenges!')
-            return Decline_Reason.LATER
+    def check_challenges(self) -> None:
+        if not self.open_challenge_ids:
+            return
 
         if self.game_count.is_max():
-            print(f'Not more then {self.game_count.max_games} concurrend game(s) allowed according to config.')
-            return Decline_Reason.LATER
+            return
+
+        challenge_id = self.open_challenge_ids.popleft()
+
+        if not self.api.accept_challenge(challenge_id):
+            print(f'Challenge "{challenge_id}" could not be accepted!')

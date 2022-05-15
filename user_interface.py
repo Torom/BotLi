@@ -3,24 +3,26 @@ import argparse
 from api import API
 from challenge_handler import Challenge_Handler
 from config import load_config
-from enums import Challenge_Color, Perf_Type, Variant
+from enums import Perf_Type, Variant
 from game_counter import Game_Counter
 from logo import LOGO
 from matchmaking import Matchmaking
 from opponents import Opponents
 
-COMMANDS = {'abort': 'Aborts a game. Usage: abort GAME_ID',
-            'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED]',
-            'help': 'Prints this message.', 'matchmaking': 'Starts matchmaking mode. Usage: matchmaking [VARIANT]',
-            'quit': 'Exits the bot.', 'reset': 'Resets matchmaking. Usage: reset PERF_TYPE',
-            'stop': 'Stops matchmaking mode.'}
+COMMANDS = {
+    'help': 'Prints this message.',
+    'matchmaking': 'Starts matchmaking mode. Usage: matchmaking [VARIANT]',
+    'quit': 'Exits the bot.',
+    'reset': 'Resets matchmaking. Usage: reset PERF_TYPE',
+    'stop': 'Stops matchmaking mode.'
+}
 
 
 class UserInterface:
     def __init__(self) -> None:
         self.config = load_config()
         self.api = API(self.config['token'])
-        self.game_count = Game_Counter(self.config['challenge'].get('concurrency', 1))
+        self.game_counter = Game_Counter(self.config['challenge'].get('concurrency', 1))
         self.is_running = True
         self.matchmaking: Matchmaking | None = None
 
@@ -36,7 +38,7 @@ class UserInterface:
 
         self._handle_bot_status(args.non_interactive, args.upgrade)
 
-        self.challenge_handler = Challenge_Handler(self.config, self.api, self.game_count)
+        self.challenge_handler = Challenge_Handler(self.config, self.api, self.game_counter)
 
         if args.matchmaking:
             self._matchmaking(Variant(self.config['matchmaking']['variant']))
@@ -61,25 +63,6 @@ class UserInterface:
 
             if len(command) == 0:
                 continue
-            elif command[0] == 'abort':
-                if len(command) != 2:
-                    print(COMMANDS['abort'])
-                    continue
-
-                self._abort(command[1])
-            elif command[0] == 'challenge':
-                command_length = len(command)
-                if command_length < 2 or command_length > 6:
-                    print(COMMANDS['challenge'])
-                    continue
-
-                opponent_username = command[1]
-                initial_time = int(command[2]) if command_length > 2 else 60
-                increment = int(command[3]) if command_length > 3 else 1
-                color = Challenge_Color(command[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
-                rated = command[5].lower() == 'true' if command_length > 5 else True
-
-                self._challenge(opponent_username, initial_time, increment, rated, color)
             elif command[0] == 'matchmaking':
                 if len(command) > 2:
                     print(COMMANDS['matchmaking'])
@@ -124,40 +107,13 @@ class UserInterface:
             print('Upgrade failed.')
             exit()
 
-    def _abort(self, game_id: str) -> None:
-        self.api.abort_game(game_id)
-
-    def _challenge(self, opponent_username: str, initial_time: int, increment: int, rated: bool, color: Challenge_Color) -> None:
-        challenge_lines = self.api.create_challenge(
-            opponent_username, initial_time, increment, rated, color, Variant.STANDARD, 20)
-
-        line = challenge_lines[0]
-        if 'challenge' in line and 'id' in line['challenge']:
-            challenge_id = line['challenge']['id']
-        else:
-            print(line['error'])
-            return
-
-        line = challenge_lines[1]
-        if 'done' in line and line['done'] == 'timeout':
-            print('challenge timed out.')
-            self.api.cancel_challenge(challenge_id)
-        elif 'done' in line and line['done'] == 'declined':
-            print('challenge was declined.')
-
     def _matchmaking(self, variant: Variant) -> None:
         if self.matchmaking:
             print('matchmaking already running ...')
             return
 
-        self.challenge_handler.stop_accepting_challenges()
-
-        print('Waiting for a game to finish ...')
-        self.game_count.wait_for_increment()
-
         print('Starting matchmaking ...')
-
-        self.matchmaking = Matchmaking(self.config, self.api, variant)
+        self.matchmaking = Matchmaking(self.config, self.api, variant, self.game_counter)
         self.matchmaking.start()
 
     def _quit(self) -> None:
@@ -185,9 +141,7 @@ class UserInterface:
         print('Stopping matchmaking ...')
         self.matchmaking.join()
         self.matchmaking = None
-        self.game_count.decrement()
-        self.challenge_handler.start_accepting_challenges()
-        print('Matchmaking has been stopped. And challenges are resuming ...')
+        print('Matchmaking has been stopped.')
 
     def _help(self) -> None:
         print('These commands are supported by BotLi:\n')

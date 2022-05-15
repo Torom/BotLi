@@ -85,7 +85,7 @@ To challenge other players with similar ratings, type:
 matchmaking
 ```
 
-Change the settings in `matchmaking` in the config to change how this bot challenges other players. The bot will not accept challenges in this mode. To exit the matchmaking mode type:
+Change the settings in `matchmaking` in the config to change how this bot challenges other players. The bot will pause matchmaking for incoming challenges. To exit the matchmaking mode type:
 ```
 stop
 ```

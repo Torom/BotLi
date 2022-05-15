@@ -25,6 +25,12 @@ class Game_Counter:
         with self.lock:
             return self.counter >= self.max_games
 
-    def wait_for_increment(self) -> None:
-        while not self.increment():
-            sleep(2)
+    def wait_for_increment(self, delay: int) -> None:
+        while True:
+            while self.is_max():
+                sleep(2)
+
+            sleep(delay)
+
+            if self.increment():
+                return
