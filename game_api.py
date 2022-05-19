@@ -78,12 +78,15 @@ class Game_api:
         self.lichess_game.quit_engine()
 
     def _watch_game_stream(self) -> None:
-        game_stream = self.api.get_game_stream(self.game_id)
-
-        for line in game_stream:
-            if line:
-                event = json.loads(line.decode('utf-8'))
-            else:
-                event = {'type': 'ping'}
-
-            self.game_queue.put_nowait(event)
+        while True:
+            try:
+                game_stream = self.api.get_game_stream(self.game_id)
+                for line in game_stream:
+                    if line:
+                        event = json.loads(line.decode('utf-8'))
+                    else:
+                        event = {'type': 'ping'}
+                    self.game_queue.put_nowait(event)
+                return
+            except Exception as e:
+                print(e)

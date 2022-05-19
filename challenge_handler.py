@@ -117,8 +117,8 @@ class Challenge_Handler(Thread):
                     if line:
                         event = json.loads(line.decode('utf-8'))
                         self.challenge_queue.put_nowait(event)
-            except Exception as e:
-                print(e)
+            except Exception:
+                pass
 
     def _get_decline_reason(self, event: dict) -> Decline_Reason | None:
         variants = self.config['challenge']['variants']
