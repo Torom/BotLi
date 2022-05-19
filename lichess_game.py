@@ -311,11 +311,11 @@ class Lichess_Game:
             ponder = False
         else:
             if self.is_white:
-                white_time = self.white_time - self.move_overhead if self.white_time > self.move_overhead else self.white_time
+                white_time = self.white_time - self.move_overhead if self.white_time > self.move_overhead else self.white_time / 2
                 white_time /= 1000
                 black_time = self.black_time / 1000
             else:
-                black_time = self.black_time - self.move_overhead if self.black_time > self.move_overhead else self.black_time
+                black_time = self.black_time - self.move_overhead if self.black_time > self.move_overhead else self.black_time / 2
                 black_time /= 1000
                 white_time = self.white_time / 1000
             increment = self.increment / 1000
