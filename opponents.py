@@ -48,8 +48,9 @@ class Opponent:
 
 
 class Opponents:
-    def __init__(self, perf_type: Perf_Type) -> None:
+    def __init__(self, perf_type: Perf_Type, estimated_game_pair_duration: timedelta) -> None:
         self.perf_type = perf_type
+        self.estimated_game_pair_duration = estimated_game_pair_duration
         self.opponent_list = self._load()
 
     def next_opponent(self, online_bots: list[dict]) -> dict:
@@ -63,8 +64,7 @@ class Opponents:
 
         return self.next_opponent(online_bots)
 
-    def set_timeout(self, username: str, success: bool, game_pair_duration: timedelta,
-                    estimated_game_pair_duration: timedelta) -> None:
+    def set_timeout(self, username: str, success: bool, game_pair_duration: timedelta) -> None:
         opponent = self._find(username)
 
         if success and opponent.values[self.perf_type].multiplier > 1:
@@ -72,8 +72,9 @@ class Opponents:
         elif not success:
             opponent.values[self.perf_type].multiplier += 1
 
-        duration_ratio = game_pair_duration / estimated_game_pair_duration
-        timeout = duration_ratio ** 2 * estimated_game_pair_duration * 25 * opponent.values[self.perf_type].multiplier
+        duration_ratio = game_pair_duration / self.estimated_game_pair_duration
+        timeout = duration_ratio ** 2 * self.estimated_game_pair_duration * \
+            25 * opponent.values[self.perf_type].multiplier
 
         opponent.values[self.perf_type].release_time = datetime.now() + timeout
         release_str = opponent.values[self.perf_type].release_time.isoformat(sep=" ", timespec="seconds")
@@ -84,14 +85,11 @@ class Opponents:
 
         self._save()
 
-    def reset_release_time(self, full_reset: bool = False, save_to_file: bool = False) -> None:
+    def reset_release_time(self, full_reset: bool = False) -> None:
         for opponent in self.opponent_list:
             if self.perf_type in opponent.values:
                 if full_reset or opponent.values[self.perf_type].multiplier == 1:
                     opponent.values[self.perf_type].release_time = datetime.now()
-
-        if save_to_file:
-            self._save()
 
     def _find(self, username: str) -> Opponent:
         try:

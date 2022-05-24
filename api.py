@@ -4,10 +4,9 @@ from typing import Iterable
 import requests
 from tenacity import retry
 from tenacity.retry import retry_if_exception_type
-from tenacity.wait import wait_exponential
 
+from challenge_response import Challenge_Reponse
 from enums import Challenge_Color, Decline_Reason, Perf_Type, Variant
-from exceptions import Too_Many_Requests_Exception
 
 
 class API:
@@ -44,12 +43,9 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(Too_Many_Requests_Exception), wait=wait_exponential(min=60, max=600))
     def create_challenge(
         self, username: str, inital_time: int, increment: int, rated: bool, color: Challenge_Color,
-            variant: Variant, timeout: int) -> list[dict]:
-
-        challenge_lines = []
+            variant: Variant, timeout: int) -> Iterable[Challenge_Reponse]:
         try:
             response = self.session.post(
                 f'https://lichess.org/api/challenge/{username}',
@@ -59,18 +55,20 @@ class API:
                 timeout=timeout, stream=True)
 
             if response.status_code == 429:
-                print('429 - Rate limiting by Lichess')
-                raise Too_Many_Requests_Exception
+                yield Challenge_Reponse(has_reached_rate_limit=True)
 
             for line in response.iter_lines():
                 if line:
-                    line_json = json.loads(line.decode('utf-8'))
-                    challenge_lines.append(line_json)
+                    iterator_response = Challenge_Reponse()
+                    data = json.loads(line.decode('utf-8'))
+                    iterator_response.challenge_id = data.get('challenge', {'id': None}).get('id')
+                    iterator_response.was_accepted = data.get('done') == 'accepted'
+                    iterator_response.error = data.get('error')
+                    iterator_response.was_declined = data.get('done') == 'declined'
+                    yield iterator_response
 
         except requests.ConnectionError:
-            challenge_lines.append({'done': 'timeout'})
-
-        return challenge_lines
+            yield Challenge_Reponse(has_timed_out=True)
 
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:

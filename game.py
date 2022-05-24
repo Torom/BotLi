@@ -8,8 +8,9 @@ from enums import Game_Status
 from lichess_game import Lichess_Game
 
 
-class Game_api:
+class Game(Thread):
     def __init__(self, config: dict, api: API, game_id: str) -> None:
+        Thread.__init__(self)
         self.config: dict = config
         self.api = api
         self.game_id = game_id
@@ -18,7 +19,10 @@ class Game_api:
         self.game_queue = Queue()
         self.was_aborted = False
 
-    def run_game(self) -> None:
+    def start(self):
+        Thread.start(self)
+
+    def run(self) -> None:
         game_queue_thread = Thread(target=self._watch_game_stream, daemon=True)
         game_queue_thread.start()
 

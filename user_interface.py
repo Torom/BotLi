@@ -1,19 +1,16 @@
 import argparse
 
 from api import API
-from challenge_handler import Challenge_Handler
 from config import load_config
-from enums import Perf_Type, Variant
-from game_counter import Game_Counter
+from event_handler import Event_Handler
+from game_manager import Game_Manager
 from logo import LOGO
-from matchmaking import Matchmaking
-from opponents import Opponents
 
 COMMANDS = {
     'help': 'Prints this message.',
-    'matchmaking': 'Starts matchmaking mode. Usage: matchmaking [VARIANT]',
+    'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
-    'reset': 'Resets matchmaking. Usage: reset PERF_TYPE',
+    'reset': 'Resets matchmaking.',
     'stop': 'Stops matchmaking mode.'
 }
 
@@ -22,9 +19,9 @@ class UserInterface:
     def __init__(self) -> None:
         self.config = load_config()
         self.api = API(self.config['token'])
-        self.game_counter = Game_Counter(self.config['challenge'].get('concurrency', 1))
         self.is_running = True
-        self.matchmaking: Matchmaking | None = None
+        self.game_manager = Game_Manager(self.config, self.api)
+        self.event_handler = Event_Handler(self.config, self.api, self.game_manager)
 
     def main(self) -> None:
         print(LOGO)
@@ -38,13 +35,12 @@ class UserInterface:
 
         self._handle_bot_status(args.non_interactive, args.upgrade)
 
-        self.challenge_handler = Challenge_Handler(self.config, self.api, self.game_counter)
-
         if args.matchmaking:
-            self._matchmaking(Variant(self.config['matchmaking']['variant']))
+            self._matchmaking()
 
         print('handling challenges ...')
-        self.challenge_handler.start()
+        self.event_handler.start()
+        self.game_manager.start()
 
         if args.non_interactive:
             return
@@ -64,19 +60,11 @@ class UserInterface:
             if len(command) == 0:
                 continue
             elif command[0] == 'matchmaking':
-                if len(command) > 2:
-                    print(COMMANDS['matchmaking'])
-                    continue
-
-                self._matchmaking(Variant(command[1]) if len(command) == 2 else Variant.STANDARD)
+                self._matchmaking()
             elif command[0] == 'quit':
                 self._quit()
             elif command[0] == 'reset':
-                if len(command) != 2:
-                    print(COMMANDS['reset'])
-                    return
-
-                self._reset(Perf_Type(command[1]))
+                self._reset()
             elif command[0] == 'stop':
                 self._stop()
             else:
@@ -107,41 +95,30 @@ class UserInterface:
             print('Upgrade failed.')
             exit()
 
-    def _matchmaking(self, variant: Variant) -> None:
-        if self.matchmaking:
+    def _matchmaking(self) -> None:
+        if self.game_manager.is_matchmaking_allowed:
             print('matchmaking already running ...')
             return
 
         print('Starting matchmaking ...')
-        self.matchmaking = Matchmaking(self.config, self.api, variant, self.game_counter)
-        self.matchmaking.start()
+        self.game_manager.is_matchmaking_allowed = True
 
     def _quit(self) -> None:
         self.is_running = False
-        self.challenge_handler.stop()
+        self.game_manager.stop()
         print('Terminating programm ...')
-        if self.matchmaking:
-            self.matchmaking.stop()
-            self.matchmaking.join()
-        self.challenge_handler.join()
+        self.game_manager.join()
 
-    def _reset(self, perf_type: Perf_Type) -> None:
-        if self.matchmaking:
-            print('Can\'t reset matchmaking while running ...')
-            return
-
-        Opponents(perf_type).reset_release_time(full_reset=True, save_to_file=True)
+    def _reset(self) -> None:
+        self.game_manager.matchmaking.opponents.reset_release_time(full_reset=True)
 
     def _stop(self) -> None:
-        if not self.matchmaking:
+        if not self.game_manager.is_matchmaking_allowed:
             print('Matchmaking isn\'t currently running ...')
             return
 
-        self.matchmaking.stop()
         print('Stopping matchmaking ...')
-        self.matchmaking.join()
-        self.matchmaking = None
-        print('Matchmaking has been stopped.')
+        self.game_manager.is_matchmaking_allowed = False
 
     def _help(self) -> None:
         print('These commands are supported by BotLi:\n')

@@ -6,15 +6,9 @@ import chess.engine
 import chess.polyglot
 from chess.variant import find_variant
 
+from aliases import CP_Score, Depth, Offer_Draw, Outcome, Resign, UCI_Move
 from api import API
 from enums import Game_Status, Variant
-
-UCI_Move = str
-CP_Score = int
-Depth = int
-Outcome = str
-Offer_Draw = bool
-Resign = bool
 
 
 class Lichess_Game:
