@@ -108,6 +108,8 @@ class UserInterface:
         self.game_manager.stop()
         print('Terminating programm ...')
         self.game_manager.join()
+        self.event_handler.stop()
+        self.event_handler.join()
 
     def _reset(self) -> None:
         self.game_manager.matchmaking.opponents.reset_release_time(full_reset=True)

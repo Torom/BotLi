@@ -12,20 +12,23 @@ from game_manager import Game_Manager
 class Event_Handler(Thread):
     def __init__(self, config: dict, api: API, game_manager: Game_Manager) -> None:
         Thread.__init__(self)
-        self.daemon = True
         self.config = config
         self.api = api
+        self.is_running = True
         self.challenge_queue = Queue()
         self.game_manager = game_manager
 
     def start(self):
         Thread.start(self)
 
+    def stop(self):
+        self.is_running = False
+
     def run(self) -> None:
         challenge_queue_thread = Thread(target=self._watch_challenge_stream, daemon=True)
         challenge_queue_thread.start()
 
-        while True:
+        while self.is_running:
             try:
                 event = self.challenge_queue.get(timeout=2)
             except queue.Empty:

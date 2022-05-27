@@ -57,7 +57,6 @@ class Matchmaking:
             raise Exception('"last_response" should not be None!')
 
         success = last_reponse.success
-        pending_challenge.set_final_state(success, last_reponse.has_reached_rate_limit)
 
         if not success:
             self.need_next_opponent = True
@@ -76,6 +75,7 @@ class Matchmaking:
                 )
 
         self.previous_opponent = self.opponent
+        pending_challenge.set_final_state(success, last_reponse.has_reached_rate_limit)
 
     def on_game_started(self) -> None:
         self.game_start_time = datetime.now()
