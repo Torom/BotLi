@@ -1,11 +1,12 @@
 import json
 from datetime import datetime, timedelta
-from typing import Iterable
 
 from api import API
+from challenge_request import Challenge_Request
+from challenge_response import Challenge_Response
+from challenger import Challenger
 from enums import Challenge_Color, Perf_Type, Variant
 from game import Game
-from matchmaking_response import Matchmaking_Response
 from opponents import Opponents
 from pending_challenge import Pending_Challenge
 
@@ -29,6 +30,7 @@ class Matchmaking:
         self.game_start_time: datetime | None = None
         self.white_game_duration: timedelta | None = None
         self.need_next_opponent = True
+        self.challenger = Challenger(self.config, self.api)
 
     def create_challenge(self, pending_challenge: Pending_Challenge) -> None:
         if self.need_next_opponent:
@@ -47,8 +49,15 @@ class Matchmaking:
 
         print(f'challenging {opponent_username} ({self.opponent["rating_diff"]:+.1f}) as {color.value}')
 
-        last_reponse: Matchmaking_Response | None = None
-        for response in self._challenge_bot(opponent_username, color):
+        rated = self.config['matchmaking']['rated']
+        initial_time = self.config['matchmaking']['initial_time']
+        increment = self.config['matchmaking']['increment']
+        timeout = self.config['matchmaking']['timeout']
+        challenge_request = Challenge_Request(opponent_username, initial_time,
+                                              increment, rated, color, self.variant, timeout)
+
+        last_reponse: Challenge_Response | None = None
+        for response in self.challenger.create(challenge_request):
             last_reponse = response
             if response.challenge_id:
                 pending_challenge.set_challenge_id(response.challenge_id)
@@ -113,39 +122,6 @@ class Matchmaking:
             total_game_duration += self.estimated_game_duration
 
         self.opponents.set_timeout(opponent_username, True, total_game_duration)
-
-    def _challenge_bot(self, username: str, color: Challenge_Color) -> Iterable[Matchmaking_Response]:
-        rated = self.config['matchmaking']['rated']
-        initial_time = self.config['matchmaking']['initial_time']
-        increment = self.config['matchmaking']['increment']
-        timeout = self.config['matchmaking']['timeout']
-
-        challenge_response = self.api.create_challenge(
-            username, initial_time, increment, rated, color, self.variant, timeout)
-
-        challenge_id = None
-
-        for response in challenge_response:
-            if response.challenge_id:
-                challenge_id = response.challenge_id
-                yield Matchmaking_Response(challenge_id=challenge_id)
-            elif response.was_accepted:
-                yield Matchmaking_Response(success=True)
-            elif response.error:
-                print(response.error)
-                yield Matchmaking_Response(success=False)
-            elif response.was_declined:
-                print('challenge was declined.')
-                yield Matchmaking_Response(success=False)
-            elif response.has_timed_out:
-                print('challenge timed out.')
-                if challenge_id is None:
-                    print('Could not cancel challenge because the challenge_id was not set in "_challenge_bot"!')
-                    continue
-                self.api.cancel_challenge(challenge_id)
-                yield Matchmaking_Response(success=False)
-            elif response.has_reached_rate_limit:
-                yield Matchmaking_Response(success=False, has_reached_rate_limit=True)
 
     def _call_update(self) -> None:
         if self.next_update <= datetime.now():

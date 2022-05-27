@@ -5,8 +5,9 @@ import requests
 from tenacity import retry
 from tenacity.retry import retry_if_exception_type
 
-from challenge_response import Challenge_Reponse
-from enums import Challenge_Color, Decline_Reason, Perf_Type, Variant
+from api_challenge_response import API_Challenge_Reponse
+from challenge_request import Challenge_Request
+from enums import Decline_Reason, Perf_Type, Variant
 
 
 class API:
@@ -43,32 +44,31 @@ class API:
             print(e)
             return False
 
-    def create_challenge(
-        self, username: str, inital_time: int, increment: int, rated: bool, color: Challenge_Color,
-            variant: Variant, timeout: int) -> Iterable[Challenge_Reponse]:
+    def create_challenge(self, challenge_request: Challenge_Request) -> Iterable[API_Challenge_Reponse]:
         try:
             response = self.session.post(
-                f'https://lichess.org/api/challenge/{username}',
-                data={'rated': str(rated).lower(),
-                      'clock.limit': inital_time, 'clock.increment': increment, 'color': color.value,
-                      'variant': variant.value, 'keepAliveStream': 'true'},
-                timeout=timeout, stream=True)
+                f'https://lichess.org/api/challenge/{challenge_request.opponent_username}',
+                data={'rated': str(challenge_request.rated).lower(),
+                      'clock.limit': challenge_request.initial_time, 'clock.increment': challenge_request.increment,
+                      'color': challenge_request.color.value, 'variant': challenge_request.variant.value,
+                      'keepAliveStream': 'true'},
+                timeout=challenge_request.timeout, stream=True)
 
             if response.status_code == 429:
-                yield Challenge_Reponse(has_reached_rate_limit=True)
+                yield API_Challenge_Reponse(has_reached_rate_limit=True)
 
             for line in response.iter_lines():
                 if line:
-                    iterator_response = Challenge_Reponse()
+                    api_challenge_response = API_Challenge_Reponse()
                     data = json.loads(line.decode('utf-8'))
-                    iterator_response.challenge_id = data.get('challenge', {'id': None}).get('id')
-                    iterator_response.was_accepted = data.get('done') == 'accepted'
-                    iterator_response.error = data.get('error')
-                    iterator_response.was_declined = data.get('done') == 'declined'
-                    yield iterator_response
+                    api_challenge_response.challenge_id = data.get('challenge', {'id': None}).get('id')
+                    api_challenge_response.was_accepted = data.get('done') == 'accepted'
+                    api_challenge_response.error = data.get('error')
+                    api_challenge_response.was_declined = data.get('done') == 'declined'
+                    yield api_challenge_response
 
         except requests.ConnectionError:
-            yield Challenge_Reponse(has_timed_out=True)
+            yield API_Challenge_Reponse(has_timed_out=True)
 
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:

@@ -1,12 +1,15 @@
 import argparse
 
 from api import API
+from challenge_request import Challenge_Request
 from config import load_config
+from enums import Challenge_Color, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
 from logo import LOGO
 
 COMMANDS = {
+    'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED]',
     'help': 'Prints this message.',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
@@ -59,6 +62,8 @@ class UserInterface:
 
             if len(command) == 0:
                 continue
+            elif command[0] == 'challenge':
+                self._challenge(command)
             elif command[0] == 'matchmaking':
                 self._matchmaking()
             elif command[0] == 'quit':
@@ -94,6 +99,23 @@ class UserInterface:
         else:
             print('Upgrade failed.')
             exit()
+
+    def _challenge(self, command: list[str]) -> None:
+        command_length = len(command)
+        if command_length < 2 or command_length > 6:
+            print(COMMANDS['challenge'])
+            return
+
+        opponent_username = command[1]
+        initial_time = int(command[2]) if command_length > 2 else 60
+        increment = int(command[3]) if command_length > 3 else 1
+        color = Challenge_Color(command[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
+        rated = command[5].lower() == 'true' if command_length > 5 else True
+
+        challenge_request = Challenge_Request(opponent_username, initial_time,
+                                              increment, rated, color, Variant.STANDARD, 20)
+        self.game_manager.request_challenge(challenge_request)
+        print(f'"{opponent_username}" will be challenged soon.')
 
     def _matchmaking(self) -> None:
         if self.game_manager.is_matchmaking_allowed:
