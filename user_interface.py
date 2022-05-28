@@ -135,6 +135,7 @@ class UserInterface:
 
     def _reset(self) -> None:
         self.game_manager.matchmaking.opponents.reset_release_time(full_reset=True)
+        print('Matchmaking has been reset.')
 
     def _stop(self) -> None:
         if not self.game_manager.is_matchmaking_allowed:
