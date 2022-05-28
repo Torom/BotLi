@@ -115,7 +115,7 @@ class UserInterface:
         challenge_request = Challenge_Request(opponent_username, initial_time,
                                               increment, rated, color, Variant.STANDARD, 20)
         self.game_manager.request_challenge(challenge_request)
-        print(f'"{opponent_username}" will be challenged soon.')
+        print(f'Challenge against {challenge_request.opponent_username} added to the queue.')
 
     def _matchmaking(self) -> None:
         if self.game_manager.is_matchmaking_allowed:

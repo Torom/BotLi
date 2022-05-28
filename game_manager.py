@@ -151,7 +151,7 @@ class Game_Manager(Thread):
                 # Reserve a spot for this game
                 self.reserved_game_ids.append(challenge_id)
             else:
-                print('challenge_id was None despite success.')
+                raise Exception('challenge_id was None despite success.')
         else:
             self.current_matchmaking_game_id = None
             if has_reached_rate_limit:
@@ -168,7 +168,7 @@ class Game_Manager(Thread):
         return self.challenge_requests.popleft()
 
     def _create_challenge(self, challenge_request: Challenge_Request) -> None:
-        print(f'Challenging "{challenge_request.opponent_username}" ...')
+        print(f'Challenging {challenge_request.opponent_username} ...')
 
         last_reponse: Challenge_Response | None = None
         challenge_id: Challenge_ID | None = None
@@ -185,8 +185,4 @@ class Game_Manager(Thread):
                 # Reserve a spot for this game
                 self.reserved_game_ids.append(challenge_id)
             else:
-                print('challenge_id was None despite success.')
-        else:
-            print(f'Challenge against "{challenge_request.opponent_username}" failed.')
-            if last_reponse.has_reached_rate_limit:
-                print('Due to rate limiting.')
+                raise Exception('challenge_id was None despite success.')

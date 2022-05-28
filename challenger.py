@@ -11,11 +11,11 @@ class Challenger:
         self.api = api
 
     def create(self, challenge_request: Challenge_Request) -> Iterable[Challenge_Response]:
-        challenge_response = self.api.create_challenge(challenge_request)
+        api_challenge_response = self.api.create_challenge(challenge_request)
 
         challenge_id = None
 
-        for response in challenge_response:
+        for response in api_challenge_response:
             if response.challenge_id:
                 challenge_id = response.challenge_id
                 yield Challenge_Response(challenge_id=challenge_id)
@@ -25,14 +25,15 @@ class Challenger:
                 print(response.error)
                 yield Challenge_Response(success=False)
             elif response.was_declined:
-                print('challenge was declined.')
+                print(f'{challenge_request.opponent_username} has declined the challenge.')
                 yield Challenge_Response(success=False)
             elif response.has_timed_out:
-                print('challenge timed out.')
+                print(f'Challenge against {challenge_request.opponent_username} has timed out.')
                 if challenge_id is None:
-                    print('Could not cancel challenge because the challenge_id was not set in "_challenge_bot"!')
+                    print('Could not cancel challenge because the challenge_id was not set in "Challenger"!')
                     continue
                 self.api.cancel_challenge(challenge_id)
                 yield Challenge_Response(success=False)
             elif response.has_reached_rate_limit:
+                print(f'Challenge against {challenge_request.opponent_username} failed due to Lichess rate limit.')
                 yield Challenge_Response(success=False, has_reached_rate_limit=True)
