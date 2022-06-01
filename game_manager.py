@@ -88,7 +88,7 @@ class Game_Manager(Thread):
     def on_game_finished(self, game_id: Game_ID) -> None:
         self.finished_game_ids.append(game_id)
         if game_id == self.current_matchmaking_game_id:
-            self.matchmaking.on_game_finished(self.games[game_id], self.is_running)
+            self.matchmaking.on_game_finished(self.games[game_id])
             self.current_matchmaking_game_id = None
         self.changed_event.set()
 

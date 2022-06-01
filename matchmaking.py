@@ -15,20 +15,16 @@ class Matchmaking:
     def __init__(self, config: dict, api: API) -> None:
         self.config = config
         self.api = api
-        self.is_running = True
         self.next_update = datetime.now()
         self.variant = Variant(self.config['matchmaking']['variant'])
         initial_time: int = self.config['matchmaking']['initial_time']
         increment: int = self.config['matchmaking']['increment']
         self.estimated_game_duration = timedelta(seconds=(initial_time + increment * 80) * 2)
-        self.estimated_game_pair_duration = self.estimated_game_duration * 2
 
         self.perf_type = self._get_perf_type()
-        self.opponents = Opponents(self.perf_type, self.estimated_game_pair_duration)
+        self.opponents = Opponents(self.perf_type, self.estimated_game_duration)
         self.opponent: dict | None = None
-        self.previous_opponent: dict | None = None
         self.game_start_time: datetime | None = None
-        self.white_game_duration: timedelta | None = None
         self.need_next_opponent = True
         self.challenger = Challenger(self.config, self.api)
 
@@ -38,10 +34,9 @@ class Matchmaking:
             self.opponent = self.opponents.next_opponent(self.online_bots)
 
             color = Challenge_Color.WHITE
+            self.need_next_opponent = False
         else:
-            assert self.previous_opponent
-
-            self.opponent = self.previous_opponent
+            assert self.opponent
             color = Challenge_Color.BLACK
             self.need_next_opponent = True
 
@@ -62,66 +57,29 @@ class Matchmaking:
             if response.challenge_id:
                 pending_challenge.set_challenge_id(response.challenge_id)
 
-        if last_reponse is None:
-            raise Exception('"last_response" should not be None!')
-
+        assert last_reponse
         success = last_reponse.success
 
         if not success:
             self.need_next_opponent = True
-            if color == Challenge_Color.WHITE:
-                self.opponents.set_timeout(
-                    opponent_username,
-                    False,
-                    self.estimated_game_pair_duration
-                )
-            else:
-                assert self.white_game_duration
-                self.opponents.set_timeout(
-                    opponent_username,
-                    True,
-                    self.white_game_duration + self.estimated_game_duration
-                )
+            self.opponents.add_timeout(opponent_username, False, self.estimated_game_duration)
 
-        self.previous_opponent = self.opponent
         pending_challenge.set_final_state(success, last_reponse.has_reached_rate_limit)
 
     def on_game_started(self) -> None:
         self.game_start_time = datetime.now()
 
-    def on_game_finished(self, game: Game, is_running: bool) -> None:
-        assert self.previous_opponent
+    def on_game_finished(self, game: Game) -> None:
+        assert self.opponent
         assert self.game_start_time
 
-        opponent_username = self.previous_opponent['username']
-
-        if game.lichess_game.is_white:
-            if game.was_aborted:
-                self.need_next_opponent = True
-                self.opponents.set_timeout(opponent_username, False, self.estimated_game_pair_duration)
-                return
-            else:
-                self.need_next_opponent = False
-
-            self.white_game_duration = datetime.now() - self.game_start_time
-            if not is_running:
-                # This is probably the last event this class will ever receive
-                # because the program is shutting down.
-                self.opponents.set_timeout(
-                    opponent_username,
-                    True,
-                    self.white_game_duration
-                )
-            return
-
-        assert self.white_game_duration
-        black_game_duration = datetime.now() - self.game_start_time
-        total_game_duration = self.white_game_duration + black_game_duration
+        game_duration = datetime.now() - self.game_start_time
 
         if game.was_aborted:
-            total_game_duration += self.estimated_game_duration
+            self.need_next_opponent = True
+            game_duration += self.estimated_game_duration
 
-        self.opponents.set_timeout(opponent_username, True, total_game_duration)
+        self.opponents.add_timeout(self.opponent['username'], not game.was_aborted, game_duration)
 
     def _call_update(self) -> None:
         if self.next_update <= datetime.now():

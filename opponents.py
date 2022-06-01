@@ -21,7 +21,7 @@ class Opponent:
         self.values = values
 
     @classmethod
-    def from_dict(cls, dict_: dict):
+    def from_dict(cls, dict_: dict) -> 'Opponent':
         username = dict_['username']
 
         categories: dict[Perf_Type, Matchmaking_Value] = {}
@@ -48,9 +48,9 @@ class Opponent:
 
 
 class Opponents:
-    def __init__(self, perf_type: Perf_Type, estimated_game_pair_duration: timedelta) -> None:
+    def __init__(self, perf_type: Perf_Type, estimated_game_duration: timedelta) -> None:
         self.perf_type = perf_type
-        self.estimated_game_pair_duration = estimated_game_pair_duration
+        self.estimated_game_duration = estimated_game_duration
         self.opponent_list = self._load()
 
     def next_opponent(self, online_bots: list[dict]) -> dict:
@@ -64,21 +64,25 @@ class Opponents:
 
         return self.next_opponent(online_bots)
 
-    def set_timeout(self, username: str, success: bool, game_pair_duration: timedelta) -> None:
+    def add_timeout(self, username: str, success: bool, game_duration: timedelta) -> None:
         opponent = self._find(username)
+        opponent_value = opponent.values[self.perf_type]
 
-        if success and opponent.values[self.perf_type].multiplier > 1:
-            opponent.values[self.perf_type].multiplier //= 2
+        if success and opponent_value.multiplier > 1:
+            opponent_value.multiplier //= 2
         elif not success:
-            opponent.values[self.perf_type].multiplier += 1
+            opponent_value.multiplier += 1
 
-        duration_ratio = game_pair_duration / self.estimated_game_pair_duration
-        timeout = duration_ratio ** 2 * self.estimated_game_pair_duration * \
-            25 * opponent.values[self.perf_type].multiplier
+        multiplier = opponent_value.multiplier if opponent_value.multiplier >= 5 else 1
+        duration_ratio = game_duration / self.estimated_game_duration
+        timeout = duration_ratio ** 2 * self.estimated_game_duration * 20 * multiplier
 
-        opponent.values[self.perf_type].release_time = datetime.now() + timeout
-        release_str = opponent.values[self.perf_type].release_time.isoformat(sep=" ", timespec="seconds")
-        print(f'not challenging {username} until {release_str}')
+        if opponent_value.release_time > datetime.now():
+            timeout += opponent_value.release_time - datetime.now()
+
+        opponent_value.release_time = datetime.now() + timeout
+        release_str = opponent_value.release_time.isoformat(sep=" ", timespec="seconds")
+        print(f'{username} will not be challenged to a new game pair before {release_str}.')
 
         if opponent not in self.opponent_list:
             self.opponent_list.append(opponent)
