@@ -28,6 +28,7 @@ class Lichess_Game:
         self.status = Game_Status(gameFull_event['state']['status'])
         self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
         self.resign_enabled: bool = config['engine']['resign']['enabled']
+        self.ponder_enabled: bool = self.config['engine']['ponder']
         self.move_overhead = self._get_move_overhead()
         self.out_of_book_counter = 0
         self.out_of_cloud_counter = 0
@@ -42,6 +43,7 @@ class Lichess_Game:
             message = f'Book:    {self._format_move(move):14}'
             offer_draw = False
             resign = False
+            engine_move = False
         elif response := self._make_cloud_move():
             uci_move, cp_score, depth = response
             move = chess.Move.from_uci(uci_move)
@@ -49,26 +51,32 @@ class Lichess_Game:
             message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
             offer_draw = False
             resign = False
+            engine_move = False
         elif uci_move := self._make_chessdb_move():
             move = chess.Move.from_uci(uci_move)
             message = f'ChessDB: {self._format_move(move):14}'
             offer_draw = False
             resign = False
+            engine_move = False
         elif response := self._make_egtb_move():
             uci_move, outcome, offer_draw, resign = response
             offer_draw = offer_draw and self.draw_enabled
             resign = resign and self.resign_enabled
             move = chess.Move.from_uci(uci_move)
             message = f'EGTB:    {self._format_move(move):14} {outcome}'
+            engine_move = False
         else:
             move, info = self._make_engine_move()
             message = f'Engine:  {self._format_move(move):14} {self._format_info(info)}'
             offer_draw = self._is_drawish()
             resign = self._is_resignable()
+            engine_move = True
 
         print(message)
         self.last_message = message
         self.board.push(move)
+        if not engine_move and self.ponder_enabled:
+            self.engine.analysis(self.board)
         return move.uci(), offer_draw, resign
 
     def update(self, gameState_event: dict) -> bool:
@@ -316,7 +324,7 @@ class Lichess_Game:
 
             limit = chess.engine.Limit(white_clock=white_time, white_inc=increment,
                                        black_clock=black_time, black_inc=increment)
-            ponder = self.config['engine']['ponder']
+            ponder = self.ponder_enabled
 
         result = self.engine.play(self.board, limit, info=chess.engine.INFO_ALL, ponder=ponder)
         if result.move:
