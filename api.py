@@ -56,6 +56,7 @@ class API:
 
             if response.status_code == 429:
                 yield API_Challenge_Reponse(has_reached_rate_limit=True)
+                return
 
             for line in response.iter_lines():
                 if line:

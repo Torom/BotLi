@@ -58,13 +58,11 @@ class Matchmaking:
                 pending_challenge.set_challenge_id(response.challenge_id)
 
         assert last_reponse
-        success = last_reponse.success
-
-        if not success:
+        if not last_reponse.success and not last_reponse.has_reached_rate_limit:
             self.need_next_opponent = True
             self.opponents.add_timeout(opponent_username, False, self.estimated_game_duration)
 
-        pending_challenge.set_final_state(success, last_reponse.has_reached_rate_limit)
+        pending_challenge.set_final_state(last_reponse.success, last_reponse.has_reached_rate_limit)
 
     def on_game_started(self) -> None:
         self.game_start_time = datetime.now()
