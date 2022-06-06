@@ -1,4 +1,5 @@
 import pickle
+from random import choices
 from typing import Tuple
 
 import chess
@@ -6,7 +7,7 @@ import chess.engine
 import chess.polyglot
 from chess.variant import find_variant
 
-from aliases import CP_Score, Depth, Offer_Draw, Outcome, Resign, UCI_Move
+from aliases import CP_Score, Depth, Offer_Draw, Outcome, PyBook, Resign, UCI_Move
 from api import API
 from enums import Game_Status, Variant
 
@@ -33,7 +34,7 @@ class Lichess_Game:
         self.out_of_book_counter = 0
         self.out_of_cloud_counter = 0
         self.out_of_chessdb_counter = 0
-        self.loaded_pybooks: dict[str, dict[int, str]] = {}
+        self.loaded_pybooks: dict[str, PyBook] = {}
         self.engine = self._get_engine()
         self.scores: list[chess.engine.PovScore] = []
         self.last_message = 'No eval available yet.'
@@ -183,7 +184,7 @@ class Lichess_Game:
 
         for book in self._get_books():
             if book.lower().endswith('.pybook'):
-                move = self._get_pybook_move(book)
+                move = self._get_pybook_move(book, selection)
             else:
                 move = self._get_polyglot_move(book, selection)
 
@@ -209,12 +210,19 @@ class Lichess_Game:
 
         return books['standard'] if 'standard' in books else []
 
-    def _get_pybook_move(self, book: str) -> chess.Move | None:
+    def _get_pybook_move(self, book: str, selection: str) -> chess.Move | None:
         if book not in self.loaded_pybooks:
             with open(book, 'rb') as input:
                 self.loaded_pybooks[book] = pickle.load(input)
 
-        if uci_move := self.loaded_pybooks[book].get(chess.polyglot.zobrist_hash(self.board)):
+        if moves := self.loaded_pybooks[book].get(chess.polyglot.zobrist_hash(self.board)):
+            if selection == 'weighted_random':
+                uci_move = choices([move[0] for move in moves], [move[1] for move in moves])[0]
+            elif selection == 'uniform_random':
+                uci_move = choices([move[0] for move in moves])[0]
+            else:
+                uci_move = moves[0][0]
+
             return chess.Move.from_uci(uci_move)
 
     def _get_polyglot_move(self, book: str, selection: str) -> chess.Move | None:
