@@ -30,6 +30,7 @@ class Game_Manager(Thread):
         self.is_matchmaking_allowed = False
         self.current_matchmaking_game_id: Game_ID | None = None
         self.challenger = Challenger(self.config, self.api)
+        self.matchmaking_delay: int = max(self.config['matchmaking'].get('delay', 10), 1)
 
     def start(self):
         Thread.start(self)
@@ -40,7 +41,7 @@ class Game_Manager(Thread):
 
     def run(self) -> None:
         while self.is_running:
-            event_received = self.changed_event.wait(10.0)
+            event_received = self.changed_event.wait(self.matchmaking_delay)
             if not event_received:
                 self._check_matchmaking()
                 continue

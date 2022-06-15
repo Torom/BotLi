@@ -90,6 +90,7 @@ matchmaking:
   variant: standard                       # Chess variant (https://lichess.org/variant) to challenge.
 # min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
 # max_rating_diff: 300                    # Maximum rating distance to opponent. (Commenting allowed)
+  delay: 10                               # Time in seconds the bot must be idle before a new challenge is started.
 
 books:                                    # Names of the opening books (to be used above in the opening_books section) and paths to the opening books.
   DefaultBook: "/path/to/DefaultBook.bin"
