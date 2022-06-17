@@ -31,8 +31,8 @@ class Challenger:
                 print(f'Challenge against {challenge_request.opponent_username} has timed out.')
                 if challenge_id is None:
                     print('Could not cancel challenge because the challenge_id was not set in "Challenger"!')
-                    continue
-                self.api.cancel_challenge(challenge_id)
+                else:
+                    self.api.cancel_challenge(challenge_id)
                 yield Challenge_Response(success=False)
             elif response.has_reached_rate_limit:
                 print(f'Challenge against {challenge_request.opponent_username} failed due to Lichess rate limit.')
