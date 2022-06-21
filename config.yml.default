@@ -80,7 +80,7 @@ challenge:                                # Incoming challenges. (Commenting all
     - rapid
 #   - classical
   bot_modes:                              # Game modes to accept against BOTs.
-#   - casual                              # Unrated games.
+    - casual                              # Unrated games.
     - rated                               # Rated games
   human_modes:                            # Game modes to accept against humans.
     - casual                              # Unrated games.
