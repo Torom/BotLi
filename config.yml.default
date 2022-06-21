@@ -1,4 +1,4 @@
-token: "XXXXXXXXXXXXXXXXXXXXXXXX"         # Lichess OAuth2 Token.
+token: "lip_3m7xE3B3Qe86W5ji92B5"         # Lichess OAuth2 Token.
 
 engine:                                   # Engine settings.
   dir: "./engines"                        # Directory containing the engine.
@@ -19,9 +19,9 @@ engine:                                   # Engine settings.
 #   max_depth: 16                         # Half move max depth. (Comment this line for max depth)
   online_moves:
     chessdb:
-      enabled: false                      # Activate online moves from https://chessdb.cn/queryc_en/
+      enabled: true                      # Activate online moves from https://chessdb.cn/queryc_en/
       min_eval_depth: 10                  # Minimum evaluation depth. Only for selection: "best".
-      min_time: 40                        # Time the bot must have at least to use the online move.
+      min_time: 5                        # Time the bot must have at least to use the online move.
       timeout: 5                          # Time the server has to respond.
       selection: "best"                   # Move selection is one of "best", "good" or "all".
 #     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
@@ -45,7 +45,11 @@ engine:                                   # Engine settings.
     score: -1000                          # If the score is less than or equal to this value, the bot resigns (in cp).
     consecutive_moves: 5                  # How many moves in a row the score has to be below the resign value.
   uci_options:                            # Arbitrary UCI options passed to the engine. (Commenting allowed)
-    Move Overhead: 100                    # Increase if your bot flags games too often.
+    Move Overhead: 1000                   # Increase if your bot flags games too often.
+    Ponder: true
+    Slow Mover: 100
+    Skill Level: 20
+    MultiPV: 1
     Threads: 4                            # Max CPU threads the engine can use.
     Hash: 256                             # Max memory (in megabytes) the engine can allocate.
 #   SyzygyPath: "/path/to/syzygy"         # Path to your local syzygy endgame tablebases
@@ -54,7 +58,7 @@ move_overhead_multiplier: 1.0             # Increase if your bot flags games too
     
 challenge:                                # Incoming challenges. (Commenting allowed)
   concurrency: 1                          # Number of games to play simultaneously.
-  bullet_with_increment_only: false       # Whether bullet games should be accepted with increment only.
+  bullet_with_increment_only: true       # Whether bullet games should be accepted with increment only.
 # min_increment: 0                        # Minimum amount of increment to accept a challenge.
 # max_increment: 180                      # Maximum amount of increment to accept a challenge.
 # min_initial: 0                          # Minimum amount of initial time to accept a challenge.
