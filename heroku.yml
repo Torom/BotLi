@@ -1,8 +1,0 @@
-build:
-  docker:
-    worker: Dockerfile
-run:
-  worker:
-    command:
-      - python3 user_interface.py
-    image: worker
