@@ -18,6 +18,7 @@ class Game(Thread):
         self.ping_counter = 0
         self.game_queue = Queue()
         self.was_aborted = False
+        self.is_started = False
 
     def start(self):
         Thread.start(self)
@@ -30,8 +31,12 @@ class Game(Thread):
             event = self.game_queue.get()
 
             if event['type'] == 'gameFull':
-                print(f'Game "{self.game_id}" was started.')
-                self.lichess_game = Lichess_Game(self.api, event, self.config)
+                if not self.is_started:
+                    print(f'Game "{self.game_id}" was started.')
+                    self.lichess_game = Lichess_Game(self.api, event, self.config)
+                    self.is_started = True
+                else:
+                    self.lichess_game.update(event['state'])
 
                 if self.lichess_game.is_our_turn():
                     uci_move, offer_draw, resign = self.lichess_game.make_move()
