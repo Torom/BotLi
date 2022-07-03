@@ -22,7 +22,7 @@ class Chatter:
         elif command == 'eval':
             return lichess_game.last_message
         elif command == 'name':
-            return f'{lichess_game.username} running {lichess_game.engine.id["name"]} (Torom\'s BotLi)'
+            return f'{lichess_game.username} running {lichess_game.engine.id["name"]} (BotLi)'
         elif command == 'ram':
             return self.ram_message
         else:
