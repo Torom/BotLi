@@ -100,7 +100,7 @@ class Lichess_Game:
             if self.status == Game_Status.MATE:
                 message += ' by checkmate!'
             elif self.status == Game_Status.OUT_OF_TIME:
-                message += f'! {losing_name} run out of time.'
+                message += f'! {losing_name} ran out of time.'
             elif self.status == Game_Status.RESIGN:
                 message += f'! {losing_name} resigned.'
         elif self.status == Game_Status.DRAW:

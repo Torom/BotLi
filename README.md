@@ -30,9 +30,9 @@ Within the file `config.yml`:
 - You need to adjust the settings in `engine: uci_options` depending on your system.
 
 ## Setup opening book
-To use an opening book you have to enter a name of your choice and the path to the book at the end of the config in the `books` section.
+To use an opening book, you have to enter a name of your choice and the path to the book at the end of the config in the `books` section.
 
-In the upper `eninge: opening_books: books` section you only have to enter the name you just chose. In addition, different books can be used for white, black and chess960. If no specific book is defined, the `standard` books are used.
+In the upper `engine: opening_books: books` section you only have to enter the name you just chose. In addition, different books can be used for white, black and chess960. If no specific book is defined, the `standard` books are used.
 
 For example, the `books` section could look like this:
 ```yaml
@@ -60,7 +60,7 @@ A corresponding `engine: opening_books:` section could look like this:
 
 # How to control
 
-## Interacitve mode
+## Interactive mode
 
 In this mode the bot is controlled by commands entered into the console.
 
@@ -139,9 +139,9 @@ The account **cannot have played any game** before becoming a Bot account. The u
 
 - [Fork](https://github.com/Torom/BotLi/fork) this repository.
 - Create a [new heroku app](https://dashboard.heroku.com/new-app).
-- Go to [Account Settings](https://dashboard.heroku.com/account) on Heroku, scoll down to `API Key` and copy it.
+- Go to [Account Settings](https://dashboard.heroku.com/account) on Heroku, scroll down to `API Key` and copy it.
 - In your fork go to `Settings` -> `Secrets` and create a `New repository secret`. Name is `HEROKU_API_KEY` and value is the api key from Heroku.
-- Create another `New repository secret`. Name is `HEROKU_EMAIL` and value is the email adress you use for Heroku.
+- Create another `New repository secret`. Name is `HEROKU_EMAIL` and value is the email address you use for Heroku.
 - Go to `Settings` tab on Heroku and create a variable, set `LICHESS_BOT_TOKEN` as key and your Lichess token as value.
 - Go to the `Actions` tab on your fork and enable them.
 - Insert your app name into the [.github/workflows/main.yml](/.github/workflows/main.yml) of your fork and commit it.
