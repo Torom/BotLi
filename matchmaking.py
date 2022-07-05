@@ -47,7 +47,7 @@ class Matchmaking:
         rated = self.config['matchmaking']['rated']
         initial_time = self.config['matchmaking']['initial_time']
         increment = self.config['matchmaking']['increment']
-        timeout = self.config['matchmaking']['timeout']
+        timeout = min(self.config['matchmaking']['timeout'], 45)
         challenge_request = Challenge_Request(opponent_username, initial_time,
                                               increment, rated, color, self.variant, timeout)
 
