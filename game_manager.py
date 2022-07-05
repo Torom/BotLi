@@ -148,11 +148,10 @@ class Game_Manager(Thread):
         success, has_reached_rate_limit = pending_challenge.get_final_state()
 
         if success:
-            if challenge_id is not None:
-                # Reserve a spot for this game
-                self.reserved_game_ids.append(challenge_id)
-            else:
-                raise Exception('challenge_id was None despite success.')
+            assert challenge_id
+
+            # Reserve a spot for this game
+            self.reserved_game_ids.append(challenge_id)
         else:
             self.current_matchmaking_game_id = None
             if has_reached_rate_limit:
@@ -178,12 +177,10 @@ class Game_Manager(Thread):
             if response.challenge_id:
                 challenge_id = response.challenge_id
 
-        if last_reponse is None:
-            raise Exception('In Game_Manager: "last_response" should not be None!')
+        assert last_reponse
 
         if last_reponse.success:
-            if challenge_id is not None:
-                # Reserve a spot for this game
-                self.reserved_game_ids.append(challenge_id)
-            else:
-                raise Exception('challenge_id was None despite success.')
+            assert challenge_id
+
+            # Reserve a spot for this game
+            self.reserved_game_ids.append(challenge_id)
