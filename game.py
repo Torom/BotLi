@@ -81,11 +81,11 @@ class Game(Thread):
                 self.ping_counter += 1
 
                 if self.ping_counter >= 7 and self.lichess_game.is_abortable() and not self.lichess_game.is_our_turn():
-                    if self.abortion_counter >= 3:
-                        break
-
                     self.api.abort_game(self.game_id)
                     self.abortion_counter += 1
+
+                    if self.abortion_counter >= 3:
+                        break
             else:
                 print(event)
 

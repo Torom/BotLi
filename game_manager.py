@@ -73,12 +73,10 @@ class Game_Manager(Thread):
         self.changed_event.set()
 
     def remove_challenge(self, challenge_id: Challenge_ID) -> None:
-        try:
+        if challenge_id in self.open_challenge_ids:
             self.open_challenge_ids.remove(challenge_id)
             print(f'Challenge "{challenge_id}" has been canceled.')
             self.changed_event.set()
-        except ValueError:
-            pass
 
     def on_game_started(self, game_id: Game_ID) -> None:
         self.started_game_ids.append(game_id)
@@ -87,6 +85,9 @@ class Game_Manager(Thread):
         self.changed_event.set()
 
     def on_game_finished(self, game_id: Game_ID) -> None:
+        if game_id not in self.games:
+            return
+
         self.finished_game_ids.append(game_id)
         if game_id == self.current_matchmaking_game_id:
             self.matchmaking.on_game_finished(self.games[game_id])
@@ -94,11 +95,9 @@ class Game_Manager(Thread):
         self.changed_event.set()
 
     def _start_game(self, game_id: Game_ID) -> None:
-        try:
+        if game_id in self.reserved_game_ids:
             # Remove reserved spot, if it exists:
             self.reserved_game_ids.remove(game_id)
-        except ValueError:
-            pass
 
         if not self.game_counter.increment():
             print(f'Max number of concurrent games reached. Aborting an already started game {game_id}.')
