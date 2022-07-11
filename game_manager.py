@@ -102,6 +102,7 @@ class Game_Manager(Thread):
         if not self.game_counter.increment():
             print(f'Max number of concurrent games reached. Aborting an already started game {game_id}.')
             self.api.abort_game(game_id)
+            return
 
         self.games[game_id] = Game(self.config, self.api, game_id)
         self.games[game_id].start()
