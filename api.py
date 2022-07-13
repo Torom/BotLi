@@ -1,4 +1,5 @@
 import json
+from queue import Queue
 from typing import Iterable
 
 import requests
@@ -44,32 +45,32 @@ class API:
             print(e)
             return False
 
-    def create_challenge(self, challenge_request: Challenge_Request) -> Iterable[API_Challenge_Reponse]:
-        try:
-            response = self.session.post(
-                f'https://lichess.org/api/challenge/{challenge_request.opponent_username}',
-                data={'rated': str(challenge_request.rated).lower(),
-                      'clock.limit': challenge_request.initial_time, 'clock.increment': challenge_request.increment,
-                      'color': challenge_request.color.value, 'variant': challenge_request.variant.value,
-                      'keepAliveStream': 'true'},
-                timeout=challenge_request.timeout, stream=True)
+    def create_challenge(
+            self,
+            challenge_request: Challenge_Request,
+            response_queue: Queue[API_Challenge_Reponse]
+    ) -> None:
+        response = self.session.post(
+            f'https://lichess.org/api/challenge/{challenge_request.opponent_username}',
+            data={'rated': str(challenge_request.rated).lower(),
+                  'clock.limit': challenge_request.initial_time, 'clock.increment': challenge_request.increment,
+                  'color': challenge_request.color.value, 'variant': challenge_request.variant.value,
+                  'keepAliveStream': 'true'},
+            stream=True)
 
-            if response.status_code == 429:
-                yield API_Challenge_Reponse(has_reached_rate_limit=True)
-                return
+        if response.status_code == 429:
+            response_queue.put(API_Challenge_Reponse(has_reached_rate_limit=True))
+            return
 
-            for line in response.iter_lines():
-                if line:
-                    api_challenge_response = API_Challenge_Reponse()
-                    data = json.loads(line.decode('utf-8'))
-                    api_challenge_response.challenge_id = data.get('challenge', {'id': None}).get('id')
-                    api_challenge_response.was_accepted = data.get('done') == 'accepted'
-                    api_challenge_response.error = data.get('error')
-                    api_challenge_response.was_declined = data.get('done') == 'declined'
-                    yield api_challenge_response
-
-        except requests.ConnectionError:
-            yield API_Challenge_Reponse(has_timed_out=True)
+        for line in response.iter_lines():
+            if line:
+                api_challenge_response = API_Challenge_Reponse()
+                data = json.loads(line.decode('utf-8'))
+                api_challenge_response.challenge_id = data.get('challenge', {'id': None}).get('id')
+                api_challenge_response.was_accepted = data.get('done') == 'accepted'
+                api_challenge_response.error = data.get('error')
+                api_challenge_response.was_declined = data.get('done') == 'declined'
+                response_queue.put(api_challenge_response)
 
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:
