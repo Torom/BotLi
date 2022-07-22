@@ -15,6 +15,7 @@ engine:                                   # Engine settings.
         - "DefaultBook" 
 #     chess960:                           # List of names of books to use for Chess960.
 #       - "Chess960Book"
+#     Use the same pattern for 'antichess', 'atomic', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
     selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
 #   max_depth: 16                         # Half move max depth. (Comment this line for max depth)
   online_moves:

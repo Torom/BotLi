@@ -203,13 +203,17 @@ class Lichess_Game:
 
         if self.board.chess960 and 'chess960' in books:
             return books['chess960']
-        else:
+        elif self.board.uci_variant == 'chess':
             if self.is_white and 'white' in books:
                 return books['white']
             elif not self.is_white and 'black' in books:
                 return books['black']
 
-        return books['standard'] if 'standard' in books else []
+            return books['standard'] if 'standard' in books else []
+        elif self.board.uci_variant in books:
+            return books[self.board.uci_variant]
+        else:
+            return []
 
     def _make_cloud_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
         enabled = self.config['engine']['online_moves']['lichess_cloud']['enabled']
