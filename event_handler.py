@@ -75,4 +75,4 @@ class Event_Handler(Thread):
                         event = json.loads(line.decode('utf-8'))
                         self.challenge_queue.put_nowait(event)
             except Exception:
-                pass
+                print('Event stream broke. Retrying ...')

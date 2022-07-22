@@ -102,5 +102,5 @@ class Game(Thread):
                         event = {'type': 'ping'}
                     self.game_queue.put_nowait(event)
                 return
-            except Exception as e:
-                print(e)
+            except Exception:
+                print('Game stream broke. Retrying ...')
