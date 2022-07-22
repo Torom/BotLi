@@ -113,7 +113,7 @@ class UserInterface:
         rated = command[5].lower() == 'true' if command_length > 5 else True
 
         challenge_request = Challenge_Request(opponent_username, initial_time,
-                                              increment, rated, color, Variant.STANDARD, 20)
+                                              increment, rated, color, Variant.STANDARD, 30)
         self.game_manager.request_challenge(challenge_request)
         print(f'Challenge against {challenge_request.opponent_username} added to the queue.')
 
