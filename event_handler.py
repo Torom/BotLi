@@ -58,7 +58,13 @@ class Event_Handler(Thread):
 
                 self.game_manager.on_game_finished(game_id)
             elif event['type'] == 'challengeDeclined':
-                continue
+                opponent_name = event['challenge']['destUser']['name']
+
+                if opponent_name == self.api.user['username']:
+                    continue
+
+                decline_reason = event['challenge']['declineReason']
+                print(f'{opponent_name} declined challenge: {decline_reason}')
             elif event['type'] == 'challengeCanceled':
                 challenge_id = event['challenge']['id']
                 self.game_manager.remove_challenge(challenge_id)

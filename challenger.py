@@ -32,7 +32,6 @@ class Challenger:
                     print(response.error)
                     yield Challenge_Response(success=False)
                 elif response.was_declined:
-                    print(f'{challenge_request.opponent_username} has declined the challenge.')
                     yield Challenge_Response(success=False)
                 elif response.has_reached_rate_limit:
                     print(f'Challenge against {challenge_request.opponent_username} failed due to Lichess rate limit.')
