@@ -72,12 +72,13 @@ class Matchmaking:
         assert self.game_start_time
 
         game_duration = datetime.now() - self.game_start_time
+        was_aborted = game.lichess_game.is_abortable()
 
-        if game.was_aborted:
+        if was_aborted:
             self.need_next_opponent = True
             game_duration += self.estimated_game_duration
 
-        self.opponents.add_timeout(self.opponent['username'], not game.was_aborted, game_duration)
+        self.opponents.add_timeout(self.opponent['username'], not was_aborted, game_duration)
 
     def _call_update(self) -> None:
         if self.next_update <= datetime.now():

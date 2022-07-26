@@ -17,7 +17,6 @@ class Game(Thread):
         self.chatter = Chatter(config)
         self.ping_counter = 0
         self.game_queue = Queue()
-        self.was_aborted = False
         self.is_started = False
         self.abortion_counter = 0
 
@@ -49,7 +48,6 @@ class Game(Thread):
                 updated = self.lichess_game.update(event)
 
                 if self.lichess_game.status != Game_Status.STARTED:
-                    self.was_aborted = self.lichess_game.status == Game_Status.ABORTED
                     print(self.lichess_game.get_result_message(event.get('winner')))
                     break
 
