@@ -294,7 +294,8 @@ class Lichess_Game:
             return
 
         timeout = self.config['engine']['online_moves']['online_egtb']['timeout']
-        assert variant := 'standard' if self.board.uci_variant == 'chess' else self.board.uci_variant
+        variant = 'standard' if self.board.uci_variant == 'chess' else self.board.uci_variant
+        assert variant
 
         if response := self.api.get_egtb(self.board.fen(), variant, timeout):
             uci_move = response['moves'][0]['uci']
