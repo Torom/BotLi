@@ -4,6 +4,19 @@ engine:                                   # Engine settings.
   dir: "./engines"                        # Directory containing the engine.
   name: "stockfish"                       # Binary name of the engine to use.
   ponder: true                            # Think on opponent's time.
+  uci_options:                            # Arbitrary UCI options passed to the engine. (Commenting allowed)
+    Move Overhead: 100                    # Increase if your bot flags games too often.
+    Threads: 4                            # Max CPU threads the engine can use.
+    Hash: 256                             # Max memory (in megabytes) the engine can allocate.
+#   SyzygyPath: "/path/to/syzygy"         # Path to your local syzygy endgame tablebases
+  variants:
+    enabled: false                        # Activate seperate engine for other chess variants than standard and chess960.
+    dir: "./engines"                      # Directory containing the engine.
+    name: "fairy-stockfish"               # Binary name of the engine to use.
+    uci_options:                          # Arbitrary UCI options passed to the engine. (Commenting allowed)
+      Move Overhead: 100                  # Increase if your bot flags games too often.
+      Threads: 4                          # Max CPU threads the engine can use.
+      Hash: 256                           # Max memory (in megabytes) the engine can allocate.
   opening_books:
     enabled: false                        # Activate opening books.
     books:
@@ -13,7 +26,7 @@ engine:                                   # Engine settings.
 #       - "BlackBook"
       standard:                           # List of names of books to use if there is no specific book for white, black or chess960.
         - "DefaultBook" 
-#     chess960:                           # List of names of books to use for Chess960.
+#     chess960:                           # List of names of books to use for chess960.
 #       - "Chess960Book"
 #     Use the same pattern for 'antichess', 'atomic', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
     selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
@@ -45,11 +58,6 @@ engine:                                   # Engine settings.
     enabled: false                        # Activate whether the bot should resign games.
     score: -1000                          # If the score is less than or equal to this value, the bot resigns (in cp).
     consecutive_moves: 5                  # How many moves in a row the score has to be below the resign value.
-  uci_options:                            # Arbitrary UCI options passed to the engine. (Commenting allowed)
-    Move Overhead: 100                    # Increase if your bot flags games too often.
-    Threads: 4                            # Max CPU threads the engine can use.
-    Hash: 256                             # Max memory (in megabytes) the engine can allocate.
-#   SyzygyPath: "/path/to/syzygy"         # Path to your local syzygy endgame tablebases
 
 move_overhead_multiplier: 1.0             # Increase if your bot flags games too often. Default move overhead is 1 second per 1 minute initital time.
     

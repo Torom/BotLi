@@ -30,7 +30,8 @@ def load_config() -> dict:
                 raise Exception(section[2])
 
         engine_sections = [['dir', str, '"dir" must be a string wrapped in quotes.'],
-                           ['name', str, '"name" must be a string wrapped in quotes.']]
+                           ['name', str, '"name" must be a string wrapped in quotes.'],
+                           ['variants', dict, '"variants" must be a dictionary with indented keys followed by colons.']]
         for subsection in engine_sections:
             if subsection[0] not in CONFIG['engine']:
                 raise Exception(f'Your config.yml does not have required `engine` subsection `{subsection[0]}`.')
@@ -48,6 +49,22 @@ def load_config() -> dict:
         if not os.access(CONFIG['engine']['path'], os.X_OK):
             raise Exception(
                 f'The engine "{CONFIG["engine"]["path"]}" doesnt have execute (x) permission. Try: chmod +x {CONFIG["engine"]["path"]}')
+
+        if CONFIG['engine']['variants']['enabled']:
+            if not os.path.isdir(CONFIG['engine']['variants']['dir']):
+                raise Exception(
+                    f'Your variants engine directory "{CONFIG["engine"]["variants"]["dir"]}" is not a directory.')
+
+            CONFIG['engine']['variants']['path'] = os.path.join(
+                CONFIG['engine']['variants']['dir'],
+                CONFIG['engine']['variants']['name'])
+
+            if not os.path.isfile(CONFIG['engine']['variants']['path']):
+                raise Exception(f'The variants engine "{CONFIG["engine"]["variants"]["path"]}" file does not exist.')
+
+            if not os.access(CONFIG['engine']['variants']['path'], os.X_OK):
+                raise Exception(
+                    f'The variants engine "{CONFIG["engine"]["variants"]["path"]}" doesnt have execute (x) permission. Try: chmod +x {CONFIG["engine"]["variants"]["path"]}')
 
         if CONFIG['engine']['opening_books']['enabled']:
             for key, book_list in CONFIG['engine']['opening_books']['books'].items():

@@ -97,6 +97,8 @@ class Lichess_Game:
                 message += f'! {losing_name} ran out of time.'
             elif self.status == Game_Status.RESIGN:
                 message += f'! {losing_name} resigned.'
+            elif self.status == Game_Status.VARIANT_END:
+                message += ' by variant rules!'
         elif self.status == Game_Status.DRAW:
             if self.board.is_fifty_moves():
                 message = 'Game drawn by 50-move rule.'
@@ -366,8 +368,12 @@ class Lichess_Game:
             return str(score.pov(self.board.turn))
 
     def _get_engine(self) -> chess.engine.SimpleEngine:
-        engine = chess.engine.SimpleEngine.popen_uci(self.config['engine']['path'])
-        options = self.config['engine']['uci_options']
+        if self.board.uci_variant != 'chess' and self.config['engine']['variants']['enabled']:
+            engine = chess.engine.SimpleEngine.popen_uci(self.config['engine']['variants']['path'])
+            options = self.config['engine']['variants']['uci_options']
+        else:
+            engine = chess.engine.SimpleEngine.popen_uci(self.config['engine']['path'])
+            options = self.config['engine']['uci_options']
 
         def not_managed(key: str): return not chess.engine.Option(key, '', None, None, None, None).is_managed()
         options = {key: value for key, value in options.items() if not_managed(key)}
