@@ -287,13 +287,15 @@ class Lichess_Game:
 
         is_endgame = chess.popcount(self.board.occupied) <= 7
         has_time = self._has_time(self.config['engine']['online_moves']['online_egtb']['min_time'])
+        compatible_variant = self.board.uci_variant in ['chess', 'antichess', 'atomic']
 
-        if not is_endgame or not has_time:
+        if not is_endgame or not has_time or not compatible_variant:
             return
 
         timeout = self.config['engine']['online_moves']['online_egtb']['timeout']
+        assert variant := 'standard' if self.board.uci_variant == 'chess' else self.board.uci_variant
 
-        if response := self.api.get_egtb(self.board.fen(), timeout):
+        if response := self.api.get_egtb(self.board.fen(), variant, timeout):
             uci_move = response['moves'][0]['uci']
             outcome = response['category']
             return uci_move, outcome, outcome == 'draw', outcome == 'loss'

@@ -105,10 +105,10 @@ class API:
         except requests.Timeout as e:
             print(e)
 
-    def get_egtb(self, fen: str, timeout: int) -> dict | None:
+    def get_egtb(self, fen: str, variant: str, timeout: int) -> dict | None:
         try:
             response = self.session.get(
-                'https://tablebase.lichess.ovh/standard', params={'fen': fen},
+                f'https://tablebase.lichess.ovh/{variant}', params={'fen': fen},
                 headers={'Authorization': None},
                 timeout=timeout)
             response.raise_for_status()
