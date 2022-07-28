@@ -234,7 +234,9 @@ class Lichess_Game:
         timeout = self.config['engine']['online_moves']['lichess_cloud']['timeout']
         min_eval_depth = self.config['engine']['online_moves']['lichess_cloud']['min_eval_depth']
 
-        if response := self.api.get_cloud_eval(self.board.fen(), self.variant, timeout):
+        if response := self.api.get_cloud_eval(
+                self.board.fen().replace('[', '/').replace(']', ''),
+                self.variant, timeout):
             if 'error' not in response:
                 if response['depth'] >= min_eval_depth:
                     self.out_of_cloud_counter = 0
