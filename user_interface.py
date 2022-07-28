@@ -106,12 +106,16 @@ class UserInterface:
             print(COMMANDS['challenge'])
             return
 
-        opponent_username = command[1]
-        initial_time = int(command[2]) if command_length > 2 else 60
-        increment = int(command[3]) if command_length > 3 else 1
-        color = Challenge_Color(command[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
-        rated = command[5].lower() == 'true' if command_length > 5 else True
-        variant = Variant(command[6]) if command_length > 6 else Variant.STANDARD
+        try:
+            opponent_username = command[1]
+            initial_time = int(command[2]) if command_length > 2 else 60
+            increment = int(command[3]) if command_length > 3 else 1
+            color = Challenge_Color(command[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
+            rated = command[5].lower() == 'true' if command_length > 5 else True
+            variant = self._find_variant(command[6]) if command_length > 6 else Variant.STANDARD
+        except ValueError as e:
+            print(e)
+            return
 
         challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 30)
         self.game_manager.request_challenge(challenge_request)
@@ -149,6 +153,13 @@ class UserInterface:
         print('These commands are supported by BotLi:\n')
         for key, value in COMMANDS.items():
             print(f'{key:11}\t\t# {value}')
+
+    def _find_variant(self, name: str) -> Variant:
+        for variant in Variant:
+            if variant.value.lower() == name.lower():
+                return variant
+
+        raise ValueError(f'{name} is not a valid Variant')
 
 
 class Autocompleter:
