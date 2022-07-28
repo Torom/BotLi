@@ -9,7 +9,7 @@ from game_manager import Game_Manager
 from logo import LOGO
 
 COMMANDS = {
-    'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED]',
+    'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED] [VARIANT]',
     'help': 'Prints this message.',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
@@ -102,7 +102,7 @@ class UserInterface:
 
     def _challenge(self, command: list[str]) -> None:
         command_length = len(command)
-        if command_length < 2 or command_length > 6:
+        if command_length < 2 or command_length > 7:
             print(COMMANDS['challenge'])
             return
 
@@ -111,9 +111,9 @@ class UserInterface:
         increment = int(command[3]) if command_length > 3 else 1
         color = Challenge_Color(command[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
         rated = command[5].lower() == 'true' if command_length > 5 else True
+        variant = Variant(command[6]) if command_length > 6 else Variant.STANDARD
 
-        challenge_request = Challenge_Request(opponent_username, initial_time,
-                                              increment, rated, color, Variant.STANDARD, 30)
+        challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 30)
         self.game_manager.request_challenge(challenge_request)
         print(f'Challenge against {challenge_request.opponent_username} added to the queue.')
 
