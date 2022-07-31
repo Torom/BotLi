@@ -29,6 +29,7 @@ class Lichess_Game:
         self.resign_enabled: bool = config['engine']['resign']['enabled']
         self.ponder_enabled: bool = self.config['engine']['ponder']
         self.move_overhead = self._get_move_overhead()
+        self.books = self._get_books()
         self.out_of_book_counter = 0
         self.out_of_cloud_counter = 0
         self.out_of_chessdb_counter = 0
@@ -180,7 +181,7 @@ class Lichess_Game:
             return
 
         selection = self.config['engine']['opening_books']['selection']
-        for book in self._get_books():
+        for book in self.books:
             with chess.polyglot.open_reader(book) as book_reader:
                 try:
                     if selection == 'weighted_random':
@@ -201,7 +202,12 @@ class Lichess_Game:
         self.out_of_book_counter += 1
 
     def _get_books(self) -> list[str]:
-        books = self.config['engine']['opening_books']['books']
+        enabled = self.config['engine']['opening_books']['enabled']
+
+        if not enabled:
+            return []
+
+        books: dict[str, list[str]] = self.config['engine']['opening_books']['books']
 
         if self.board.chess960 and 'chess960' in books:
             return books['chess960']
@@ -212,9 +218,11 @@ class Lichess_Game:
                 return books['black']
 
             return books['standard'] if 'standard' in books else []
-        elif self.board.uci_variant in books:
-            return books[self.board.uci_variant]
         else:
+            for key in books:
+                if key.lower() in [alias.lower() for alias in self.board.aliases]:
+                    return books[key]
+
             return []
 
     def _make_cloud_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
@@ -227,8 +235,10 @@ class Lichess_Game:
         has_time = self._has_time(self.config['engine']['online_moves']['lichess_cloud']['min_time'])
         max_depth = self.config['engine']['online_moves']['lichess_cloud'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
+        only_without_book = self.config['engine']['online_moves']['lichess_cloud'].get('only_without_book', False)
+        blocking_book = only_without_book and bool(self.books)
 
-        if out_of_book or too_deep or not has_time:
+        if out_of_book or too_deep or not has_time or blocking_book:
             return
 
         timeout = self.config['engine']['online_moves']['lichess_cloud']['timeout']
