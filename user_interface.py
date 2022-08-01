@@ -132,7 +132,7 @@ class UserInterface:
     def _quit(self) -> None:
         self.is_running = False
         self.game_manager.stop()
-        print('Terminating programm ...')
+        print('Terminating program ...')
         self.game_manager.join()
         self.event_handler.stop()
         self.event_handler.join()
