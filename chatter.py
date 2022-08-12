@@ -47,7 +47,11 @@ class Chatter:
 
         cores = psutil.cpu_count(logical=False)
         threads = psutil.cpu_count(logical=True)
-        cpu_freq = psutil.cpu_freq().max / 1000
+
+        try:
+            cpu_freq = psutil.cpu_freq().max / 1000
+        except FileNotFoundError:
+            cpu_freq = float('NaN')
 
         return f'{cpu} {cores}c/{threads}t @ {cpu_freq:.2f}GHz'
 
