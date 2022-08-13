@@ -58,8 +58,8 @@ class Challenge_Validator:
         elif initial > max_initial:
             print(f'Initial time {initial} is too long according to config.')
             return Decline_Reason.TOO_SLOW
-        elif speed == 'bullet' and increment == 0 and bullet_with_increment_only:
-            print('Bullet is only allowed with increment according to config.')
+        elif is_bot and speed == 'bullet' and increment == 0 and bullet_with_increment_only:
+            print('Bullet against bots is only allowed with increment according to config.')
             return Decline_Reason.TOO_FAST
 
         is_rated = challenge_event['challenge']['rated']

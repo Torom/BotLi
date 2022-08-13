@@ -64,7 +64,7 @@ move_overhead_multiplier: 1.0             # Increase if your bot flags games too
     
 challenge:                                # Incoming challenges. (Commenting allowed)
   concurrency: 1                          # Number of games to play simultaneously.
-  bullet_with_increment_only: false       # Whether bullet games should be accepted with increment only.
+  bullet_with_increment_only: false       # Whether bullet games against BOTs should only be accepted with increment.
 # min_increment: 0                        # Minimum amount of increment to accept a challenge.
 # max_increment: 180                      # Maximum amount of increment to accept a challenge.
 # min_initial: 0                          # Minimum amount of initial time to accept a challenge.
