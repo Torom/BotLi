@@ -2,6 +2,8 @@ import json
 from queue import Queue
 from threading import Thread
 
+from tenacity import retry
+
 from api import API
 from chatter import Chat_Message, Chatter
 from enums import Game_Status
@@ -84,21 +86,22 @@ class Game(Thread):
 
                     if self.abortion_counter >= 3:
                         break
+            elif event['type'] == 'endOfStream':
+                print('Game stream ended unexpectedly.')
+                break
             else:
                 print(event)
 
         self.lichess_game.quit_engine()
 
+    @retry
     def _watch_game_stream(self) -> None:
-        while True:
-            try:
-                game_stream = self.api.get_game_stream(self.game_id)
-                for line in game_stream:
-                    if line:
-                        event = json.loads(line.decode('utf-8'))
-                    else:
-                        event = {'type': 'ping'}
-                    self.game_queue.put_nowait(event)
-                return
-            except Exception:
-                print('Game stream broke. Retrying ...')
+        game_stream = self.api.get_game_stream(self.game_id)
+        for line in game_stream:
+            if line:
+                event = json.loads(line.decode('utf-8'))
+            else:
+                event = {'type': 'ping'}
+            self.game_queue.put_nowait(event)
+
+        self.game_queue.put_nowait({'type': 'endOfStream'})
