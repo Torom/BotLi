@@ -64,6 +64,8 @@ class UserInterface:
                 continue
             elif command[0] == 'challenge':
                 self._challenge(command)
+            elif command[0] == 'exit':
+                self._quit()
             elif command[0] == 'matchmaking':
                 self._matchmaking()
             elif command[0] == 'quit':
@@ -92,9 +94,7 @@ class UserInterface:
                 print('Upgrade aborted.')
                 exit()
 
-        outcome = self.api.upgrade_account()
-
-        if outcome:
+        if self.api.upgrade_account():
             print('Upgrade successful.')
         else:
             print('Upgrade failed.')
