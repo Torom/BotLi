@@ -68,8 +68,8 @@ class Game_Manager(Thread):
         self.open_challenge_ids.append(challenge_id)
         self.changed_event.set()
 
-    def request_challenge(self, challenge_request: Challenge_Request) -> None:
-        self.challenge_requests.append(challenge_request)
+    def request_challenge(self, *challenge_requests: Challenge_Request) -> None:
+        self.challenge_requests.extend(challenge_requests)
         self.changed_event.set()
 
     def remove_challenge(self, challenge_id: Challenge_ID) -> None:

@@ -10,6 +10,7 @@ from logo import LOGO
 
 COMMANDS = {
     'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED] [VARIANT]',
+    'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [INITIAL_TIME] [INCREMENT] [RATED] [VARIANT]',
     'help': 'Prints this message.',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
@@ -64,6 +65,8 @@ class UserInterface:
                 continue
             elif command[0] == 'challenge':
                 self._challenge(command)
+            elif command[0] == 'create':
+                self._create(command)
             elif command[0] == 'exit':
                 self._quit()
             elif command[0] == 'matchmaking':
@@ -120,6 +123,33 @@ class UserInterface:
         challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 30)
         self.game_manager.request_challenge(challenge_request)
         print(f'Challenge against {challenge_request.opponent_username} added to the queue.')
+
+    def _create(self, command: list[str]) -> None:
+        command_length = len(command)
+        if command_length < 3 or command_length > 7:
+            print(COMMANDS['create'])
+            return
+
+        try:
+            count = int(command[1])
+            opponent_username = command[2]
+            initial_time = int(command[3]) if command_length > 3 else 60
+            increment = int(command[4]) if command_length > 4 else 1
+            rated = command[5].lower() == 'true' if command_length > 5 else True
+            variant = self._find_variant(command[6]) if command_length > 6 else Variant.STANDARD
+        except ValueError as e:
+            print(e)
+            return
+
+        challenges: list[Challenge_Request] = []
+        for _ in range(count):
+            challenges.append(Challenge_Request(opponent_username, initial_time,
+                              increment, rated, Challenge_Color.WHITE, variant, 30))
+            challenges.append(Challenge_Request(opponent_username, initial_time,
+                              increment, rated, Challenge_Color.BLACK, variant, 30))
+
+        self.game_manager.request_challenge(*challenges)
+        print(f'Challenges for {count} game pairs against {opponent_username} added to the queue.')
 
     def _matchmaking(self) -> None:
         if self.game_manager.is_matchmaking_allowed:
