@@ -267,8 +267,9 @@ class Lichess_Game:
         max_depth = self.config['engine']['online_moves']['chessdb'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
         incompatible_variant = self.board.uci_variant != 'chess'
+        is_endgame = chess.popcount(self.board.occupied) <= 7
 
-        if out_of_book or too_deep or not has_time or incompatible_variant:
+        if out_of_book or too_deep or not has_time or incompatible_variant or is_endgame:
             return
 
         timeout = self.config['engine']['online_moves']['chessdb']['timeout']
