@@ -45,12 +45,10 @@ class Lichess_Game:
         if move := self._make_book_move():
             message = f'Book:    {self._format_move(move):14}'
         elif response := self._make_cloud_move():
-            uci_move, cp_score, depth = response
-            move = chess.Move.from_uci(uci_move)
+            move, cp_score, depth = response
             pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), chess.WHITE)
             message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
-        elif uci_move := self._make_chessdb_move():
-            move = chess.Move.from_uci(uci_move)
+        elif move := self._make_chessdb_move():
             message = f'ChessDB: {self._format_move(move):14}'
         elif response := self._make_egtb_move():
             uci_move, outcome, offer_draw, resign = response
@@ -192,9 +190,7 @@ class Lichess_Game:
                         move = book_reader.find(self.board).move
 
                     self.out_of_book_counter = 0
-                    new_board = self.board.copy()
-                    new_board.push(move)
-                    if not new_board.is_repetition(count=2):
+                    if not self._is_repetition(move):
                         return move
                 except IndexError:
                     pass
@@ -225,7 +221,7 @@ class Lichess_Game:
 
             return []
 
-    def _make_cloud_move(self) -> Tuple[UCI_Move, CP_Score, Depth] | None:
+    def _make_cloud_move(self) -> Tuple[chess.Move, CP_Score, Depth] | None:
         enabled = self.config['engine']['online_moves']['lichess_cloud']['enabled']
 
         if not enabled:
@@ -250,13 +246,15 @@ class Lichess_Game:
             if 'error' not in response:
                 if response['depth'] >= min_eval_depth:
                     self.out_of_cloud_counter = 0
-                    return response['pvs'][0]['moves'].split()[0], response['pvs'][0]['cp'], response['depth']
+                    move = chess.Move.from_uci(response['pvs'][0]['moves'].split()[0])
+                    if not self._is_repetition(move):
+                        return move, response['pvs'][0]['cp'], response['depth']
 
             self.out_of_cloud_counter += 1
         else:
             self._reduce_own_time(timeout * 1000)
 
-    def _make_chessdb_move(self) -> UCI_Move | None:
+    def _make_chessdb_move(self) -> chess.Move | None:
         enabled = self.config['engine']['online_moves']['chessdb']['enabled']
 
         if not enabled:
@@ -287,7 +285,10 @@ class Lichess_Game:
             if response['status'] == 'ok':
                 if response.get('depth', 50) >= min_eval_depth:
                     self.out_of_chessdb_counter = 0
-                    return response['move'] if 'move' in response else response['pv'][0]
+                    uci_move = response['move'] if 'move' in response else response['pv'][0]
+                    move = chess.Move.from_uci(uci_move)
+                    if not self._is_repetition(move):
+                        return move
 
             self.out_of_chessdb_counter += 1
         else:
@@ -434,3 +435,8 @@ class Lichess_Game:
             self.white_time -= milliseconds
         else:
             self.black_time -= milliseconds
+
+    def _is_repetition(self, move: chess.Move) -> bool:
+        board = self.board.copy()
+        board.push(move)
+        return board.is_repetition(count=2)
