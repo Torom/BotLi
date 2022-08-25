@@ -300,7 +300,8 @@ class Lichess_Game:
         if not enabled:
             return
 
-        is_endgame = chess.popcount(self.board.occupied) <= 7
+        max_pieces = 7 if self.board.uci_variant == 'chess' else 6
+        is_endgame = chess.popcount(self.board.occupied) <= max_pieces
         has_time = self._has_time(self.config['engine']['online_moves']['online_egtb']['min_time'])
         compatible_variant = self.board.uci_variant in ['chess', 'antichess', 'atomic']
 
