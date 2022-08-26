@@ -428,6 +428,9 @@ class Lichess_Game:
         return max(int(self.initial_time / 60 * multiplier), 1000)
 
     def _has_time(self, min_time: int) -> bool:
+        if len(self.board.move_stack) < 2:
+            return True
+
         min_time *= 1000
         return self.white_time >= min_time if self.is_white else self.black_time >= min_time
 
