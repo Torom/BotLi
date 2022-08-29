@@ -55,7 +55,7 @@ class Lichess_Game:
             offer_draw = offer_draw and self.draw_enabled
             resign = resign and self.resign_enabled
             move = chess.Move.from_uci(uci_move)
-            message = f'EGTB:    {self._format_move(move):14} {outcome}'
+            message = f'EGTB:    {self._format_move(move):14} {outcome:>7}'
         else:
             move, info = self._make_engine_move()
             message = f'Engine:  {self._format_move(move):14} {self._format_info(info)}'
