@@ -95,7 +95,12 @@ class Matchmaking:
         for line in online_bots_stream:
             if line:
                 bot = json.loads(line)
-                if bot['username'] == self.api.user['username'] or 'disabled' in bot:
+
+                is_ourselves = bot['username'] == self.api.user['username']
+                is_disabled = 'disabled' in bot
+                has_tosViolation = 'tosViolation' in bot if self.config['matchmaking']['rated'] else False
+
+                if is_ourselves or is_disabled or has_tosViolation:
                     continue
 
                 if self.perf_type.value in bot['perfs']:
