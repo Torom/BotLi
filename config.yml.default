@@ -4,11 +4,16 @@ engine:                                   # Engine settings.
   dir: "./engines"                        # Directory containing the engine.
   name: "stockfish"                       # Binary name of the engine to use.
   ponder: true                            # Think on opponent's time.
+  syzygy:
+    enabled: false                        # Activate local syzygy endgame tablebases.
+    paths:                                # Paths to local syzygy endgame tablebases.
+      - "/path/to/syzygy"
+    max_pieces: 6                         # Count of max pieces in the local syzygy endgame tablebases.
+    instant_play: true                    # Whether the bot should play directly from syzygy without engine if possible.
   uci_options:                            # Arbitrary UCI options passed to the engine. (Commenting allowed)
     Move Overhead: 100                    # Increase if your bot flags games too often.
     Threads: 4                            # Max CPU threads the engine can use.
     Hash: 256                             # Max memory (in megabytes) the engine can allocate.
-#   SyzygyPath: "/path/to/syzygy"         # Path to your local syzygy endgame tablebases
   variants:
     enabled: false                        # Activate seperate engine for other chess variants than standard and chess960.
     dir: "./engines"                      # Directory containing the engine.

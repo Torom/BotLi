@@ -29,9 +29,12 @@ def load_config() -> dict:
             elif not isinstance(CONFIG[section[0]], section[1]):
                 raise Exception(section[2])
 
-        engine_sections = [['dir', str, '"dir" must be a string wrapped in quotes.'],
-                           ['name', str, '"name" must be a string wrapped in quotes.'],
-                           ['variants', dict, '"variants" must be a dictionary with indented keys followed by colons.']]
+        engine_sections = [
+            ['dir', str, '"dir" must be a string wrapped in quotes.'],
+            ['name', str, '"name" must be a string wrapped in quotes.'],
+            ['syzygy', dict, '"syzygy" must be a dictionary with indented keys followed by colons.'],
+            ['uci_options', dict, '"uci_options" must be a dictionary with indented keys followed by colons.'],
+            ['variants', dict, '"variants" must be a dictionary with indented keys followed by colons.']]
         for subsection in engine_sections:
             if subsection[0] not in CONFIG['engine']:
                 raise Exception(f'Your config.yml does not have required `engine` subsection `{subsection[0]}`.')
@@ -65,6 +68,11 @@ def load_config() -> dict:
             if not os.access(CONFIG['engine']['variants']['path'], os.X_OK):
                 raise Exception(
                     f'The variants engine "{CONFIG["engine"]["variants"]["path"]}" doesnt have execute (x) permission. Try: chmod +x {CONFIG["engine"]["variants"]["path"]}')
+
+        if CONFIG['engine']['syzygy']['enabled']:
+            for path in CONFIG['engine']['syzygy']['paths']:
+                if not os.path.isdir(path):
+                    raise Exception(f'Your syzygy directory "{path}" is not a directory.')
 
         if CONFIG['engine']['opening_books']['enabled']:
             for key, book_list in CONFIG['engine']['opening_books']['books'].items():

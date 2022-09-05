@@ -92,7 +92,7 @@ class Game(Thread):
             else:
                 print(event)
 
-        self.lichess_game.quit_engine()
+        self.lichess_game.end_game()
 
     @retry
     def _watch_game_stream(self) -> None:
