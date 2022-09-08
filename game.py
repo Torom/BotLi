@@ -47,6 +47,7 @@ class Game(Thread):
                     else:
                         self.api.send_move(self.game_id, uci_move, offer_draw)
             elif event['type'] == 'gameState':
+                self.ping_counter = 0
                 updated = self.lichess_game.update(event)
 
                 if self.lichess_game.status != Game_Status.STARTED:
