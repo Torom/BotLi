@@ -1,4 +1,5 @@
 import os
+import random
 from typing import Tuple
 
 import chess
@@ -320,7 +321,9 @@ class Lichess_Game:
         if not is_endgame or incompatible_variant:
             return
 
-        best_move: Tuple[chess.Move, int, int] | None = None
+        best_moves: list[chess.Move] = []
+        best_wdl = -2
+        best_dtz = 1_000_000
         for move in self.board.legal_moves:
             board_copy = self.board.copy()
             board_copy.push(move)
@@ -333,26 +336,32 @@ class Lichess_Game:
             wdl = self._dtz_to_wdl(dtz, board_copy.halfmove_clock)
             dtz = 0 if board_copy.halfmove_clock == 0 else dtz
 
-            if best_move:
-                if wdl > best_move[1]:
-                    best_move = (move, wdl, dtz)
-                elif wdl == best_move[1]:
-                    if dtz < best_move[2]:
-                        best_move = (move, wdl, dtz)
+            if best_moves:
+                if wdl > best_wdl:
+                    best_moves = [move]
+                    best_wdl = wdl
+                    best_dtz = dtz
+                elif wdl == best_wdl:
+                    if dtz < best_dtz:
+                        best_moves = [move]
+                        best_dtz = dtz
+                    elif dtz == best_dtz:
+                        best_moves.append(move)
             else:
-                best_move = (move, wdl, dtz)
+                best_moves.append(move)
+                best_wdl = wdl
+                best_dtz = dtz
 
-        assert best_move
-        if best_move[1] == 2:
-            return best_move[0], 'win', False, False
-        elif best_move[1] == 1:
-            return best_move[0], 'cursed win', False, False
-        elif best_move[1] == 0:
-            return best_move[0], 'draw', True, False
-        elif best_move[1] == -1:
-            return best_move[0], 'blessed loss', True, False
+        if best_wdl == 2:
+            return random.choice(best_moves), 'win', False, False
+        elif best_wdl == 1:
+            return random.choice(best_moves), 'cursed win', False, False
+        elif best_wdl == 0:
+            return random.choice(best_moves), 'draw', True, False
+        elif best_wdl == -1:
+            return random.choice(best_moves), 'blessed loss', True, False
         else:
-            return best_move[0], 'loss', False, True
+            return random.choice(best_moves), 'loss', False, True
 
     def _dtz_to_wdl(self, dtz: int, halfmove_clock: int) -> int:
         if dtz > 0:
