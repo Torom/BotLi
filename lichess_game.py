@@ -489,7 +489,7 @@ class Lichess_Game:
         elif number >= 1_000:
             return f'{number/1_000:5.1f} k'
         else:
-            return f'{number:7}'
+            return f'{number:5}  '
 
     def _format_score(self, score: chess.engine.PovScore) -> str:
         if not score.is_mate():
