@@ -450,13 +450,11 @@ class Lichess_Game:
         depth_str = f'{info_depth}/{info_seldepth}'
         depth = f'{depth_str:6}' if info_depth and info_seldepth else 6 * ' '
 
-        if info_nps := info.get('nps'):
-            if info_nps >= 1_000_000:
-                nps = f'nps: {info_nps/1000000:5.1f} M'
-            else:
-                nps = f'nps: {info_nps/1000:5.1f} k'
-        else:
-            nps = 8 * ' '
+        info_nodes = info.get('nodes')
+        nodes = f'nodes: {self._format_number(info_nodes)}' if info_nodes else 14 * ' '
+
+        info_nps = info.get('nps')
+        nps = f'nps: {self._format_number(info_nps)}' if info_nps else 12 * ' '
 
         if info_time := info.get('time'):
             minutes, seconds = divmod(info_time, 60)
@@ -468,9 +466,21 @@ class Lichess_Game:
         hashfull = f'hash: {info_hashfull/10:4.1f} %' if info_hashfull else 12 * ' '
 
         info_tbhits = info.get('tbhits')
-        tbhits = f'tb: {info_tbhits}' if info_tbhits else ''
+        tbhits = f'tb: {self._format_number(info_tbhits)}' if info_tbhits else ''
 
-        return '     '.join((score, depth, nps, time, hashfull, tbhits))
+        return '     '.join((score, depth, nodes, nps, time, hashfull, tbhits))
+
+    def _format_number(self, number: int) -> str:
+        if number >= 1_000_000_000_000:
+            return f'{number/1_000_000_000_000:5.1f} T'
+        elif number >= 1_000_000_000:
+            return f'{number/1_000_000_000:5.1f} G'
+        elif number >= 1_000_000:
+            return f'{number/1_000_000:5.1f} M'
+        elif number >= 1_000:
+            return f'{number/1_000:5.1f} k'
+        else:
+            return f'{number:7}'
 
     def _format_score(self, score: chess.engine.PovScore) -> str:
         if not score.is_mate():
