@@ -488,7 +488,7 @@ class Lichess_Game:
         if number >= 1_000_000_000_000:
             return f'{number/1_000_000_000_000:5.1f} T'
         elif number >= 1_000_000_000:
-            return f'{number/1_000_000_000:5.1f} G'
+            return f'{number/1_000_000_000:5.1f} B'
         elif number >= 1_000_000:
             return f'{number/1_000_000:5.1f} M'
         elif number >= 1_000:
