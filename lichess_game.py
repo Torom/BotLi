@@ -336,10 +336,10 @@ class Lichess_Game:
             wdl = self._dtz_to_wdl(dtz, board_copy.halfmove_clock)
 
             if board_copy.halfmove_clock == 0:
-                if wdl > 0:
-                    dtz -= 10_000
-                else:
+                if wdl < 0:
                     dtz += 10_000
+                else:
+                    dtz -= 10_000
 
             if best_moves:
                 if wdl > best_wdl:
