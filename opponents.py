@@ -48,9 +48,10 @@ class Opponent:
 
 
 class Opponents:
-    def __init__(self, perf_type: Perf_Type, estimated_game_duration: timedelta) -> None:
+    def __init__(self, perf_type: Perf_Type, estimated_game_duration: timedelta, delay: int) -> None:
         self.perf_type = perf_type
         self.estimated_game_duration = estimated_game_duration
+        self.delay = timedelta(seconds=delay)
         self.opponent_list = self._load()
 
     def next_opponent(self, online_bots: list[dict]) -> dict:
@@ -75,7 +76,7 @@ class Opponents:
 
         multiplier = opponent_value.multiplier if opponent_value.multiplier >= 5 else 1
         duration_ratio = game_duration / self.estimated_game_duration
-        timeout = duration_ratio ** 2 * self.estimated_game_duration * 20 * multiplier
+        timeout = duration_ratio ** 2 * (self.estimated_game_duration + self.delay) * 20 * multiplier
 
         if opponent_value.release_time > datetime.now():
             timeout += opponent_value.release_time - datetime.now()

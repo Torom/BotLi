@@ -22,7 +22,7 @@ class Matchmaking:
         self.estimated_game_duration = timedelta(seconds=(initial_time + increment * 80) * 2)
 
         self.perf_type = self._get_perf_type()
-        self.opponents = Opponents(self.perf_type, self.estimated_game_duration)
+        self.opponents = Opponents(self.perf_type, self.estimated_game_duration, self.config['matchmaking']['delay'])
         self.opponent: dict | None = None
         self.game_start_time: datetime | None = None
         self.need_next_opponent = True
