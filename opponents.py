@@ -65,7 +65,7 @@ class Opponents:
 
         return self.next_opponent(online_bots)
 
-    def add_timeout(self, username: str, success: bool, game_duration: timedelta) -> None:
+    def add_timeout(self, username: str, success: bool, game_duration: timedelta, challenge_duration: timedelta) -> None:
         opponent = self._find(username)
         opponent_value = opponent.values[self.perf_type]
 
@@ -76,7 +76,7 @@ class Opponents:
 
         multiplier = opponent_value.multiplier if opponent_value.multiplier >= 5 else 1
         duration_ratio = game_duration / self.estimated_game_duration
-        timeout = duration_ratio ** 2 * (self.estimated_game_duration + self.delay) * 20 * multiplier
+        timeout = duration_ratio ** 2 * (self.estimated_game_duration + self.delay + challenge_duration) * 20 * multiplier
 
         if opponent_value.release_time > datetime.now():
             timeout += opponent_value.release_time - datetime.now()
