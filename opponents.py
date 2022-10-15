@@ -76,7 +76,7 @@ class Opponents:
 
         multiplier = opponent_value.multiplier if opponent_value.multiplier >= 5 else 1
         duration_ratio = game_duration / self.estimated_game_duration
-        timeout = duration_ratio ** 2 * (self.estimated_game_duration + self.delay + challenge_duration) * 20 * multiplier
+        timeout = duration_ratio ** 2 * self.estimated_game_duration * 20 * multiplier + self.delay + challenge_duration
 
         if opponent_value.release_time > datetime.now():
             timeout += opponent_value.release_time - datetime.now()
