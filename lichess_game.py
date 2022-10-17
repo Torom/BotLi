@@ -389,7 +389,7 @@ class Lichess_Game:
             return
 
         paths = self.config['engine']['syzygy']['paths']
-        tablebase = chess.syzygy.open_tablebase(paths[0])
+        tablebase = chess.syzygy.open_tablebase(paths[0], VariantBoard=type(self.board))
 
         for path in paths[1:]:
             tablebase.add_directory(path)
