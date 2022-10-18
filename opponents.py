@@ -48,26 +48,27 @@ class Opponent:
 
 
 class Opponents:
-    def __init__(self, perf_type: Perf_Type, estimated_game_duration: timedelta, delay: int) -> None:
-        self.perf_type = perf_type
+    def __init__(self, estimated_game_duration: timedelta, delay: int) -> None:
         self.estimated_game_duration = estimated_game_duration
         self.delay = timedelta(seconds=delay)
         self.opponent_list = self._load()
 
-    def next_opponent(self, online_bots: list[dict]) -> dict:
+    def next_opponent(self, perf_type: Perf_Type, online_bots: list[dict]) -> dict:
         for bot in online_bots:
-            opponent = self._find(bot['username'])
-            if opponent.values[self.perf_type].release_time <= datetime.now():
+            opponent = self._find(perf_type, bot['username'])
+            if opponent.values[perf_type].release_time <= datetime.now():
                 return bot
 
-        self.reset_release_time()
+        self.reset_release_time(perf_type)
         print('matchmaking reseted')
 
-        return self.next_opponent(online_bots)
+        return self.next_opponent(perf_type, online_bots)
 
-    def add_timeout(self, username: str, success: bool, game_duration: timedelta, challenge_duration: timedelta) -> None:
-        opponent = self._find(username)
-        opponent_value = opponent.values[self.perf_type]
+    def add_timeout(
+            self, perf_type: Perf_Type, username: str, success: bool, game_duration: timedelta,
+            challenge_duration: timedelta) -> None:
+        opponent = self._find(perf_type, username)
+        opponent_value = opponent.values[perf_type]
 
         if success and opponent_value.multiplier > 1:
             opponent_value.multiplier //= 2
@@ -90,23 +91,23 @@ class Opponents:
 
         self._save()
 
-    def reset_release_time(self, full_reset: bool = False) -> None:
+    def reset_release_time(self, perf_type: Perf_Type, full_reset: bool = False) -> None:
         for opponent in self.opponent_list:
-            if self.perf_type in opponent.values:
-                if full_reset or opponent.values[self.perf_type].multiplier == 1:
-                    opponent.values[self.perf_type].release_time = datetime.now()
+            if perf_type in opponent.values:
+                if full_reset or opponent.values[perf_type].multiplier == 1:
+                    opponent.values[perf_type].release_time = datetime.now()
 
-    def _find(self, username: str) -> Opponent:
+    def _find(self, perf_type: Perf_Type, username: str) -> Opponent:
         try:
             opponent = self.opponent_list[self.opponent_list.index(Opponent(username, {}))]
 
-            if self.perf_type in opponent.values:
+            if perf_type in opponent.values:
                 return opponent
             else:
-                opponent.values[self.perf_type] = Matchmaking_Value()
+                opponent.values[perf_type] = Matchmaking_Value()
                 return opponent
         except ValueError:
-            return Opponent(username, {self.perf_type: Matchmaking_Value()})
+            return Opponent(username, {perf_type: Matchmaking_Value()})
 
     def _load(self) -> list[Opponent]:
         if os.path.isfile('matchmaking.json'):

@@ -1,4 +1,5 @@
 import json
+import random
 from datetime import datetime, timedelta
 
 from api import API
@@ -13,44 +14,54 @@ from pending_challenge import Pending_Challenge
 
 class Matchmaking:
     def __init__(self, config: dict, api: API) -> None:
-        self.config = config
         self.api = api
         self.next_update = datetime.now()
-        self.variant = Variant(self.config['matchmaking']['variant'])
-        initial_time: int = self.config['matchmaking']['initial_time']
-        increment: int = self.config['matchmaking']['increment']
-        self.estimated_game_duration = timedelta(seconds=(initial_time + increment * 80) * 2)
+        self.initial_time: int = config['matchmaking']['initial_time']
+        self.increment: int = config['matchmaking']['increment']
+        self.is_rated: bool = config['matchmaking']['rated']
+        self.timeout = max(config['matchmaking']['timeout'], 1)
+        self.min_rating_diff: int = config['matchmaking'].get('min_rating_diff', 0)
+        self.max_rating_diff: int = config['matchmaking'].get('max_rating_diff', float('inf'))
+        self.estimated_game_duration = timedelta(seconds=(self.initial_time + self.increment * 80) * 2)
+        self.perf_types = [self._variant_to_perf_type(variant) for variant in config['matchmaking']['variants']]
+        self.opponents = Opponents(self.estimated_game_duration, config['matchmaking']['delay'])
+        self.need_next_opponent = True
 
-        self.perf_type = self._get_perf_type()
-        self.opponents = Opponents(self.perf_type, self.estimated_game_duration, self.config['matchmaking']['delay'])
+        self.perf_type: Perf_Type | None = None
         self.opponent: dict | None = None
         self.game_start_time: datetime | None = None
         self.challenge_duration: timedelta | None = None
-        self.need_next_opponent = True
-        self.challenger = Challenger(self.config, self.api)
+        self.online_bots: list[dict] | None = None
+
+        self.challenger = Challenger(config, self.api)
 
     def create_challenge(self, pending_challenge: Pending_Challenge) -> None:
         if self.need_next_opponent:
             self._call_update()
-            self.opponent = self.opponents.next_opponent(self.online_bots)
+            assert self.online_bots
+
+            self.perf_type = random.choice(self.perf_types)
+            self.opponent = self.opponents.next_opponent(self.perf_type, self._filter_bot_list(
+                self.perf_type, self.online_bots))
 
             color = Challenge_Color.WHITE
             self.need_next_opponent = False
         else:
+            assert self.perf_type
             assert self.opponent
+
             color = Challenge_Color.BLACK
             self.need_next_opponent = True
 
         opponent_username = self.opponent['username']
 
-        print(f'challenging {opponent_username} ({self.opponent["rating_diff"]:+.1f}) as {color.value}')
+        print(
+            f'Challenging {opponent_username} ({self.opponent[self.perf_type]:+.1f}) as {color.value} to {self.perf_type.value} ...')
 
-        rated = self.config['matchmaking']['rated']
-        initial_time = self.config['matchmaking']['initial_time']
-        increment = self.config['matchmaking']['increment']
-        timeout = max(self.config['matchmaking']['timeout'], 1)
-        challenge_request = Challenge_Request(opponent_username, initial_time,
-                                              increment, rated, color, self.variant, timeout)
+        challenge_request = Challenge_Request(
+            opponent_username, self.initial_time, self.increment, self.is_rated, color, self._perf_type_to_variant(
+                self.perf_type),
+            self.timeout)
 
         last_reponse: Challenge_Response | None = None
         challenge_start_time = datetime.now()
@@ -63,7 +74,8 @@ class Matchmaking:
         assert last_reponse
         if not last_reponse.success and not last_reponse.has_reached_rate_limit:
             self.need_next_opponent = True
-            self.opponents.add_timeout(opponent_username, False, self.estimated_game_duration, self.challenge_duration)
+            self.opponents.add_timeout(self.perf_type, opponent_username, False,
+                                       self.estimated_game_duration, self.challenge_duration)
 
         pending_challenge.set_final_state(last_reponse.success, last_reponse.has_reached_rate_limit)
 
@@ -71,6 +83,7 @@ class Matchmaking:
         self.game_start_time = datetime.now()
 
     def on_game_finished(self, game: Game) -> None:
+        assert self.perf_type
         assert self.opponent
         assert self.game_start_time
         assert self.challenge_duration
@@ -82,64 +95,59 @@ class Matchmaking:
             self.need_next_opponent = True
             game_duration += self.estimated_game_duration
 
-        self.opponents.add_timeout(self.opponent['username'], not was_aborted, game_duration, self.challenge_duration)
+        self.opponents.add_timeout(
+            self.perf_type, self.opponent['username'],
+            not was_aborted, game_duration, self.challenge_duration)
 
     def _call_update(self) -> None:
         if self.next_update <= datetime.now():
             print('updating online bots and rankings ...')
-            self.player_rating = self._get_rating()
             self.online_bots = self._get_online_bots()
 
     def _get_online_bots(self) -> list[dict]:
-        online_bots_stream = self.api.get_online_bots_stream()
-        min_rating_diff = self.config['matchmaking'].get('min_rating_diff', 0)
-        max_rating_diff = self.config['matchmaking'].get('max_rating_diff', float('inf'))
+        user_ratings = {perf_type: self._get_rating(perf_type) for perf_type in self.perf_types}
 
         online_bots: list[dict] = []
+        online_bots_stream = self.api.get_online_bots_stream()
         for line in online_bots_stream:
             if line:
                 bot = json.loads(line)
 
                 is_ourselves = bot['username'] == self.api.user['username']
                 is_disabled = 'disabled' in bot
-                has_tosViolation = 'tosViolation' in bot if self.config['matchmaking']['rated'] else False
+                has_tosViolation = 'tosViolation' in bot if self.is_rated else False
 
                 if is_ourselves or is_disabled or has_tosViolation:
                     continue
 
-                if self.perf_type.value in bot['perfs']:
-                    bot_rating = bot['perfs'][self.perf_type.value]['rating']
-                else:
-                    bot_rating = 1500
+                for perf_type in self.perf_types:
+                    if perf_type.value in bot['perfs']:
+                        bot_rating = bot['perfs'][perf_type.value]['rating']
+                    else:
+                        bot_rating = 1500
 
-                bot['rating_diff'] = bot_rating - self.player_rating
-                if abs(bot['rating_diff']) >= min_rating_diff and abs(bot['rating_diff']) <= max_rating_diff:
-                    online_bots.append(bot)
+                    bot[perf_type] = bot_rating - user_ratings[perf_type]
 
-        if len(online_bots) == 0:
-            raise RuntimeError('No online bots in rating range, check config!')
-
-        online_bots.sort(key=lambda bot: abs(bot['rating_diff']))
+                online_bots.append(bot)
 
         self.next_update = datetime.now() + timedelta(minutes=30)
         return online_bots
 
-    def _get_rating(self) -> float:
-        perfomance = self.api.get_perfomance(self.api.user['username'], self.perf_type)
+    def _get_rating(self, perf_type: Perf_Type) -> float:
+        perfomance = self.api.get_perfomance(self.api.user['username'], perf_type)
         provisional: bool = perfomance['perf']['glicko']['provisional']
         rating: float = perfomance['perf']['glicko']['rating']
         deviation: float = perfomance['perf']['glicko']['deviation']
 
         return rating + deviation if provisional else rating
 
-    def _get_perf_type(self) -> Perf_Type:
-        if self.variant not in [Variant.STANDARD, Variant.FROM_POSITION]:
-            return Perf_Type(self.variant.value)
+    def _variant_to_perf_type(self, matchmaking_variant: str) -> Perf_Type:
+        variant = Variant(matchmaking_variant)
 
-        initial_time: int = self.config['matchmaking']['initial_time']
-        increment: int = self.config['matchmaking']['increment']
-        estimated_game_duration = initial_time + increment * 40
+        if variant != Variant.STANDARD:
+            return Perf_Type(variant.value)
 
+        estimated_game_duration = self.initial_time + self.increment * 40
         if estimated_game_duration < 179:
             return Perf_Type.BULLET
         elif estimated_game_duration < 479:
@@ -148,3 +156,14 @@ class Matchmaking:
             return Perf_Type.RAPID
         else:
             return Perf_Type.CLASSICAL
+
+    def _perf_type_to_variant(self, perf_type: Perf_Type) -> Variant:
+        if perf_type in [Perf_Type.BULLET, Perf_Type.BLITZ, Perf_Type.RAPID, Perf_Type.CLASSICAL]:
+            return Variant.STANDARD
+        else:
+            return Variant(perf_type.value)
+
+    def _filter_bot_list(self, perf_type: Perf_Type, online_bots: list[dict]) -> list[dict]:
+        bot_list = [bot for bot in online_bots if abs(
+            bot[perf_type]) >= self.min_rating_diff and abs(bot[perf_type]) <= self.max_rating_diff]
+        return sorted(bot_list, key=lambda bot: abs(bot[perf_type]))

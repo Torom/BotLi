@@ -102,7 +102,16 @@ matchmaking:
   increment: 1                            # Increment time for matchmaking mode.
   rated: true                             # Activate rated games in matchmaking mode.
   timeout: 60                             # Time until a challenge is canceled.
-  variant: standard                       # Chess variant (https://lichess.org/variant) to challenge.
+  variants:                               # Chess variants (https://lichess.org/variant) to challenge.
+    - standard
+#   - chess960
+#   - antichess
+#   - atomic
+#   - crazyhouse
+#   - horde
+#   - kingOfTheHill
+#   - racingKings
+#   - threeCheck
 # min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
 # max_rating_diff: 300                    # Maximum rating distance to opponent. (Commenting allowed)
   delay: 10                               # Time in seconds the bot must be idle before a new challenge is started.
