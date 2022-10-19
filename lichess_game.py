@@ -75,8 +75,8 @@ class Lichess_Game:
         print(message)
         self.last_message = message
         self.board.push(move)
-        if not engine_move and self.ponder_enabled:
-            self.engine.analysis(self.board)
+        if not engine_move:
+            self.start_pondering()
         return move.uci(), offer_draw, resign
 
     def update(self, gameState_event: dict) -> bool:
@@ -135,6 +135,10 @@ class Lichess_Game:
 
     def is_abortable(self) -> bool:
         return len(self.board.move_stack) < 2
+
+    def start_pondering(self) -> None:
+        if self.ponder_enabled:
+            self.engine.analysis(self.board)
 
     def end_game(self) -> None:
         self.engine.quit()

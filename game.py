@@ -46,6 +46,8 @@ class Game(Thread):
                         self.api.resign_game(self.game_id)
                     else:
                         self.api.send_move(self.game_id, uci_move, offer_draw)
+                else:
+                    self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
                 self.ping_counter = 0
                 updated = self.lichess_game.update(event)
