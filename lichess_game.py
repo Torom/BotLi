@@ -522,7 +522,6 @@ class Lichess_Game:
                 delimiter = ';' if os.name == 'nt' else ':'
                 syzygy_path = delimiter.join(self.config['engine']['syzygy']['paths'])
                 options['SyzygyPath'] = syzygy_path
-                options['SyzygyProbeDepth'] = self.config['engine']['syzygy']['max_pieces']
 
         def is_managed(key: str): return chess.engine.Option(key, '', None, None, None, None).is_managed()
         options = {key: value for key, value in options.items() if not is_managed(key)}
