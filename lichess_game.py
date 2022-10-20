@@ -1,5 +1,6 @@
 import os
 import random
+import subprocess
 from typing import Tuple
 
 import chess
@@ -518,21 +519,22 @@ class Lichess_Game:
 
     def _get_engine(self) -> chess.engine.SimpleEngine:
         if self.board.uci_variant != 'chess' and self.config['engine']['variants']['enabled']:
-            engine = chess.engine.SimpleEngine.popen_uci(self.config['engine']['variants']['path'])
-            options = self.config['engine']['variants']['uci_options']
+            engine_path = self.config['engine']['variants']['path']
+            engine_options = self.config['engine']['variants']['uci_options']
         else:
-            engine = chess.engine.SimpleEngine.popen_uci(self.config['engine']['path'])
-            options = self.config['engine']['uci_options']
+            engine_path = self.config['engine']['path']
+            engine_options = self.config['engine']['uci_options']
 
             if self.config['engine']['syzygy']['enabled']:
                 delimiter = ';' if os.name == 'nt' else ':'
                 syzygy_path = delimiter.join(self.config['engine']['syzygy']['paths'])
-                options['SyzygyPath'] = syzygy_path
+                engine_options['SyzygyPath'] = syzygy_path
 
         def is_managed(key: str): return chess.engine.Option(key, '', None, None, None, None).is_managed()
-        options = {key: value for key, value in options.items() if not is_managed(key)}
+        engine_options = {key: value for key, value in engine_options.items() if not is_managed(key)}
 
-        engine.configure(options)
+        engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=subprocess.DEVNULL)
+        engine.configure(engine_options)
 
         return engine
 
