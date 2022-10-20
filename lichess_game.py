@@ -59,6 +59,7 @@ class Lichess_Game:
             offer_draw = offer_draw and self.draw_enabled
             resign = resign and self.resign_enabled
             message = f'Syzygy:  {self._format_move(move):14} {outcome:>7}'
+            self.stop_pondering()
         elif response := self._make_egtb_move():
             uci_move, outcome, offer_draw, resign = response
             offer_draw = offer_draw and self.draw_enabled
@@ -139,6 +140,11 @@ class Lichess_Game:
     def start_pondering(self) -> None:
         if self.ponder_enabled:
             self.engine.analysis(self.board)
+
+    def stop_pondering(self) -> None:
+        if self.ponder_enabled:
+            self.ponder_enabled = False
+            self.engine.analysis(self.board, chess.engine.Limit(time=0.001))
 
     def end_game(self) -> None:
         self.engine.quit()
