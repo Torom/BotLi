@@ -3,7 +3,7 @@ import argparse
 from api import API
 from challenge_request import Challenge_Request
 from config import load_config
-from enums import Challenge_Color, Variant
+from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
 from logo import LOGO
@@ -14,7 +14,7 @@ COMMANDS = {
     'help': 'Prints this message.',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
-    'reset': 'Resets matchmaking.',
+    'reset': 'Resets matchmaking. Usage: reset [PERF_TYPE]',
     'stop': 'Stops matchmaking mode.'
 }
 
@@ -74,7 +74,7 @@ class UserInterface:
             elif command[0] == 'quit':
                 self._quit()
             elif command[0] == 'reset':
-                self._reset()
+                self._reset(command)
             elif command[0] == 'stop':
                 self._stop()
             else:
@@ -167,8 +167,18 @@ class UserInterface:
         self.event_handler.stop()
         self.event_handler.join()
 
-    def _reset(self) -> None:
-        self.game_manager.matchmaking.opponents.reset_release_time(full_reset=True)
+    def _reset(self, command: list[str]) -> None:
+        if len(command) != 2:
+            print(COMMANDS['reset'])
+            return
+
+        try:
+            perf_type = Perf_Type(command[1])
+        except ValueError as e:
+            print(e)
+            return
+
+        self.game_manager.matchmaking.opponents.reset_release_time(perf_type, full_reset=True)
         print('Matchmaking has been reset.')
 
     def _stop(self) -> None:
