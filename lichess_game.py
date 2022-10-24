@@ -116,6 +116,8 @@ class Lichess_Game:
                 message = 'Game drawn by threefold repetition.'
             elif self.board.is_insufficient_material():
                 message = 'Game drawn due to insufficient material.'
+            elif self.board.is_variant_draw():
+                message = 'Game drawn by variant rules.'
             else:
                 message = 'Game drawn by agreement.'
         elif self.status == Game_Status.STALEMATE:
