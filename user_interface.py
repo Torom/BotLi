@@ -1,4 +1,6 @@
 import argparse
+from enum import Enum
+from typing import Type, TypeVar
 
 from api import API
 from challenge_request import Challenge_Request
@@ -17,6 +19,8 @@ COMMANDS = {
     'reset': 'Resets matchmaking. Usage: reset [PERF_TYPE]',
     'stop': 'Stops matchmaking mode.'
 }
+
+T = TypeVar('T', bound=Enum)
 
 
 class UserInterface:
@@ -115,7 +119,7 @@ class UserInterface:
             increment = int(command[3]) if command_length > 3 else 1
             color = Challenge_Color(command[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
             rated = command[5].lower() == 'true' if command_length > 5 else True
-            variant = self._find_variant(command[6]) if command_length > 6 else Variant.STANDARD
+            variant = self._find_enum(command[6], Variant) if command_length > 6 else Variant.STANDARD
         except ValueError as e:
             print(e)
             return
@@ -136,7 +140,7 @@ class UserInterface:
             initial_time = int(command[3]) if command_length > 3 else 60
             increment = int(command[4]) if command_length > 4 else 1
             rated = command[5].lower() == 'true' if command_length > 5 else True
-            variant = self._find_variant(command[6]) if command_length > 6 else Variant.STANDARD
+            variant = self._find_enum(command[6], Variant) if command_length > 6 else Variant.STANDARD
         except ValueError as e:
             print(e)
             return
@@ -173,7 +177,7 @@ class UserInterface:
             return
 
         try:
-            perf_type = Perf_Type(command[1])
+            perf_type = self._find_enum(command[1], Perf_Type)
         except ValueError as e:
             print(e)
             return
@@ -194,12 +198,12 @@ class UserInterface:
         for key, value in COMMANDS.items():
             print(f'{key:11}\t\t# {value}')
 
-    def _find_variant(self, name: str) -> Variant:
-        for variant in Variant:
-            if variant.value.lower() == name.lower():
-                return variant
+    def _find_enum(self, name: str, enum_type: Type[T]) -> T:
+        for enum in enum_type:
+            if enum.value.lower() == name.lower():
+                return enum
 
-        raise ValueError(f'{name} is not a valid Variant')
+        raise ValueError(f'{name} is not a valid {enum_type}')
 
 
 class Autocompleter:
