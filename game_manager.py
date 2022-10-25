@@ -65,8 +65,9 @@ class Game_Manager(Thread):
             self.game_counter.decrement()
 
     def add_challenge(self, challenge_id: Challenge_ID) -> None:
-        self.open_challenge_ids.append(challenge_id)
-        self.changed_event.set()
+        if challenge_id not in self.open_challenge_ids:
+            self.open_challenge_ids.append(challenge_id)
+            self.changed_event.set()
 
     def request_challenge(self, *challenge_requests: Challenge_Request) -> None:
         self.challenge_requests.extend(challenge_requests)
