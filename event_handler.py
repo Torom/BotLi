@@ -43,8 +43,9 @@ class Event_Handler(Thread):
                 if challenger_name == self.api.user['username']:
                     continue
 
-                challenge_id = event['challenge']['id']
+                print(self.challenge_validator.format_challenge_event(event))
 
+                challenge_id = event['challenge']['id']
                 if decline_reason := self.challenge_validator.get_decline_reason(event):
                     self.api.decline_challenge(challenge_id, decline_reason)
                     continue

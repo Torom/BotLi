@@ -16,17 +16,6 @@ class Challenge_Validator:
         is_bot = challenge_event['challenge']['challenger']['title'] == 'BOT'
         modes = self.config['challenge']['bot_modes'] if is_bot else self.config['challenge']['human_modes']
 
-        challenger_name = challenge_event['challenge']['challenger']['name']
-        challenge_id = challenge_event['challenge']['id']
-        challenger_title = challenge_event['challenge']['challenger']['title']
-        challenger_title = challenger_title if challenger_title else ''
-        challenger_rating = challenge_event['challenge']['challenger']['rating']
-        tc = challenge_event['challenge']['timeControl'].get('show')
-        rated = challenge_event['challenge']['rated']
-        variant_name = challenge_event['challenge']['variant']['name']
-
-        print(f'ID: {challenge_id}\tChallenger: {challenger_title} {challenger_name} ({challenger_rating})\tTC: {tc}\tRated: {rated}\tVariant: {variant_name}')
-
         if modes is None:
             if is_bot:
                 print('Bots are not allowed according to config.')
@@ -70,3 +59,18 @@ class Challenge_Validator:
         elif is_casual and 'casual' not in modes:
             print(f'Casual is not allowed according to config.')
             return Decline_Reason.RATED
+
+    def format_challenge_event(self, challenge_event: dict) -> str:
+        id_str = f'ID: {challenge_event["challenge"]["id"]}'
+        title = challenge_event['challenge']['challenger'].get('title') or ''
+        name = challenge_event['challenge']['challenger']['name']
+        rating = challenge_event['challenge']['challenger']['rating']
+        provisional = '?' if challenge_event['challenge']['challenger'].get('provisional') else ''
+        challenger_str = f'Challenger: {title}{" " if title else ""}{name} ({rating}{provisional})'
+        tc_str = f'TC: {challenge_event["challenge"]["timeControl"].get("show", "Correspondence")}'
+        rated_str = f'Rated: {challenge_event["challenge"]["rated"]}'
+        color_str = f'Color: {challenge_event["challenge"]["color"].capitalize()}'
+        variant_str = f'Variant: {challenge_event["challenge"]["variant"]["name"]}'
+        delimiter = 5 * ' '
+
+        return delimiter.join([id_str, challenger_str, tc_str, rated_str, color_str, variant_str])
