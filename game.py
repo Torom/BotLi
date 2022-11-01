@@ -80,6 +80,8 @@ class Game(Thread):
                     response = self.chatter.react(command, self.lichess_game)
 
                     self.api.send_chat_message(self.game_id, chat_message.room, response)
+            elif event['type'] == 'opponentGone':
+                continue
             elif event['type'] == 'ping':
                 self.ping_counter += 1
 
