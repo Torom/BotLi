@@ -151,6 +151,7 @@ class Lichess_Game:
 
     def end_game(self) -> None:
         self.engine.quit()
+        self.engine.close()
 
         for book_reader in self.book_readers:
             book_reader.close()
