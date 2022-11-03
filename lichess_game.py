@@ -9,7 +9,7 @@ import chess.polyglot
 import chess.syzygy
 from chess.variant import find_variant
 
-from aliases import CP_Score, Depth, Offer_Draw, Outcome, Resign, UCI_Move, Weight
+from aliases import DTM, DTZ, CP_Score, Depth, Offer_Draw, Outcome, Resign, UCI_Move, Weight
 from api import API
 from enums import Game_Status, Variant
 
@@ -57,17 +57,17 @@ class Lichess_Game:
         elif move := self._make_chessdb_move():
             message = f'ChessDB: {self._format_move(move):14}'
         elif response := self._make_syzygy_move():
-            move, outcome, offer_draw, resign = response
+            move, outcome, dtz, offer_draw, resign = response
             offer_draw = offer_draw and self.draw_enabled
             resign = resign and self.resign_enabled
-            message = f'Syzygy:  {self._format_move(move):14} {outcome:>7}'
+            message = f'Syzygy:  {self._format_move(move):14} {self._format_egtb_info(outcome, dtz)}'
             self.stop_pondering()
         elif response := self._make_egtb_move():
-            uci_move, outcome, offer_draw, resign = response
+            uci_move, outcome, dtz, dtm, offer_draw, resign = response
             offer_draw = offer_draw and self.draw_enabled
             resign = resign and self.resign_enabled
             move = chess.Move.from_uci(uci_move)
-            message = f'EGTB:    {self._format_move(move):14} {outcome:>7}'
+            message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
         else:
             move, info = self._make_engine_move()
             message = f'Engine:  {self._format_move(move):14} {self._format_info(info)}'
@@ -323,7 +323,7 @@ class Lichess_Game:
         else:
             self._reduce_own_time(timeout * 1000)
 
-    def _make_syzygy_move(self) -> Tuple[chess.Move, Outcome, Offer_Draw, Resign] | None:
+    def _make_syzygy_move(self) -> Tuple[chess.Move, Outcome, DTZ, Offer_Draw, Resign] | None:
         enabled = self.config['engine']['syzygy']['enabled'] and self.config['engine']['syzygy']['instant_play']
 
         if not enabled:
@@ -339,6 +339,7 @@ class Lichess_Game:
         best_moves: list[chess.Move] = []
         best_wdl = -2
         best_dtz = 1_000_000
+        best_real_dtz = best_dtz
         for move in self.board.legal_moves:
             board_copy = self.board.copy()
             board_copy.push(move)
@@ -350,6 +351,7 @@ class Lichess_Game:
 
             wdl = self._dtz_to_wdl(dtz, board_copy.halfmove_clock)
 
+            real_dtz = dtz
             if board_copy.halfmove_clock == 0:
                 if wdl < 0:
                     dtz += 10_000
@@ -361,27 +363,30 @@ class Lichess_Game:
                     best_moves = [move]
                     best_wdl = wdl
                     best_dtz = dtz
+                    best_real_dtz = real_dtz
                 elif wdl == best_wdl:
                     if dtz < best_dtz:
                         best_moves = [move]
                         best_dtz = dtz
+                        best_real_dtz = real_dtz
                     elif dtz == best_dtz:
                         best_moves.append(move)
             else:
                 best_moves.append(move)
                 best_wdl = wdl
                 best_dtz = dtz
+                best_real_dtz = real_dtz
 
         if best_wdl == 2:
-            return random.choice(best_moves), 'win', False, False
+            return random.choice(best_moves), 'win', best_real_dtz, False, False
         elif best_wdl == 1:
-            return random.choice(best_moves), 'cursed win', False, False
+            return random.choice(best_moves), 'cursed win', best_real_dtz, False, False
         elif best_wdl == 0:
-            return random.choice(best_moves), 'draw', True, False
+            return random.choice(best_moves), 'draw', best_real_dtz, True, False
         elif best_wdl == -1:
-            return random.choice(best_moves), 'blessed loss', True, False
+            return random.choice(best_moves), 'blessed loss', best_real_dtz, True, False
         else:
-            return random.choice(best_moves), 'loss', False, True
+            return random.choice(best_moves), 'loss', best_real_dtz, False, True
 
     def _dtz_to_wdl(self, dtz: int, halfmove_clock: int) -> int:
         if dtz > 0:
@@ -411,7 +416,7 @@ class Lichess_Game:
 
         return tablebase
 
-    def _make_egtb_move(self) -> Tuple[UCI_Move, Outcome, Offer_Draw, Resign] | None:
+    def _make_egtb_move(self) -> Tuple[UCI_Move, Outcome, DTZ, DTM | None, Offer_Draw, Resign] | None:
         enabled = self.config['engine']['online_moves']['online_egtb']['enabled']
 
         if not enabled:
@@ -430,9 +435,13 @@ class Lichess_Game:
         assert variant
 
         if response := self.api.get_egtb(self.board.fen(), variant, timeout):
-            uci_move = response['moves'][0]['uci']
-            outcome = response['category']
-            return uci_move, outcome, outcome == 'draw', outcome == 'loss'
+            uci_move: str = response['moves'][0]['uci']
+            outcome: str = response['category']
+            dtz: int = -response['moves'][0]['dtz']
+            dtm: int | None = response['dtm']
+            offer_draw = outcome in ['draw', 'blessed loss']
+            resign = outcome == 'loss'
+            return uci_move, outcome, dtz, dtm, offer_draw, resign
         else:
             self._reduce_own_time(timeout * 1000)
 
@@ -520,6 +529,14 @@ class Lichess_Game:
                 return '   0.00'
         else:
             return str(score.pov(self.board.turn))
+
+    def _format_egtb_info(self, outcome: Outcome, dtz: DTZ, dtm: DTM | None = None) -> str:
+        outcome_str = f'{outcome:>7}'
+        dtz_str = f'DTZ: {dtz}' if outcome != 'draw' else ''
+        dtm_str = f'DTM: {dtm}' if dtm else ''
+        delimitier = 5 * ' '
+
+        return delimitier.join([outcome_str, dtz_str, dtm_str])
 
     def _get_engine(self) -> chess.engine.SimpleEngine:
         if self.board.uci_variant != 'chess' and self.config['engine']['variants']['enabled']:
