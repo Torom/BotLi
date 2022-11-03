@@ -43,7 +43,7 @@ class UserInterface:
 
         self._handle_bot_status(args.non_interactive, args.upgrade)
 
-        print('handling challenges ...')
+        print('Handling challenges ...')
         self.event_handler.start()
         self.game_manager.start()
 

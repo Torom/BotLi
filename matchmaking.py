@@ -101,7 +101,7 @@ class Matchmaking:
 
     def _call_update(self) -> None:
         if self.next_update <= datetime.now():
-            print('updating online bots and rankings ...')
+            print('Updating online bots and rankings ...')
             self.online_bots = self._get_online_bots()
 
     def _get_online_bots(self) -> list[dict]:

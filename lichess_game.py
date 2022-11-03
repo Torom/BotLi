@@ -489,22 +489,22 @@ class Lichess_Game:
         depth = f'{depth_str:6}' if info_depth and info_seldepth else 6 * ' '
 
         info_nodes = info.get('nodes')
-        nodes = f'nodes: {self._format_number(info_nodes)}' if info_nodes else 14 * ' '
+        nodes = f'Nodes: {self._format_number(info_nodes)}' if info_nodes else 14 * ' '
 
         info_nps = info.get('nps')
-        nps = f'nps: {self._format_number(info_nps)}' if info_nps else 12 * ' '
+        nps = f'NPS: {self._format_number(info_nps)}' if info_nps else 12 * ' '
 
         if info_time := info.get('time'):
             minutes, seconds = divmod(info_time, 60)
-            time = f'mt: {minutes:02.0f}:{seconds:004.1f}'
+            time = f'MT: {minutes:02.0f}:{seconds:004.1f}'
         else:
             time = 11 * ' '
 
         info_hashfull = info.get('hashfull')
-        hashfull = f'hash: {info_hashfull/10:5.1f} %' if info_hashfull else 13 * ' '
+        hashfull = f'Hash: {info_hashfull/10:5.1f} %' if info_hashfull else 13 * ' '
 
         info_tbhits = info.get('tbhits')
-        tbhits = f'tb: {self._format_number(info_tbhits)}' if info_tbhits else ''
+        tbhits = f'TB: {self._format_number(info_tbhits)}' if info_tbhits else ''
 
         return '     '.join((score, depth, nodes, nps, time, hashfull, tbhits))
 
