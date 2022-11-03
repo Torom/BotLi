@@ -9,7 +9,7 @@ import chess.polyglot
 import chess.syzygy
 from chess.variant import find_variant
 
-from aliases import CP_Score, Depth, Offer_Draw, Outcome, Resign, UCI_Move
+from aliases import CP_Score, Depth, Offer_Draw, Outcome, Resign, UCI_Move, Weight
 from api import API
 from enums import Game_Status, Variant
 
@@ -47,8 +47,9 @@ class Lichess_Game:
         resign = False
         engine_move = False
 
-        if move := self._make_book_move():
-            message = f'Book:    {self._format_move(move):14}'
+        if response := self._make_book_move():
+            move, weight = response
+            message = f'Book:    {self._format_move(move):14} Weight: {weight/65535*100:3.0f} %'
         elif response := self._make_cloud_move():
             move, cp_score, depth = response
             pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), chess.WHITE)
@@ -194,7 +195,7 @@ class Lichess_Game:
 
         return True
 
-    def _make_book_move(self) -> chess.Move | None:
+    def _make_book_move(self) -> Tuple[chess.Move, Weight] | None:
         enabled = self.config['engine']['opening_books']['enabled']
 
         if not enabled:
@@ -211,15 +212,15 @@ class Lichess_Game:
         for book_reader in self.book_readers:
             try:
                 if selection == 'weighted_random':
-                    move = book_reader.weighted_choice(self.board).move
+                    entry = book_reader.weighted_choice(self.board)
                 elif selection == 'uniform_random':
-                    move = book_reader.choice(self.board).move
+                    entry = book_reader.choice(self.board)
                 else:
-                    move = book_reader.find(self.board).move
+                    entry = book_reader.find(self.board)
 
                 self.out_of_book_counter = 0
-                if not self._is_repetition(move):
-                    return move
+                if not self._is_repetition(entry.move):
+                    return entry.move, entry.weight
             except IndexError:
                 pass
 

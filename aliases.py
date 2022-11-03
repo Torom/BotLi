@@ -9,3 +9,4 @@ Resign = bool
 Success = bool
 UCI_Move = str
 Username = str
+Weight = int
