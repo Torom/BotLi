@@ -43,12 +43,12 @@ class UserInterface:
 
         self._handle_bot_status(args.non_interactive, args.upgrade)
 
-        if args.matchmaking:
-            self._matchmaking()
-
         print('handling challenges ...')
         self.event_handler.start()
         self.game_manager.start()
+
+        if args.matchmaking:
+            self._matchmaking()
 
         if args.non_interactive:
             return
