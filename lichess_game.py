@@ -542,9 +542,11 @@ class Lichess_Game:
         if self.board.uci_variant != 'chess' and self.config['engine']['variants']['enabled']:
             engine_path = self.config['engine']['variants']['path']
             engine_options = self.config['engine']['variants']['uci_options']
+            silence_stderr = self.config['engine']['variants'].get('silence_stderr', False)
         else:
             engine_path = self.config['engine']['path']
             engine_options = self.config['engine']['uci_options']
+            silence_stderr = self.config['engine'].get('silence_stderr', False)
 
             if self.config['engine']['syzygy']['enabled']:
                 delimiter = ';' if os.name == 'nt' else ':'
@@ -554,7 +556,9 @@ class Lichess_Game:
         def is_managed(key: str): return chess.engine.Option(key, '', None, None, None, None).is_managed()
         engine_options = {key: value for key, value in engine_options.items() if not is_managed(key)}
 
-        engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=subprocess.DEVNULL)
+        stderr = subprocess.DEVNULL if silence_stderr else None
+
+        engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=stderr)
         engine.configure(engine_options)
 
         return engine
