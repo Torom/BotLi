@@ -49,7 +49,7 @@ class Lichess_Game:
 
         if response := self._make_book_move():
             move, weight = response
-            message = f'Book:    {self._format_move(move):14} Weight: {weight/65535*100:3.0f} %'
+            message = f'Book:    {self._format_move(move):14} {weight/65535*100:>5.0f} %'
         elif response := self._make_cloud_move():
             move, cp_score, depth = response
             pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), chess.WHITE)
