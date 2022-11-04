@@ -31,7 +31,7 @@ class Lichess_Game:
         self.status = Game_Status(gameFull_event['state']['status'])
         self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
         self.resign_enabled: bool = config['engine']['resign']['enabled']
-        self.ponder_enabled: bool = self.config['engine']['ponder']
+        self.ponder_enabled: bool = True
         self.move_overhead = self._get_move_overhead()
         self.book_readers = self._get_book_readers()
         self.tablebase = self._get_tablebase()
@@ -542,10 +542,12 @@ class Lichess_Game:
         if self.board.uci_variant != 'chess' and self.config['engine']['variants']['enabled']:
             engine_path = self.config['engine']['variants']['path']
             engine_options = self.config['engine']['variants']['uci_options']
+            self.ponder_enabled = self.config['engine']['variants']['ponder']
             silence_stderr = self.config['engine']['variants'].get('silence_stderr', False)
         else:
             engine_path = self.config['engine']['path']
             engine_options = self.config['engine']['uci_options']
+            self.ponder_enabled = self.config['engine']['ponder']
             silence_stderr = self.config['engine'].get('silence_stderr', False)
 
             if self.config['engine']['syzygy']['enabled']:
