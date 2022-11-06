@@ -12,3 +12,9 @@ class Challenge_Request:
     color: Challenge_Color
     variant: Variant
     timeout: int
+
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, Challenge_Request):
+            return __o.opponent_username == self.opponent_username
+
+        raise NotImplemented

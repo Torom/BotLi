@@ -185,3 +185,10 @@ class Game_Manager(Thread):
 
             # Reserve a spot for this game
             self.reserved_game_ids.append(challenge_id)
+        elif last_reponse.has_reached_rate_limit and self.challenge_requests:
+            print('Challenge queue cleared due to rate limiting.')
+            self.challenge_requests.clear()
+        elif challenge_request in self.challenge_requests:
+            print(f'Challenges against {challenge_request.opponent_username} removed from queue.')
+            while challenge_request in self.challenge_requests:
+                self.challenge_requests.remove(challenge_request)
