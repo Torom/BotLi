@@ -43,7 +43,7 @@ engine:                                   # Engine settings.
     opening_explorer:
       enabled: false                      # Activate online moves from Lichess opening explorer. The move that has performed best for this bot is played.
       use_for_variants: false             # Whether the Lichess opening explorer should be used for other variants than standard and chess960.
-      min_time: 40                        # Time the bot must have at least to use the online move.
+      min_time: 20                        # Time the bot must have at least to use the online move.
       timeout: 5                          # Time the server has to respond.
       min_games: 5                        # Minimum number of games in which the position must have occurred.
       only_with_wins: false               # Whether to play only moves that have won before.
@@ -51,7 +51,7 @@ engine:                                   # Engine settings.
     chessdb:
       enabled: false                      # Activate online moves from https://chessdb.cn/queryc_en/
       min_eval_depth: 10                  # Minimum evaluation depth. Only for selection: "best".
-      min_time: 40                        # Time the bot must have at least to use the online move.
+      min_time: 20                        # Time the bot must have at least to use the online move.
       timeout: 5                          # Time the server has to respond.
       selection: "best"                   # Move selection is one of "best", "good" or "all".
 #     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
@@ -59,7 +59,7 @@ engine:                                   # Engine settings.
       enabled: false                      # Activate online moves from Lichess cloud eval.
       only_without_book: false            # Whether the cloud should only be used if there is no matching book.
       min_eval_depth: 10                  # Minimum evaluation depth.
-      min_time: 40                        # Time the bot must have at least to use the online move.
+      min_time: 20                        # Time the bot must have at least to use the online move.
       timeout: 5                          # Time the server has to respond.
 #     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
     online_egtb:
