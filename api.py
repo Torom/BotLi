@@ -128,6 +128,23 @@ class API:
         response = self.session.get('https://lichess.org/api/bot/online', stream=True)
         return response.iter_lines()
 
+    def get_opening_explorer(self, username: str, fen: str, variant: Variant, color: str, timeout: int) -> dict | None:
+        try:
+            response = self.session.get('https://explorer.lichess.ovh/player',
+                                        params={'player': username, 'variant': variant.value, 'fen': fen,
+                                                'color': color, 'speeds': 'bullet,blitz,rapid,classical',
+                                                'modes': 'rated', 'recentGames': 0},
+                                        headers={'Authorization': None},
+                                        stream=True, timeout=timeout)
+            response.raise_for_status()
+            last_line = ''
+            for line in response.iter_lines():
+                if line:
+                    last_line = line
+            return json.loads(last_line)
+        except (requests.Timeout, requests.HTTPError) as e:
+            print(e)
+
     def get_perfomance(self, username: str, perf_type: Perf_Type) -> dict:
         response = self.session.get(f'https://lichess.org/api/user/{username}/perf/{perf_type.value}')
         return response.json()

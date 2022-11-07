@@ -40,6 +40,14 @@ engine:                                   # Engine settings.
     selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
 #   max_depth: 16                         # Half move max depth. (Comment this line for max depth)
   online_moves:
+    opening_explorer:
+      enabled: false                      # Activate online moves from Lichess opening explorer. The move that has performed best for this bot is played.
+      use_for_variants: false             # Whether the Lichess opening explorer should be used for other variants than standard and chess960.
+      min_time: 40                        # Time the bot must have at least to use the online move.
+      timeout: 5                          # Time the server has to respond.
+      min_games: 5                        # Minimum number of games in which the position must have occurred.
+      only_with_wins: false               # Whether to play only moves that have won before.
+#     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
     chessdb:
       enabled: false                      # Activate online moves from https://chessdb.cn/queryc_en/
       min_eval_depth: 10                  # Minimum evaluation depth. Only for selection: "best".
