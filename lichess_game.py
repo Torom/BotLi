@@ -50,7 +50,7 @@ class Lichess_Game:
 
         if response := self._make_book_move():
             move, weight = response
-            message = f'Book:    {self._format_move(move):14} {weight/65535*100:>5.0f} %'
+            message = f'Book:    {self._format_move(move):14} {weight:>5.0f} %'
         elif response := self._make_opening_explorer_move():
             move, perfomance, wdl = response
             message = f'Explore: {self._format_move(move):14} Performance: {perfomance}      WDL: {wdl[0]}/{wdl[1]}/{wdl[2]}'
@@ -214,19 +214,18 @@ class Lichess_Game:
 
         selection = self.config['engine']['opening_books']['selection']
         for book_reader in self.book_readers:
-            try:
+            entries = list(book_reader.find_all(self.board))
+            if entries:
                 if selection == 'weighted_random':
-                    entry = book_reader.weighted_choice(self.board)
+                    entry = random.choices(entries, [entry.weight for entry in entries], k=1)[0]
                 elif selection == 'uniform_random':
-                    entry = book_reader.choice(self.board)
+                    entry = random.choice(entries)
                 else:
-                    entry = book_reader.find(self.board)
+                    entry = max(entries, key=lambda entry: entry.weight)
 
-                self.out_of_book_counter = 0
                 if not self._is_repetition(entry.move):
-                    return entry.move, entry.weight
-            except IndexError:
-                pass
+                    self.out_of_book_counter = 0
+                    return entry.move, entry.weight / sum(entry.weight for entry in entries) * 100.0
 
         self.out_of_book_counter += 1
 

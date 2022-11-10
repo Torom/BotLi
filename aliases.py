@@ -16,4 +16,4 @@ Success = bool
 UCI_Move = str
 Username = str
 WDL = Tuple[int, int, int]
-Weight = int
+Weight = float
