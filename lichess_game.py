@@ -280,7 +280,7 @@ class Lichess_Game:
         if response := self.api.get_opening_explorer(self.username, self.board.fen(), self.variant, color, timeout):
             game_count = response['white'] + response['draws'] + response['black']
             if game_count >= min_games:
-                top_move = sorted(response['moves'], key=lambda move: move['performance'], reverse=True)[0]
+                top_move = max(response['moves'], key=lambda move: move['performance'])
                 wins = top_move['white'] if self.board.turn else top_move['black']
                 missing_win = only_with_wins and not bool(wins)
                 if not missing_win:
