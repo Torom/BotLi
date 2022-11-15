@@ -22,15 +22,12 @@ class Opponent:
 
     @classmethod
     def from_dict(cls, dict_: dict) -> 'Opponent':
-        username = dict_['username']
+        username = dict_.pop('username')
 
         categories: dict[Perf_Type, Matchmaking_Value] = {}
         for key, value in dict_.items():
-            if key == 'username':
-                continue
-
-            categories[Perf_Type(key)] = Matchmaking_Value(
-                release_time=datetime.fromisoformat(value['release_time']), multiplier=value['multiplier'])
+            release_time = datetime.fromisoformat(value['release_time'])
+            categories[Perf_Type(key)] = Matchmaking_Value(release_time, value['multiplier'])
 
         return Opponent(username, categories)
 
