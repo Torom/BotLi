@@ -1,6 +1,7 @@
 import os
 import random
 import subprocess
+from collections import deque
 from typing import Tuple
 
 import chess
@@ -40,7 +41,10 @@ class Lichess_Game:
         self.out_of_cloud_counter = 0
         self.out_of_chessdb_counter = 0
         self.engine = self._get_engine()
-        self.scores: list[chess.engine.PovScore] = []
+        consecutive_draw_moves = config['engine']['offer_draw']['consecutive_moves']
+        self.draw_scores: deque[chess.engine.PovScore] = deque(maxlen=consecutive_draw_moves)
+        consecutive_resign_moves = config['engine']['resign']['consecutive_moves']
+        self.resign_scores: deque[chess.engine.PovScore] = deque(maxlen=consecutive_resign_moves)
         self.last_message = 'No eval available yet.'
 
     def make_move(self) -> Tuple[UCI_Move, Offer_Draw, Resign]:
@@ -168,15 +172,15 @@ class Lichess_Game:
         if not self.draw_enabled:
             return False
 
-        min_game_length = self.config['engine']['offer_draw']['min_game_length']
-        consecutive_moves = self.config['engine']['offer_draw']['consecutive_moves']
+        too_shallow = self.board.fullmove_number < self.config['engine']['offer_draw']['min_game_length']
+        too_few_scores = len(self.draw_scores) < self.config['engine']['offer_draw']['consecutive_moves']
 
-        if self.board.fullmove_number < min_game_length or len(self.scores) < consecutive_moves:
+        if too_shallow or too_few_scores:
             return False
 
         max_score = self.config['engine']['offer_draw']['score']
 
-        for score in self.scores[-consecutive_moves:]:
+        for score in self.draw_scores:
             if abs(score.relative.score(mate_score=40000)) > max_score:
                 return False
 
@@ -186,14 +190,12 @@ class Lichess_Game:
         if not self.resign_enabled:
             return False
 
-        consecutive_moves = self.config['engine']['resign']['consecutive_moves']
-
-        if len(self.scores) < consecutive_moves:
+        if len(self.resign_scores) < self.config['engine']['resign']['consecutive_moves']:
             return False
 
         max_score = self.config['engine']['resign']['score']
 
-        for score in self.scores[-consecutive_moves:]:
+        for score in self.resign_scores:
             if score.relative.score(mate_score=40000) > max_score:
                 return False
 
@@ -509,7 +511,8 @@ class Lichess_Game:
         result = self.engine.play(self.board, limit, info=chess.engine.INFO_ALL, ponder=ponder)
         if result.move:
             score = result.info.get('score', chess.engine.PovScore(chess.engine.Mate(1), self.board.turn))
-            self.scores.append(score)
+            self.draw_scores.append(score)
+            self.resign_scores.append(score)
             return result.move, result.info
         raise RuntimeError('Engine could not make a move!')
 
