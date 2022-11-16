@@ -280,19 +280,32 @@ class Lichess_Game:
         if response := self.api.get_opening_explorer(self.username, self.board.fen(), self.variant, color, timeout):
             game_count = response['white'] + response['draws'] + response['black']
             if game_count >= min_games:
-                top_move = max(response['moves'], key=lambda move: move['performance'])
-                wins = top_move['white'] if self.board.turn else top_move['black']
-                missing_win = only_with_wins and not bool(wins)
+                top_move = self._get_opening_explorer_top_move(response['moves'])
+                missing_win = only_with_wins and not bool(top_move['wins'])
                 if not missing_win:
                     self.out_of_opening_explorer_counter = 0
                     move = chess.Move.from_uci(top_move['uci'])
                     if not self._is_repetition(move):
-                        losses = top_move['black'] if self.board.turn else top_move['white']
-                        return move, top_move['performance'], (wins, top_move['draws'], losses)
+                        return move, top_move['performance'], (top_move['wins'], top_move['draws'], top_move['losses'])
 
             self.out_of_opening_explorer_counter += 1
         else:
             self._reduce_own_time(timeout * 1000)
+
+    def _get_opening_explorer_top_move(self, moves: list[dict]) -> dict:
+        selection = self.config['engine']['online_moves']['opening_explorer']['selection']
+
+        if selection == 'win_rate':
+            for move in moves:
+                move['wins'] = move['white'] if self.board.turn else move['black']
+                move['losses'] = move['black'] if self.board.turn else move['white']
+
+            return max(moves, key=lambda move: move['wins'] / (move['white'] + move['draws'] + move['black']))
+        else:
+            top_move = max(moves, key=lambda move: move['performance'])
+            top_move['wins'] = top_move['white'] if self.board.turn else top_move['black']
+            top_move['losses'] = top_move['black'] if self.board.turn else top_move['white']
+            return top_move
 
     def _make_cloud_move(self) -> Tuple[chess.Move, CP_Score, Depth] | None:
         enabled = self.config['engine']['online_moves']['lichess_cloud']['enabled']
