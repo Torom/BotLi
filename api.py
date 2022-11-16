@@ -142,7 +142,7 @@ class API:
                 if line:
                     last_line = line
             return json.loads(last_line)
-        except (requests.Timeout, requests.HTTPError) as e:
+        except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
     def get_perfomance(self, username: str, perf_type: Perf_Type) -> dict:
