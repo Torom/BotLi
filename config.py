@@ -34,6 +34,7 @@ def load_config() -> dict:
             ['name', str, '"name" must be a string wrapped in quotes.'],
             ['ponder', bool, '"ponder" must be a bool.'],
             ['syzygy', dict, '"syzygy" must be a dictionary with indented keys followed by colons.'],
+            ['gaviota', dict, '"gaviota" must be a dictionary with indented keys followed by colons.'],
             ['uci_options', dict, '"uci_options" must be a dictionary with indented keys followed by colons.'],
             ['variants', dict, '"variants" must be a dictionary with indented keys followed by colons.'],
             ['opening_books', dict, '"opening_books" must be a dictionary with indented keys followed by colons.'],
@@ -57,6 +58,17 @@ def load_config() -> dict:
                     f'Your config.yml does not have required `engine` `syzygy` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine']['syzygy'][subsection[0]], subsection[1]):
                 raise Exception(f'`engine` `syzygy` subsection {subsection[2]}')
+
+        gaviota_sections = [
+            ['enabled', bool, '"enabled" must be a bool.'],
+            ['paths', list, '"paths" must be a list.'],
+            ['max_pieces', int, '"max_pieces" must be a integer.']]
+        for subsection in gaviota_sections:
+            if subsection[0] not in CONFIG['engine']['gaviota']:
+                raise Exception(
+                    f'Your config.yml does not have required `engine` `gaviota` subsection `{subsection[0]}`.')
+            if not isinstance(CONFIG['engine']['gaviota'][subsection[0]], subsection[1]):
+                raise Exception(f'`engine` `gaviota` subsection {subsection[2]}')
 
         variants_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
@@ -115,6 +127,11 @@ def load_config() -> dict:
             for path in CONFIG['engine']['syzygy']['paths']:
                 if not os.path.isdir(path):
                     raise Exception(f'Your syzygy directory "{path}" is not a directory.')
+
+        if CONFIG['engine']['gaviota']['enabled']:
+            for path in CONFIG['engine']['gaviota']['paths']:
+                if not os.path.isdir(path):
+                    raise Exception(f'Your gaviota directory "{path}" is not a directory.')
 
         if CONFIG['engine']['opening_books']['enabled']:
             for key, book_list in CONFIG['engine']['opening_books']['books'].items():

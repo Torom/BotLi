@@ -6,6 +6,7 @@ from typing import Tuple
 
 import chess
 import chess.engine
+import chess.gaviota
 import chess.polyglot
 import chess.syzygy
 from chess.variant import find_variant
@@ -35,7 +36,8 @@ class Lichess_Game:
         self.ponder_enabled: bool = True
         self.move_overhead = self._get_move_overhead()
         self.book_readers = self._get_book_readers()
-        self.tablebase = self._get_tablebase()
+        self.syzygy_tablebase = self._get_syzygy_tablebase()
+        self.gaviota_tablebase = self._get_gaviota_tablebase()
         self.out_of_book_counter = 0
         self.out_of_opening_explorer_counter = 0
         self.out_of_cloud_counter = 0
@@ -64,16 +66,16 @@ class Lichess_Game:
             message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
         elif move := self._make_chessdb_move():
             message = f'ChessDB: {self._format_move(move):14}'
+        elif response := self._make_gaviota_move():
+            move, outcome, dtm, offer_draw, resign = response
+            message = f'Gaviota: {self._format_move(move):14} {self._format_egtb_info(outcome, dtm=dtm)}'
+            self.stop_pondering()
         elif response := self._make_syzygy_move():
             move, outcome, dtz, offer_draw, resign = response
-            offer_draw = offer_draw and self.draw_enabled
-            resign = resign and self.resign_enabled
-            message = f'Syzygy:  {self._format_move(move):14} {self._format_egtb_info(outcome, dtz)}'
+            message = f'Syzygy:  {self._format_move(move):14} {self._format_egtb_info(outcome, dtz=dtz)}'
             self.stop_pondering()
         elif response := self._make_egtb_move():
             uci_move, outcome, dtz, dtm, offer_draw, resign = response
-            offer_draw = offer_draw and self.draw_enabled
-            resign = resign and self.resign_enabled
             move = chess.Move.from_uci(uci_move)
             message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
         else:
@@ -88,7 +90,7 @@ class Lichess_Game:
         self.board.push(move)
         if not engine_move:
             self.start_pondering()
-        return move.uci(), offer_draw, resign
+        return move.uci(), offer_draw and self.draw_enabled, resign and self.resign_enabled
 
     def update(self, gameState_event: dict) -> bool:
         self.status = Game_Status(gameState_event['status'])
@@ -165,8 +167,11 @@ class Lichess_Game:
         for book_reader in self.book_readers:
             book_reader.close()
 
-        if self.tablebase:
-            self.tablebase.close()
+        if self.syzygy_tablebase:
+            self.syzygy_tablebase.close()
+
+        if self.gaviota_tablebase:
+            self.gaviota_tablebase.close()
 
     def _is_drawish(self) -> bool:
         if not self.draw_enabled:
@@ -380,13 +385,66 @@ class Lichess_Game:
         else:
             self._reduce_own_time(timeout * 1000)
 
+    def _make_gaviota_move(self) -> Tuple[chess.Move, Outcome, DTM, Offer_Draw, Resign] | None:
+        enabled = self.config['engine']['gaviota']['enabled']
+
+        if not enabled:
+            return
+
+        assert self.gaviota_tablebase
+        is_endgame = chess.popcount(self.board.occupied) <= self.config['engine']['gaviota']['max_pieces']
+        incompatible_variant = self.board.uci_variant != 'chess'
+
+        if not is_endgame or incompatible_variant:
+            return
+
+        best_moves: list[chess.Move] = []
+        best_wdl = -2
+        best_dtm = 1_000_000
+        for move in self.board.legal_moves:
+            board_copy = self.board.copy()
+            board_copy.push(move)
+
+            if board_copy.is_checkmate():
+                wdl = 2
+                dtm = 0
+            else:
+                try:
+                    dtm = -self.gaviota_tablebase.probe_dtm(board_copy)
+                    wdl = self._value_to_wdl(dtm, board_copy.halfmove_clock)
+                except chess.gaviota.MissingTableError:
+                    return
+
+            if best_moves:
+                if wdl > best_wdl:
+                    best_moves = [move]
+                    best_wdl = wdl
+                    best_dtm = dtm
+                elif wdl == best_wdl:
+                    if dtm < best_dtm:
+                        best_moves = [move]
+                        best_dtm = dtm
+                    elif dtm == best_dtm:
+                        best_moves.append(move)
+            else:
+                best_moves.append(move)
+                best_wdl = wdl
+                best_dtm = dtm
+
+        if best_wdl == 2:
+            return random.choice(best_moves), 'win', best_dtm, False, False
+        elif best_wdl == 0:
+            return random.choice(best_moves), 'draw', best_dtm, True, False
+        elif best_wdl == -2:
+            return random.choice(best_moves), 'loss', best_dtm, False, True
+
     def _make_syzygy_move(self) -> Tuple[chess.Move, Outcome, DTZ, Offer_Draw, Resign] | None:
         enabled = self.config['engine']['syzygy']['enabled'] and self.config['engine']['syzygy']['instant_play']
 
         if not enabled:
             return
 
-        assert self.tablebase
+        assert self.syzygy_tablebase
         is_endgame = chess.popcount(self.board.occupied) <= self.config['engine']['syzygy']['max_pieces']
         incompatible_variant = self.board.uci_variant not in ['chess', 'antichess', 'atomic']
 
@@ -402,17 +460,17 @@ class Lichess_Game:
             board_copy.push(move)
 
             try:
-                dtz = -self.tablebase.probe_dtz(board_copy)
+                dtz = -self.syzygy_tablebase.probe_dtz(board_copy)
             except chess.syzygy.MissingTableError:
                 return
 
-            wdl = self._dtz_to_wdl(dtz, board_copy.halfmove_clock)
+            wdl = self._value_to_wdl(dtz, board_copy.halfmove_clock)
 
             real_dtz = dtz
             if board_copy.halfmove_clock == 0:
                 if wdl < 0:
                     dtz += 10_000
-                else:
+                elif wdl > 0:
                     dtz -= 10_000
 
             if best_moves:
@@ -445,21 +503,21 @@ class Lichess_Game:
         else:
             return random.choice(best_moves), 'loss', best_real_dtz, False, True
 
-    def _dtz_to_wdl(self, dtz: int, halfmove_clock: int) -> int:
-        if dtz > 0:
-            if dtz + halfmove_clock <= 100:
+    def _value_to_wdl(self, value: int, halfmove_clock: int) -> int:
+        if value > 0:
+            if value + halfmove_clock <= 100:
                 return 2
             else:
                 return 1
-        elif dtz < 0:
-            if dtz - halfmove_clock >= -100:
+        elif value < 0:
+            if value - halfmove_clock >= -100:
                 return -2
             else:
                 return -1
         else:
             return 0
 
-    def _get_tablebase(self) -> chess.syzygy.Tablebase | None:
+    def _get_syzygy_tablebase(self) -> chess.syzygy.Tablebase | None:
         enabled = self.config['engine']['syzygy']['enabled'] and self.config['engine']['syzygy']['instant_play']
 
         if not enabled:
@@ -467,6 +525,20 @@ class Lichess_Game:
 
         paths = self.config['engine']['syzygy']['paths']
         tablebase = chess.syzygy.open_tablebase(paths[0], VariantBoard=type(self.board))
+
+        for path in paths[1:]:
+            tablebase.add_directory(path)
+
+        return tablebase
+
+    def _get_gaviota_tablebase(self) -> chess.gaviota.PythonTablebase | chess.gaviota.NativeTablebase | None:
+        enabled = self.config['engine']['gaviota']['enabled']
+
+        if not enabled:
+            return
+
+        paths = self.config['engine']['gaviota']['paths']
+        tablebase = chess.gaviota.open_tablebase(paths[0])
 
         for path in paths[1:]:
             tablebase.add_directory(path)
@@ -588,13 +660,13 @@ class Lichess_Game:
         else:
             return str(score.pov(self.board.turn))
 
-    def _format_egtb_info(self, outcome: Outcome, dtz: DTZ, dtm: DTM | None = None) -> str:
+    def _format_egtb_info(self, outcome: Outcome, dtz: DTZ | None = None, dtm: DTM | None = None) -> str:
         outcome_str = f'{outcome:>7}'
-        dtz_str = f'DTZ: {dtz}' if outcome != 'draw' else ''
+        dtz_str = f'DTZ: {dtz}' if dtz else ''
         dtm_str = f'DTM: {dtm}' if dtm else ''
         delimitier = 5 * ' '
 
-        return delimitier.join([outcome_str, dtz_str, dtm_str])
+        return delimitier.join(filter(None, [outcome_str, dtz_str, dtm_str]))
 
     def _get_engine(self) -> chess.engine.SimpleEngine:
         if self.board.uci_variant != 'chess' and self.config['engine']['variants']['enabled']:

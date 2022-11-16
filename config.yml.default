@@ -11,6 +11,11 @@ engine:                                   # Engine settings.
       - "/path/to/syzygy"
     max_pieces: 6                         # Count of max pieces in the local syzygy endgame tablebases.
     instant_play: true                    # Whether the bot should play directly from syzygy without engine if possible.
+  gaviota:
+    enabled: false                        # Activate local gaviota endgame tablebases.
+    paths:                                # Paths to local gaviota endgame tablebases.
+      - "/path/to/gaviota"
+    max_pieces: 5                         # Count of max pieces in the local gaviota endgame tablebases.
   uci_options:                            # Arbitrary UCI options passed to the engine. (Commenting allowed)
     Move Overhead: 100                    # Increase if your bot flags games too often.
     Threads: 4                            # Max CPU threads the engine can use.
