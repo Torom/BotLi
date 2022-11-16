@@ -32,14 +32,56 @@ def load_config() -> dict:
         engine_sections = [
             ['dir', str, '"dir" must be a string wrapped in quotes.'],
             ['name', str, '"name" must be a string wrapped in quotes.'],
+            ['ponder', bool, '"ponder" must be a bool.'],
             ['syzygy', dict, '"syzygy" must be a dictionary with indented keys followed by colons.'],
             ['uci_options', dict, '"uci_options" must be a dictionary with indented keys followed by colons.'],
-            ['variants', dict, '"variants" must be a dictionary with indented keys followed by colons.']]
+            ['variants', dict, '"variants" must be a dictionary with indented keys followed by colons.'],
+            ['opening_books', dict, '"opening_books" must be a dictionary with indented keys followed by colons.'],
+            ['online_moves', dict, '"online_moves" must be a dictionary with indented keys followed by colons.'],
+            ['offer_draw', dict, '"offer_draw" must be a dictionary with indented keys followed by colons.'],
+            ['resign', dict, '"resign" must be a dictionary with indented keys followed by colons.']]
         for subsection in engine_sections:
             if subsection[0] not in CONFIG['engine']:
                 raise Exception(f'Your config.yml does not have required `engine` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine'][subsection[0]], subsection[1]):
                 raise Exception(f'`engine` subsection {subsection[2]}')
+
+        syzygy_sections = [
+            ['enabled', bool, '"enabled" must be a bool.'],
+            ['paths', list, '"paths" must be a list.'],
+            ['max_pieces', int, '"max_pieces" must be a integer.'],
+            ['instant_play', bool, '"instant_play" must be a bool.']]
+        for subsection in syzygy_sections:
+            if subsection[0] not in CONFIG['engine']['syzygy']:
+                raise Exception(
+                    f'Your config.yml does not have required `engine` `syzygy` subsection `{subsection[0]}`.')
+            if not isinstance(CONFIG['engine']['syzygy'][subsection[0]], subsection[1]):
+                raise Exception(f'`engine` `syzygy` subsection {subsection[2]}')
+
+        variants_sections = [
+            ['enabled', bool, '"enabled" must be a bool.'],
+            ['dir', str, '"dir" must be a string wrapped in quotes.'],
+            ['name', str, '"name" must be a string wrapped in quotes.'],
+            ['ponder', bool, '"ponder" must be a bool.'],
+            ['uci_options', dict, '"uci_options" must be a dictionary with indented keys followed by colons.']]
+        for subsection in variants_sections:
+            if subsection[0] not in CONFIG['engine']['variants']:
+                raise Exception(
+                    f'Your config.yml does not have required `engine` `variants` subsection `{subsection[0]}`.')
+            if not isinstance(CONFIG['engine']['variants'][subsection[0]], subsection[1]):
+                raise Exception(f'`engine` `variants` subsection {subsection[2]}')
+
+        online_moves_sections = [
+            ['opening_explorer', dict, '"opening_explorer" must be a dictionary with indented keys followed by colons.'],
+            ['chessdb', dict, '"chessdb" must be a dictionary with indented keys followed by colons.'],
+            ['lichess_cloud', dict, '"lichess_cloud" must be a dictionary with indented keys followed by colons.'],
+            ['online_egtb', dict, '"online_egtb" must be a dictionary with indented keys followed by colons.']]
+        for subsection in online_moves_sections:
+            if subsection[0] not in CONFIG['engine']['online_moves']:
+                raise Exception(
+                    f'Your config.yml does not have required `engine` `online_moves` subsection `{subsection[0]}`.')
+            if not isinstance(CONFIG['engine']['online_moves'][subsection[0]], subsection[1]):
+                raise Exception(f'`engine` `online_moves` subsection {subsection[2]}')
 
         if not os.path.isdir(CONFIG['engine']['dir']):
             raise Exception(f'Your engine directory "{CONFIG["engine"]["dir"]}" is not a directory.')
