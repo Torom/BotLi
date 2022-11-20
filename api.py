@@ -23,7 +23,7 @@ class API:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/abort')
             response.raise_for_status()
             return True
-        except requests.HTTPError as e:
+        except (requests.HTTPError, requests.ConnectionError) as e:
             print(e)
             return False
 
@@ -32,7 +32,7 @@ class API:
             response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/accept')
             response.raise_for_status()
             return True
-        except requests.HTTPError as e:
+        except (requests.HTTPError, requests.ConnectionError) as e:
             print(e)
             return False
 
@@ -41,7 +41,7 @@ class API:
             response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/cancel')
             response.raise_for_status()
             return True
-        except requests.HTTPError as e:
+        except (requests.HTTPError, requests.ConnectionError) as e:
             print(e)
             return False
 
@@ -78,7 +78,7 @@ class API:
                 f'https://lichess.org/api/challenge/{challenge_id}/decline', data={'reason': reason.value})
             response.raise_for_status()
             return True
-        except requests.HTTPError as e:
+        except (requests.HTTPError, requests.ConnectionError) as e:
             print(e)
             return False
 
@@ -102,7 +102,7 @@ class API:
             response = self.session.get('https://lichess.org/api/cloud-eval',
                                         params={'fen': fen, 'variant': variant.value}, timeout=timeout)
             return response.json()
-        except requests.Timeout as e:
+        except (requests.Timeout, requests.ConnectionError) as e:
             print(e)
 
     def get_egtb(self, fen: str, variant: str, timeout: int) -> dict | None:
@@ -154,7 +154,7 @@ class API:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/resign')
             response.raise_for_status()
             return True
-        except requests.HTTPError as e:
+        except (requests.HTTPError, requests.ConnectionError) as e:
             print(e)
             return False
 
@@ -164,7 +164,7 @@ class API:
                 f'https://lichess.org/api/bot/game/{game_id}/chat', data={'room': room, 'text': text})
             response.raise_for_status()
             return True
-        except requests.HTTPError as e:
+        except (requests.HTTPError, requests.ConnectionError) as e:
             print(e)
             return False
 
@@ -185,6 +185,6 @@ class API:
             response = self.session.post('https://lichess.org/api/bot/account/upgrade')
             response.raise_for_status()
             return True
-        except requests.HTTPError as e:
+        except (requests.HTTPError, requests.ConnectionError) as e:
             print(e)
             return False
