@@ -18,38 +18,38 @@ class API:
         self.user = self.get_account()
         self.session.headers.update({'User-Agent': f'BotLi user:{self.user["username"]}'})
 
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def abort_game(self, game_id: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/abort')
             response.raise_for_status()
             return True
-        except (requests.HTTPError, requests.ConnectionError) as e:
+        except requests.HTTPError as e:
             print(e)
             return False
 
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def accept_challenge(self, challenge_id: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/accept')
             response.raise_for_status()
             return True
-        except (requests.HTTPError, requests.ConnectionError) as e:
+        except requests.HTTPError as e:
             print(e)
             return False
 
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def cancel_challenge(self, challenge_id: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/cancel')
             response.raise_for_status()
             return True
-        except (requests.HTTPError, requests.ConnectionError) as e:
+        except requests.HTTPError as e:
             print(e)
             return False
 
-    def create_challenge(
-            self,
-            challenge_request: Challenge_Request,
-            response_queue: Queue[API_Challenge_Reponse]
-    ) -> None:
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    def create_challenge(self, challenge_request: Challenge_Request, response_queue: Queue[API_Challenge_Reponse]) -> None:
         response = self.session.post(
             f'https://lichess.org/api/challenge/{challenge_request.opponent_username}',
             data={'rated': str(challenge_request.rated).lower(),
@@ -70,13 +70,14 @@ class API:
             was_declined = data.get('done') == 'declined'
             response_queue.put(API_Challenge_Reponse(challenge_id, was_accepted, error, was_declined))
 
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:
             response = self.session.post(
                 f'https://lichess.org/api/challenge/{challenge_id}/decline', data={'reason': reason.value})
             response.raise_for_status()
             return True
-        except (requests.HTTPError, requests.ConnectionError) as e:
+        except requests.HTTPError as e:
             print(e)
             return False
 
@@ -140,26 +141,29 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def get_perfomance(self, username: str, perf_type: Perf_Type) -> dict:
         response = self.session.get(f'https://lichess.org/api/user/{username}/perf/{perf_type.value}')
         return response.json()
 
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def resign_game(self, game_id: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/resign')
             response.raise_for_status()
             return True
-        except (requests.HTTPError, requests.ConnectionError) as e:
+        except requests.HTTPError as e:
             print(e)
             return False
 
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def send_chat_message(self, game_id: str, room: str, text: str) -> bool:
         try:
             response = self.session.post(
                 f'https://lichess.org/api/bot/game/{game_id}/chat', data={'room': room, 'text': text})
             response.raise_for_status()
             return True
-        except (requests.HTTPError, requests.ConnectionError) as e:
+        except requests.HTTPError as e:
             print(e)
             return False
 
@@ -175,11 +179,12 @@ class API:
             print(e)
             return False
 
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def upgrade_account(self) -> bool:
         try:
             response = self.session.post('https://lichess.org/api/bot/account/upgrade')
             response.raise_for_status()
             return True
-        except (requests.HTTPError, requests.ConnectionError) as e:
+        except requests.HTTPError as e:
             print(e)
             return False
