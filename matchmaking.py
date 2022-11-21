@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from api import API
 from challenge_request import Challenge_Request
+from challenge_response import Challenge_Response
 from challenger import Challenger
 from enums import Challenge_Color, Perf_Type, Variant
 from game import Game
@@ -59,12 +60,13 @@ class Matchmaking:
         challenge_request = Challenge_Request(opponent_username, self.initial_time, self.increment,
                                               self.is_rated, color, self._perf_type_to_variant(self.perf_type), self.timeout)
 
-        challenge = self.challenger.create(challenge_request)
-        response = next(challenge)
-        if response.challenge_id:
-            pending_challenge.set_challenge_id(response.challenge_id)
-        *_, last_response = challenge
+        last_response: Challenge_Response | None = None
+        for response in self.challenger.create(challenge_request):
+            last_response = response
+            if response.challenge_id:
+                pending_challenge.set_challenge_id(response.challenge_id)
 
+        assert last_response
         if not last_response.success and not last_response.has_reached_rate_limit:
             self.need_next_opponent = True
             self.opponents.add_timeout(self.perf_type, opponent_username, False, self.estimated_game_duration)

@@ -4,6 +4,7 @@ from threading import Event, Thread
 from aliases import Challenge_ID, Game_ID
 from api import API
 from challenge_request import Challenge_Request
+from challenge_response import Challenge_Response
 from challenger import Challenger
 from game import Game
 from game_counter import Game_Counter
@@ -170,11 +171,14 @@ class Game_Manager(Thread):
     def _create_challenge(self, challenge_request: Challenge_Request) -> None:
         print(f'Challenging {challenge_request.opponent_username} ...')
 
-        challenge = self.challenger.create(challenge_request)
-        response = next(challenge)
-        challenge_id = response.challenge_id
-        *_, last_response = challenge
+        last_response: Challenge_Response | None = None
+        challenge_id: Challenge_ID | None = None
+        for response in self.challenger.create(challenge_request):
+            last_response = response
+            if response.challenge_id:
+                challenge_id = response.challenge_id
 
+        assert last_response
         if last_response.success:
             assert challenge_id
 
