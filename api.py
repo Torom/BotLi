@@ -1,6 +1,6 @@
 import json
 from queue import Queue
-from typing import Iterable
+from typing import Iterator
 
 import requests
 from tenacity import retry
@@ -62,15 +62,13 @@ class API:
             response_queue.put(API_Challenge_Reponse(has_reached_rate_limit=True))
             return
 
-        for line in response.iter_lines():
-            if line:
-                api_challenge_response = API_Challenge_Reponse()
-                data = json.loads(line.decode('utf-8'))
-                api_challenge_response.challenge_id = data.get('challenge', {'id': None}).get('id')
-                api_challenge_response.was_accepted = data.get('done') == 'accepted'
-                api_challenge_response.error = data.get('error')
-                api_challenge_response.was_declined = data.get('done') == 'declined'
-                response_queue.put(api_challenge_response)
+        for line in filter(None, response.iter_lines()):
+            data = json.loads(line)
+            challenge_id = data.get('challenge', {'id': None}).get('id')
+            was_accepted = data.get('done') == 'accepted'
+            error = data.get('error')
+            was_declined = data.get('done') == 'declined'
+            response_queue.put(API_Challenge_Reponse(challenge_id, was_accepted, error, was_declined))
 
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:
@@ -116,15 +114,15 @@ class API:
         except (requests.Timeout, requests.HTTPError) as e:
             print(e)
 
-    def get_event_stream(self) -> Iterable:
+    def get_event_stream(self) -> Iterator:
         response = self.session.get('https://lichess.org/api/stream/event', stream=True)
         return response.iter_lines()
 
-    def get_game_stream(self, game_id: str) -> Iterable:
+    def get_game_stream(self, game_id: str) -> Iterator:
         response = self.session.get(f'https://lichess.org/api/bot/game/stream/{game_id}', stream=True)
         return response.iter_lines()
 
-    def get_online_bots_stream(self) -> Iterable:
+    def get_online_bots_stream(self) -> Iterator:
         response = self.session.get('https://lichess.org/api/bot/online', stream=True)
         return response.iter_lines()
 
@@ -137,10 +135,7 @@ class API:
                                         headers={'Authorization': None},
                                         stream=True, timeout=timeout)
             response.raise_for_status()
-            last_line = ''
-            for line in response.iter_lines():
-                if line:
-                    last_line = line
+            *_, last_line = filter(None, response.iter_lines())
             return json.loads(last_line)
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)

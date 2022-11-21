@@ -4,7 +4,6 @@ from threading import Event, Thread
 from aliases import Challenge_ID, Game_ID
 from api import API
 from challenge_request import Challenge_Request
-from challenge_response import Challenge_Response
 from challenger import Challenger
 from game import Game
 from game_counter import Game_Counter
@@ -171,21 +170,17 @@ class Game_Manager(Thread):
     def _create_challenge(self, challenge_request: Challenge_Request) -> None:
         print(f'Challenging {challenge_request.opponent_username} ...')
 
-        last_reponse: Challenge_Response | None = None
-        challenge_id: Challenge_ID | None = None
-        for response in self.challenger.create(challenge_request):
-            last_reponse = response
-            if response.challenge_id:
-                challenge_id = response.challenge_id
+        challenge = self.challenger.create(challenge_request)
+        response = next(challenge)
+        challenge_id = response.challenge_id
+        *_, last_response = challenge
 
-        assert last_reponse
-
-        if last_reponse.success:
+        if last_response.success:
             assert challenge_id
 
             # Reserve a spot for this game
             self.reserved_game_ids.append(challenge_id)
-        elif last_reponse.has_reached_rate_limit and self.challenge_requests:
+        elif last_response.has_reached_rate_limit and self.challenge_requests:
             print('Challenge queue cleared due to rate limiting.')
             self.challenge_requests.clear()
         elif challenge_request in self.challenge_requests:

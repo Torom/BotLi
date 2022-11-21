@@ -1,6 +1,6 @@
 from queue import Empty, Queue
 from threading import Thread
-from typing import Iterable
+from typing import Iterator
 
 from api import API
 from api_challenge_response import API_Challenge_Reponse
@@ -13,7 +13,7 @@ class Challenger:
         self.config = config
         self.api = api
 
-    def create(self, challenge_request: Challenge_Request) -> Iterable[Challenge_Response]:
+    def create(self, challenge_request: Challenge_Request) -> Iterator[Challenge_Response]:
         response_queue: Queue[API_Challenge_Reponse] = Queue()
         Thread(target=self.api.create_challenge, args=(challenge_request, response_queue), daemon=True).start()
 
