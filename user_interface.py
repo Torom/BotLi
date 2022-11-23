@@ -85,6 +85,12 @@ class UserInterface:
                 self._help()
 
     def _handle_bot_status(self, non_interactive: bool, upgrade_account: bool) -> None:
+        if 'bot:play' not in self.api.get_token_scopes(self.config['token']):
+            print('Your token is missing the bot:play scope. This is mandatory to use BotLi.')
+            print('You can create such a token by following this link:')
+            print('https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
+            exit(1)
+
         if self.api.user.get('title') == 'BOT':
             return
 
@@ -105,7 +111,7 @@ class UserInterface:
             print('Upgrade successful.')
         else:
             print('Upgrade failed.')
-            exit()
+            exit(1)
 
     def _challenge(self, command: list[str]) -> None:
         command_length = len(command)
