@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+*** Please read, understand and follow: https://lichess.org/@/thibault/blog/how-to-ask-technical-questions/1HSthDSX ***
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
