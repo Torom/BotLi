@@ -11,7 +11,7 @@ import chess.polyglot
 import chess.syzygy
 from chess.variant import find_variant
 
-from aliases import DTM, DTZ, WDL, CP_Score, Depth, Offer_Draw, Outcome, Performance, Resign, UCI_Move, Weight
+from aliases import DTM, DTZ, CP_Score, Depth, Learn, Offer_Draw, Outcome, Performance, Resign, UCI_Move, Weight
 from api import API
 from enums import Game_Status, Variant
 
@@ -55,8 +55,8 @@ class Lichess_Game:
         engine_move = False
 
         if response := self._make_book_move():
-            move, weight = response
-            message = f'Book:    {self._format_move(move):14} {weight:>5.0f} %'
+            move, weight, learn = response
+            message = f'Book:    {self._format_move(move):14} {self._format_book_info(weight, learn)}'
         elif response := self._make_opening_explorer_move():
             move, perfomance, wdl = response
             message = f'Explore: {self._format_move(move):14} Performance: {perfomance}      WDL: {wdl[0]}/{wdl[1]}/{wdl[2]}'
@@ -80,7 +80,7 @@ class Lichess_Game:
             message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
         else:
             move, info = self._make_engine_move()
-            message = f'Engine:  {self._format_move(move):14} {self._format_info(info)}'
+            message = f'Engine:  {self._format_move(move):14} {self._format_engine_info(info)}'
             offer_draw = self._is_drawish()
             resign = self._is_resignable()
             engine_move = True if len(self.board.move_stack) > 1 else False
@@ -206,7 +206,7 @@ class Lichess_Game:
 
         return True
 
-    def _make_book_move(self) -> Tuple[chess.Move, Weight] | None:
+    def _make_book_move(self) -> Tuple[chess.Move, Weight, Learn] | None:
         enabled = self.config['engine']['opening_books']['enabled']
 
         if not enabled:
@@ -224,7 +224,7 @@ class Lichess_Game:
             entries = list(book_reader.find_all(self.board))
             if entries:
                 if selection == 'weighted_random':
-                    entry = random.choices(entries, [entry.weight for entry in entries], k=1)[0]
+                    entry, = random.choices(entries, [entry.weight for entry in entries], k=1)
                 elif selection == 'uniform_random':
                     entry = random.choice(entries)
                 else:
@@ -232,7 +232,8 @@ class Lichess_Game:
 
                 if not self._is_repetition(entry.move):
                     self.out_of_book_counter = 0
-                    return entry.move, entry.weight / sum(entry.weight for entry in entries) * 100.0
+                    weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
+                    return entry.move, weight, entry.learn
 
         self.out_of_book_counter += 1
 
@@ -260,7 +261,7 @@ class Lichess_Game:
 
             return []
 
-    def _make_opening_explorer_move(self) -> Tuple[chess.Move, Performance, WDL] | None:
+    def _make_opening_explorer_move(self) -> Tuple[chess.Move, Performance, Tuple[int, int, int]] | None:
         enabled = self.config['engine']['online_moves']['opening_explorer']['enabled']
 
         if not enabled:
@@ -609,7 +610,7 @@ class Lichess_Game:
             move_number = str(self.board.fullmove_number) + '...'
             return f'{move_number:6} {self.board.san(move)}'
 
-    def _format_info(self, info: chess.engine.InfoDict) -> str:
+    def _format_engine_info(self, info: chess.engine.InfoDict) -> str:
         info_score = info.get('score')
         score = f'{self._format_score(info_score):7}' if info_score else 7 * ' '
 
@@ -635,8 +636,9 @@ class Lichess_Game:
 
         info_tbhits = info.get('tbhits')
         tbhits = f'TB: {self._format_number(info_tbhits)}' if info_tbhits else ''
+        delimiter = 5 * ' '
 
-        return '     '.join((score, depth, nodes, nps, time, hashfull, tbhits))
+        return delimiter.join((score, depth, nodes, nps, time, hashfull, tbhits))
 
     def _format_number(self, number: int) -> str:
         if number >= 1_000_000_000_000:
@@ -664,9 +666,24 @@ class Lichess_Game:
         outcome_str = f'{outcome:>7}'
         dtz_str = f'DTZ: {dtz}' if dtz else ''
         dtm_str = f'DTM: {dtm}' if dtm else ''
-        delimitier = 5 * ' '
+        delimiter = 5 * ' '
 
-        return delimitier.join(filter(None, [outcome_str, dtz_str, dtm_str]))
+        return delimiter.join(filter(None, [outcome_str, dtz_str, dtm_str]))
+
+    def _format_book_info(self, weight: Weight, learn: Learn) -> str:
+        weight_str = f'{weight:>5.0f} %'
+        wdl = self._learn_to_wdl(learn)
+        learn_str = f'WDL: {wdl[0]:5.1f} % {wdl[1]:5.1f} % {wdl[2]:5.1f} %' if learn else ''
+        delimiter = 5 * ' '
+
+        return delimiter.join([weight_str, learn_str])
+
+    def _learn_to_wdl(self, learn: int) -> Tuple[float, float, float]:
+        win = ((learn >> 22) & 0b1111111111) / 1023.0 * 100.0
+        draw = ((learn >> 11) & 0b1111111111) / 1023.0 * 100.0
+        loss = (learn & 0b1111111111) / 1023.0 * 100.0
+
+        return win, draw, loss
 
     def _get_engine(self) -> chess.engine.SimpleEngine:
         if self.board.uci_variant != 'chess' and self.config['engine']['variants']['enabled']:
