@@ -679,9 +679,9 @@ class Lichess_Game:
         return delimiter.join([weight_str, learn_str])
 
     def _learn_to_wdl(self, learn: int) -> Tuple[float, float, float]:
-        win = ((learn >> 22) & 0b1111111111) / 1023.0 * 100.0
-        draw = ((learn >> 11) & 0b1111111111) / 1023.0 * 100.0
-        loss = (learn & 0b1111111111) / 1023.0 * 100.0
+        win = ((learn >> 16) & 0b1111111111111111) / 65_535.0 * 100.0
+        draw = (learn & 0b1111111111111111) / 65_535.0 * 100.0
+        loss = 100.0 - win - draw
 
         return win, draw, loss
 
