@@ -112,7 +112,7 @@ class API:
                 timeout=timeout)
             response.raise_for_status()
             return response.json()
-        except (requests.Timeout, requests.HTTPError) as e:
+        except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
     def get_event_stream(self) -> Iterator:
