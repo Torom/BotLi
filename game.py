@@ -13,7 +13,7 @@ from lichess_game import Lichess_Game
 class Game(Thread):
     def __init__(self, config: dict, api: API, game_id: str) -> None:
         Thread.__init__(self)
-        self.config: dict = config
+        self.config = config
         self.api = api
         self.game_id = game_id
         self.chatter = Chatter(config)
@@ -85,7 +85,8 @@ class Game(Thread):
             elif event['type'] == 'ping':
                 self.ping_counter += 1
 
-                if self.ping_counter >= 10 and self.lichess_game.is_abortable() and not self.lichess_game.is_our_turn():
+                if self.ping_counter >= 10 and self.lichess_game.is_abortable():
+                    print('Aborting game ...')
                     self.api.abort_game(self.game_id)
                     self.abortion_counter += 1
 

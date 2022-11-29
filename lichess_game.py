@@ -577,7 +577,7 @@ class Lichess_Game:
 
     def _make_engine_move(self) -> Tuple[chess.Move, chess.engine.InfoDict]:
         if len(self.board.move_stack) < 2:
-            limit = chess.engine.Limit(time=10)
+            limit = chess.engine.Limit(time=15)
             ponder = False
         else:
             if self.is_white:
