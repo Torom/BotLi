@@ -35,8 +35,7 @@ class UserInterface:
         print(LOGO)
 
         parser = argparse.ArgumentParser()
-        parser.add_argument('--non_interactive', '-n', action='store_true',
-                            help='Set if run as a service or on Heroku.')
+        parser.add_argument('--non_interactive', '-n', action='store_true', help='Set if run as a service.')
         parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
         parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
         args = parser.parse_args()

@@ -29,7 +29,7 @@ A clear and concise description of what you expected to happen.
  - Locally / Cloud:
 
 **Config:**
- Paste your config.yml (or config.yml.default) here __REMOVE YOUR TOKEN__:
+ Paste your config.yml here __REMOVE YOUR TOKEN__:
 ```yaml
 
 ```
