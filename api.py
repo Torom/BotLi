@@ -8,7 +8,7 @@ from tenacity.retry import retry_if_exception_type
 
 from api_challenge_response import API_Challenge_Reponse
 from challenge_request import Challenge_Request
-from enums import Decline_Reason, Perf_Type, Variant
+from enums import Decline_Reason, Variant
 
 
 class API:
@@ -140,11 +140,6 @@ class API:
             return json.loads(last_line)
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
-
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
-    def get_perfomance(self, username: str, perf_type: Perf_Type) -> dict:
-        response = self.session.get(f'https://lichess.org/api/user/{username}/perf/{perf_type.value}')
-        return response.json()
 
     @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def get_token_scopes(self, token: str) -> str:

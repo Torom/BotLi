@@ -55,7 +55,7 @@ class Matchmaking:
         opponent_username = self.opponent['username']
 
         print(
-            f'Challenging {opponent_username} ({self.opponent[self.perf_type]:+.1f}) as {color.value} to {self.perf_type.value} ...')
+            f'Challenging {opponent_username} ({self.opponent[self.perf_type]:+}) as {color.value} to {self.perf_type.value} ...')
 
         challenge_request = Challenge_Request(opponent_username, self.initial_time, self.increment,
                                               self.is_rated, color, self._perf_type_to_variant(self.perf_type), self.timeout)
@@ -96,41 +96,36 @@ class Matchmaking:
             self.online_bots = self._get_online_bots()
 
     def _get_online_bots(self) -> list[dict]:
-        user_ratings = {perf_type: self._get_rating(perf_type) for perf_type in self.perf_types}
+        user_ratings = self._get_user_ratings()
 
         online_bots: list[dict] = []
-        online_bots_stream = self.api.get_online_bots_stream()
-        for line in online_bots_stream:
-            if line:
-                bot = json.loads(line)
+        for line in filter(None, self.api.get_online_bots_stream()):
+            bot = json.loads(line)
 
-                is_ourselves = bot['username'] == self.api.user['username']
-                is_disabled = 'disabled' in bot
-                has_tosViolation = 'tosViolation' in bot if self.is_rated else False
+            is_ourselves = bot['username'] == self.api.user['username']
+            is_disabled = 'disabled' in bot
+            has_tosViolation = self.is_rated and 'tosViolation' in bot
 
-                if is_ourselves or is_disabled or has_tosViolation:
-                    continue
+            if is_ourselves or is_disabled or has_tosViolation:
+                continue
 
-                for perf_type in self.perf_types:
-                    if perf_type.value in bot['perfs']:
-                        bot_rating = bot['perfs'][perf_type.value]['rating']
-                    else:
-                        bot_rating = 1500
+            for perf_type in self.perf_types:
+                bot_rating = bot['perfs'][perf_type.value]['rating'] if perf_type.value in bot['perfs'] else 1500
+                bot[perf_type] = bot_rating - user_ratings[perf_type]
 
-                    bot[perf_type] = bot_rating - user_ratings[perf_type]
-
-                online_bots.append(bot)
+            online_bots.append(bot)
 
         self.next_update = datetime.now() + timedelta(minutes=30)
         return online_bots
 
-    def _get_rating(self, perf_type: Perf_Type) -> float:
-        perfomance = self.api.get_perfomance(self.api.user['username'], perf_type)
-        provisional: bool = perfomance['perf']['glicko']['provisional']
-        rating: float = perfomance['perf']['glicko']['rating']
-        deviation: float = perfomance['perf']['glicko']['deviation']
+    def _get_user_ratings(self) -> dict[Perf_Type, int]:
+        user = self.api.get_account()
 
-        return rating + deviation if provisional else rating
+        performances: dict[Perf_Type, int] = {}
+        for perf_type in self.perf_types:
+            performances[perf_type] = user['perfs'][perf_type.value]['rating'] if perf_type.value in user['perfs'] else 2500
+
+        return performances
 
     def _variant_to_perf_type(self, matchmaking_variant: str) -> Perf_Type:
         variant = Variant(matchmaking_variant)
