@@ -672,18 +672,20 @@ class Lichess_Game:
 
     def _format_book_info(self, weight: Weight, learn: Learn) -> str:
         weight_str = f'{weight:>5.0f} %'
-        wdl = self._learn_to_wdl(learn)
-        learn_str = f'WDL: {wdl[0]:5.1f} % {wdl[1]:5.1f} % {wdl[2]:5.1f} %' if learn else ''
+        performance, wdl = self._deserialize_learn(learn)
+        performance_str = f'Performance: {performance}' if learn else ''
+        wdl_str = f'WDL: {wdl[0]:5.1f} % {wdl[1]:5.1f} % {wdl[2]:5.1f} %' if learn else ''
         delimiter = 5 * ' '
 
-        return delimiter.join([weight_str, learn_str])
+        return delimiter.join([weight_str, performance_str, wdl_str])
 
-    def _learn_to_wdl(self, learn: int) -> Tuple[float, float, float]:
-        win = ((learn >> 16) & 0b1111111111111111) / 65_535.0 * 100.0
-        draw = (learn & 0b1111111111111111) / 65_535.0 * 100.0
+    def _deserialize_learn(self, learn: int) -> Tuple[Performance, Tuple[float, float, float]]:
+        performance = (learn >> 20) & 0b111111111111
+        win = ((learn >> 10) & 0b1111111111) / 1023.0 * 100.0
+        draw = (learn & 0b1111111111) / 1023.0 * 100.0
         loss = 100.0 - win - draw
 
-        return win, draw, loss
+        return performance, (win, draw, loss)
 
     def _get_engine(self) -> chess.engine.SimpleEngine:
         if self.board.uci_variant != 'chess' and self.config['engine']['variants']['enabled']:
