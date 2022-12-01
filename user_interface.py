@@ -20,7 +20,7 @@ COMMANDS = {
     'stop': 'Stops matchmaking mode.'
 }
 
-T = TypeVar('T', bound=Enum)
+EnumT = TypeVar('EnumT', bound=Enum)
 
 
 class UserInterface:
@@ -203,7 +203,7 @@ class UserInterface:
         for key, value in COMMANDS.items():
             print(f'{key:11}\t\t# {value}')
 
-    def _find_enum(self, name: str, enum_type: Type[T]) -> T:
+    def _find_enum(self, name: str, enum_type: Type[EnumT]) -> EnumT:
         for enum in enum_type:
             if enum.value.lower() == name.lower():
                 return enum

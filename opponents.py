@@ -56,8 +56,8 @@ class Opponents:
             if opponent.values[perf_type].release_time <= datetime.now():
                 return bot
 
+        print('Resetting matchmaking ...')
         self.reset_release_time(perf_type)
-        print('matchmaking reseted')
 
         return self.next_opponent(perf_type, online_bots)
 
@@ -89,7 +89,7 @@ class Opponents:
     def reset_release_time(self, perf_type: Perf_Type, full_reset: bool = False) -> None:
         for opponent in self.opponent_list:
             if perf_type in opponent.values:
-                if full_reset or opponent.values[perf_type].multiplier == 1:
+                if full_reset or opponent.values[perf_type].multiplier < 5:
                     opponent.values[perf_type].release_time = datetime.now()
 
     def _find(self, perf_type: Perf_Type, username: str) -> Opponent:
