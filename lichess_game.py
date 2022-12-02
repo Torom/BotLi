@@ -681,8 +681,8 @@ class Lichess_Game:
 
     def _deserialize_learn(self, learn: int) -> Tuple[Performance, Tuple[float, float, float]]:
         performance = (learn >> 20) & 0b111111111111
-        win = ((learn >> 10) & 0b1111111111) / 1023.0 * 100.0
-        draw = (learn & 0b1111111111) / 1023.0 * 100.0
+        win = ((learn >> 10) & 0b1111111111) / 1020.0 * 100.0
+        draw = (learn & 0b1111111111) / 1020.0 * 100.0
         loss = 100.0 - win - draw
 
         return performance, (win, draw, loss)
