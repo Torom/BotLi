@@ -683,7 +683,7 @@ class Lichess_Game:
         performance = (learn >> 20) & 0b111111111111
         win = ((learn >> 10) & 0b1111111111) / 1020.0 * 100.0
         draw = (learn & 0b1111111111) / 1020.0 * 100.0
-        loss = 100.0 - win - draw
+        loss = max(100.0 - win - draw, 0.0)
 
         return performance, (win, draw, loss)
 
