@@ -5,7 +5,7 @@ from threading import Thread
 from tenacity import retry
 
 from api import API
-from chatter import Chat_Message, Chatter
+from chatter import Chatter
 from enums import Game_Status
 from lichess_game import Lichess_Game
 
@@ -16,7 +16,7 @@ class Game(Thread):
         self.config = config
         self.api = api
         self.game_id = game_id
-        self.chatter = Chatter(config)
+        self.chatter = Chatter(api, config, game_id)
         self.ping_counter = 0
         self.game_queue = Queue()
         self.is_started = False
@@ -41,11 +41,7 @@ class Game(Thread):
                     self.lichess_game.update(event['state'])
 
                 if self.lichess_game.is_our_turn():
-                    uci_move, offer_draw, resign = self.lichess_game.make_move()
-                    if resign:
-                        self.api.resign_game(self.game_id)
-                    else:
-                        self.api.send_move(self.game_id, uci_move, offer_draw)
+                    self._make_move()
                 else:
                     self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
@@ -60,26 +56,9 @@ class Game(Thread):
                     continue
 
                 if self.lichess_game.is_our_turn() and updated:
-                    uci_move, offer_draw, resign = self.lichess_game.make_move()
-                    if resign:
-                        self.api.resign_game(self.game_id)
-                    else:
-                        self.api.send_move(self.game_id, uci_move, offer_draw)
+                    self._make_move()
             elif event['type'] == 'chatLine':
-                chat_message = Chat_Message(event)
-
-                if chat_message.username == 'lichess':
-                    if chat_message.room == 'player':
-                        print(f'{chat_message.username}: {chat_message.text}')
-                    continue
-
-                print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
-
-                if chat_message.text.startswith('!'):
-                    command = chat_message.text[1:].lower()
-                    response = self.chatter.react(command, self.lichess_game)
-
-                    self.api.send_chat_message(self.game_id, chat_message.room, response)
+                self.chatter.handle_chat_message(event, self.lichess_game)
             elif event['type'] == 'opponentGone':
                 continue
             elif event['type'] == 'ping':
@@ -99,6 +78,14 @@ class Game(Thread):
                 print(event)
 
         self.lichess_game.end_game()
+
+    def _make_move(self) -> None:
+        uci_move, offer_draw, resign = self.lichess_game.make_move()
+        if resign:
+            self.api.resign_game(self.game_id)
+        else:
+            self.api.send_move(self.game_id, uci_move, offer_draw)
+            self.chatter.print_eval(self.lichess_game)
 
     @retry
     def _watch_game_stream(self) -> None:
