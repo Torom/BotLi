@@ -86,7 +86,7 @@ class Lichess_Game:
             engine_move = True if len(self.board.move_stack) > 1 else False
 
         print(message)
-        self.last_message = message
+        self.last_message = ' '.join(message.split())
         self.board.push(move)
         if not engine_move:
             self.start_pondering()
