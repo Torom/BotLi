@@ -147,6 +147,11 @@ class API:
         return response.json()[token]['scopes']
 
     @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    def get_user_status(self, username: str) -> dict:
+        response = self.session.get('https://lichess.org/api/users/status', params={'ids': username})
+        return response.json()[0]
+
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def resign_game(self, game_id: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/resign')

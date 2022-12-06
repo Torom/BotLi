@@ -50,16 +50,19 @@ class Opponents:
         self.delay = timedelta(seconds=delay)
         self.opponent_list = self._load()
 
-    def next_opponent(self, perf_type: Perf_Type, online_bots: list[dict]) -> dict:
+    def next_opponent(self, perf_type: Perf_Type, online_bots: list[dict], busy_bots: list[str]) -> dict:
+        if not online_bots:
+            raise RuntimeError('No bots in configured rating range online!')
+
         for bot in online_bots:
             opponent = self._find(perf_type, bot['username'])
-            if opponent.values[perf_type].release_time <= datetime.now():
+            if opponent.values[perf_type].release_time <= datetime.now() and opponent.username not in busy_bots:
                 return bot
 
         print('Resetting matchmaking ...')
         self.reset_release_time(perf_type)
 
-        return self.next_opponent(perf_type, online_bots)
+        return self.next_opponent(perf_type, online_bots, busy_bots)
 
     def add_timeout(self, perf_type: Perf_Type, username: str, success: bool, game_duration: timedelta) -> None:
         opponent = self._find(perf_type, username)

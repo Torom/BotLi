@@ -2,6 +2,9 @@ import json
 import random
 from datetime import datetime, timedelta
 
+from tenacity import retry
+from tenacity.retry import retry_if_exception_type
+
 from api import API
 from challenge_request import Challenge_Request
 from challenge_response import Challenge_Response
@@ -10,6 +13,10 @@ from enums import Challenge_Color, Perf_Type, Variant
 from game import Game
 from opponents import Opponents
 from pending_challenge import Pending_Challenge
+
+
+class BusyBot(Exception):
+    pass
 
 
 class Matchmaking:
@@ -31,17 +38,19 @@ class Matchmaking:
         self.opponent: dict | None = None
         self.game_start_time: datetime | None = None
         self.online_bots: list[dict] | None = None
+        self.busy_bots: list[str] = []
 
         self.challenger = Challenger(config, self.api)
 
+    @retry(retry=retry_if_exception_type(BusyBot))
     def create_challenge(self, pending_challenge: Pending_Challenge) -> None:
         if self.need_next_opponent:
             self._call_update()
             assert self.online_bots
 
             self.perf_type = random.choice(self.perf_types)
-            self.opponent = self.opponents.next_opponent(self.perf_type, self._filter_bot_list(
-                self.perf_type, self.online_bots))
+            self.opponent = self.opponents.next_opponent(
+                self.perf_type, self._filter_bot_list(self.perf_type, self.online_bots), self.busy_bots)
 
             color = Challenge_Color.WHITE
             self.need_next_opponent = False
@@ -52,13 +61,16 @@ class Matchmaking:
             color = Challenge_Color.BLACK
             self.need_next_opponent = True
 
-        opponent_username = self.opponent['username']
+        if self._is_bot_busy(self.opponent['username']):
+            self.need_next_opponent = True
+            self.busy_bots.append(self.opponent['username'])
+            raise BusyBot
 
         print(
-            f'Challenging {opponent_username} ({self.opponent[self.perf_type]:+}) as {color.value} to {self.perf_type.value} ...')
+            f'Challenging {self.opponent["username"]} ({self.opponent[self.perf_type]:+}) as {color.value} to {self.perf_type.value} ...')
 
-        challenge_request = Challenge_Request(opponent_username, self.initial_time, self.increment,
-                                              self.is_rated, color, self._perf_type_to_variant(self.perf_type), self.timeout)
+        challenge_request = Challenge_Request(
+            self.opponent['username'], self.initial_time, self.increment, self.is_rated, color, self._perf_type_to_variant(self.perf_type), self.timeout)
 
         last_response: Challenge_Response | None = None
         for response in self.challenger.create(challenge_request):
@@ -67,9 +79,11 @@ class Matchmaking:
                 pending_challenge.set_challenge_id(response.challenge_id)
 
         assert last_response
-        if not last_response.success and not last_response.has_reached_rate_limit:
+        if last_response.success:
+            self.busy_bots.clear()
+        elif not last_response.has_reached_rate_limit:
             self.need_next_opponent = True
-            self.opponents.add_timeout(self.perf_type, opponent_username, False, self.estimated_game_duration)
+            self.opponents.add_timeout(self.perf_type, self.opponent['username'], False, self.estimated_game_duration)
 
         pending_challenge.set_final_state(last_response.success, last_response.has_reached_rate_limit)
 
@@ -153,3 +167,7 @@ class Matchmaking:
         bot_list = [bot for bot in online_bots if abs(
             bot[perf_type]) >= self.min_rating_diff and abs(bot[perf_type]) <= self.max_rating_diff]
         return sorted(bot_list, key=lambda bot: abs(bot[perf_type]))
+
+    def _is_bot_busy(self, username: str) -> bool:
+        bot_status = self.api.get_user_status(username)
+        return 'online' not in bot_status or 'playing' in bot_status

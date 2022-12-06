@@ -118,7 +118,7 @@ matchmaking:
   initial_time: 60                        # Initial time for matchmaking mode.
   increment: 1                            # Increment time for matchmaking mode.
   rated: true                             # Activate rated games in matchmaking mode.
-  timeout: 60                             # Time until a challenge is canceled.
+  timeout: 30                             # Time until a challenge is canceled.
   variants:                               # Chess variants (https://lichess.org/variant) to challenge.
     - standard
 #   - chess960
