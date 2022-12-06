@@ -62,6 +62,7 @@ class Matchmaking:
             self.need_next_opponent = True
 
         if self._is_bot_busy(self.opponent['username']):
+            print(f'Skipping {self.opponent["username"]} because it is playing a game ...')
             self.need_next_opponent = True
             self.busy_bots.append(self.opponent['username'])
             raise BusyBot
