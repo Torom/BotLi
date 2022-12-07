@@ -11,12 +11,15 @@ from game_manager import Game_Manager
 from logo import LOGO
 
 COMMANDS = {
-    'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED] [VARIANT]',
-    'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [INITIAL_TIME] [INCREMENT] [RATED] [VARIANT]',
+    'challenge': 'Challenges a player.\n\t\t\t'
+    '  Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED] [VARIANT]',
+    'create': 'Challenges a player to COUNT game pairs.\n\t\t\t'
+    '  Usage: create COUNT USERNAME [INITIAL_TIME] [INCREMENT] [RATED] [VARIANT]',
     'help': 'Prints this message.',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
-    'reset': 'Resets matchmaking. Usage: reset [PERF_TYPE]',
+    'reset': 'Resets matchmaking.\n\t\t\t'
+    '  Usage: reset [PERF_TYPE]',
     'stop': 'Stops matchmaking mode.'
 }
 
