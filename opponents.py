@@ -95,10 +95,11 @@ class Opponents:
         release_str = opponent_data.release_time.isoformat(sep=" ", timespec="seconds")
         print(f'{bot.username} will not be challenged to a new game pair before {release_str}.')
 
-        opponent_data.as_white = not as_white
-
         if success:
             self.busy_bots.clear()
+            opponent_data.as_white = not as_white
+        else:
+            opponent_data.as_white = True
 
         if opponent not in self.opponent_list:
             self.opponent_list.append(opponent)
