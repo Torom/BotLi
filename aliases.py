@@ -1,3 +1,4 @@
+As_White = bool
 Challenge_ID = str
 CP_Score = int
 Depth = int

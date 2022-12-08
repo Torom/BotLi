@@ -15,6 +15,18 @@ class API_Challenge_Reponse:
 
 
 @dataclass
+class Bot:
+    username: str
+    rating_diff: int
+
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, Bot):
+            return __o.username == self.username
+
+        raise NotImplemented
+
+
+@dataclass
 class Challenge_Request:
     opponent_username: str
     initial_time: int
