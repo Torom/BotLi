@@ -3,8 +3,7 @@ from threading import Event, Thread
 
 from aliases import Challenge_ID, Game_ID
 from api import API
-from challenge_request import Challenge_Request
-from challenge_response import Challenge_Response
+from botli_dataclasses import Challenge_Request, Challenge_Response
 from challenger import Challenger
 from game import Game
 from game_counter import Game_Counter

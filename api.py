@@ -6,8 +6,7 @@ import requests
 from tenacity import retry
 from tenacity.retry import retry_if_exception_type
 
-from api_challenge_response import API_Challenge_Reponse
-from challenge_request import Challenge_Request
+from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
 from enums import Decline_Reason, Variant
 
 

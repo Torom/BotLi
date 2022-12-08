@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Type, TypeVar
 
 from api import API
-from challenge_request import Challenge_Request
+from botli_dataclasses import Challenge_Request
 from config import load_config
 from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler

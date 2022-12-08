@@ -3,9 +3,7 @@ from threading import Thread
 from typing import Iterator
 
 from api import API
-from api_challenge_response import API_Challenge_Reponse
-from challenge_request import Challenge_Request
-from challenge_response import Challenge_Response
+from botli_dataclasses import API_Challenge_Reponse, Challenge_Request, Challenge_Response
 
 
 class Challenger:
