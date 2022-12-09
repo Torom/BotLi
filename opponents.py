@@ -96,7 +96,6 @@ class Opponents:
         print(f'{bot.username} will not be challenged to a new game pair before {release_str}.')
 
         if success:
-            self.busy_bots.clear()
             opponent_data.as_white = not as_white
         else:
             opponent_data.as_white = True
@@ -104,6 +103,7 @@ class Opponents:
         if opponent not in self.opponent_list:
             self.opponent_list.append(opponent)
 
+        self.busy_bots.clear()
         self._save()
 
     def skip_bot(self) -> None:
@@ -114,6 +114,8 @@ class Opponents:
             if perf_type in opponent.data:
                 if full_reset or opponent.data[perf_type].multiplier < 5:
                     opponent.data[perf_type].release_time = datetime.now()
+
+        self.busy_bots.clear()
 
     def _find(self, perf_type: Perf_Type, username: str) -> Opponent:
         try:
