@@ -23,7 +23,7 @@ class Bot:
         if isinstance(__o, Bot):
             return __o.username == self.username
 
-        raise NotImplemented
+        raise NotImplementedError
 
 
 @dataclass
@@ -40,7 +40,7 @@ class Challenge_Request:
         if isinstance(__o, Challenge_Request):
             return __o.opponent_username == self.opponent_username
 
-        raise NotImplemented
+        raise NotImplementedError
 
 
 @dataclass

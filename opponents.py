@@ -46,7 +46,7 @@ class Opponent:
         if isinstance(o, Opponent):
             return self.username == o.username
         else:
-            raise NotImplemented
+            raise NotImplementedError
 
 
 class Opponents:
