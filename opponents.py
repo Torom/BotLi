@@ -131,11 +131,11 @@ class Opponents:
 
     def _load(self) -> list[Opponent]:
         if os.path.isfile('matchmaking.json'):
-            with open('matchmaking.json', 'r') as input:
-                return [Opponent.from_dict(opponent) for opponent in json.load(input)]
+            with open('matchmaking.json', 'r', encoding='utf-8') as json_input:
+                return [Opponent.from_dict(opponent) for opponent in json.load(json_input)]
         else:
             return []
 
     def _save(self) -> None:
-        with open('matchmaking.json', 'w') as output:
-            json.dump([opponent.__dict__() for opponent in self.opponent_list], output, indent=4)
+        with open('matchmaking.json', 'w', encoding='utf-8') as json_output:
+            json.dump([opponent.__dict__() for opponent in self.opponent_list], json_output, indent=4)

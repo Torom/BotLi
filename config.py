@@ -6,9 +6,9 @@ import yaml
 
 
 def load_config() -> dict:
-    with open('config.yml') as stream:
+    with open('config.yml', encoding='utf-8') as yml_input:
         try:
-            CONFIG = yaml.safe_load(stream)
+            CONFIG = yaml.safe_load(yml_input)
         except Exception as e:
             print('There appears to be a syntax problem with your config.yml', file=sys.stderr)
             raise e

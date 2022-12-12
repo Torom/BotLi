@@ -71,7 +71,7 @@ class Chatter:
     def _get_cpu(self) -> str:
         cpu = ''
         if os.path.exists('/proc/cpuinfo'):
-            with open('/proc/cpuinfo', 'r') as cpuinfo:
+            with open('/proc/cpuinfo', 'r', encoding='utf-8') as cpuinfo:
                 while line := cpuinfo.readline():
                     if line.startswith('model name'):
                         cpu = line.split(': ')[1]
