@@ -1,6 +1,10 @@
 # Overview
 
-**BotLi** is a bot for Lichess. Strongly inspired by [ShailChoksi/lichess-bot](https://github.com/ShailChoksi/lichess-bot). It extends its features with a matchmaking mode where the bot automatically challenges other bots with similar ratings.
+**BotLi** is a bot for Lichess. It connects any [UCI](https://backscattering.de/chess/uci/) engine with the [Lichess Bot API](https://lichess.org/api#tag/Bot).
+
+It has a customizable support of Polyglot opening books, a variety of supported online opening books and an online endgame tablebase. It can query local Syzygy and Gaviota endgame tablebases.
+
+In addition, BotLi can autonomously challenge other bots in any variants. It optionally supports two separate engines, one for standard chess and chess960 and one for Lichess chess variants.
 
 # How to install
 
