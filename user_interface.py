@@ -217,6 +217,7 @@ class UserInterface:
 class Autocompleter:
     def __init__(self, options: list[str]) -> None:
         self.options = options
+        self.matches: list[str] = []
 
     def complete(self, text: str, state: int) -> str | None:
         if state == 0:

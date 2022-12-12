@@ -19,8 +19,8 @@ class Game(Thread):
         self.chatter = Chatter(api, config, game_id)
         self.ping_counter = 0
         self.game_queue = Queue()
-        self.is_started = False
         self.abortion_counter = 0
+        self.lichess_game: Lichess_Game | None = None
 
     def start(self):
         Thread.start(self)
@@ -33,10 +33,9 @@ class Game(Thread):
             event = self.game_queue.get()
 
             if event['type'] == 'gameFull':
-                if not self.is_started:
+                if not self.lichess_game:
                     print(f'Game "{self.game_id}" was started.')
                     self.lichess_game = Lichess_Game(self.api, event, self.config)
-                    self.is_started = True
                 else:
                     self.lichess_game.update(event['state'])
 
@@ -45,6 +44,8 @@ class Game(Thread):
                 else:
                     self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
+                assert self.lichess_game
+
                 self.ping_counter = 0
                 updated = self.lichess_game.update(event)
 
@@ -58,10 +59,14 @@ class Game(Thread):
                 if self.lichess_game.is_our_turn() and updated:
                     self._make_move()
             elif event['type'] == 'chatLine':
+                assert self.lichess_game
+
                 self.chatter.handle_chat_message(event, self.lichess_game)
             elif event['type'] == 'opponentGone':
                 continue
             elif event['type'] == 'ping':
+                assert self.lichess_game
+
                 self.ping_counter += 1
 
                 if self.ping_counter >= 10 and self.lichess_game.is_abortable():
@@ -77,9 +82,13 @@ class Game(Thread):
             else:
                 print(event)
 
+        assert self.lichess_game
+
         self.lichess_game.end_game()
 
     def _make_move(self) -> None:
+        assert self.lichess_game
+
         uci_move, offer_draw, resign = self.lichess_game.make_move()
         if resign:
             self.api.resign_game(self.game_id)

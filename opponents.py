@@ -56,6 +56,7 @@ class Opponents:
         self.delay = timedelta(seconds=delay)
         self.opponent_list = self._load()
         self.busy_bots: list[Bot] = []
+        self.last_opponent: Tuple[Bot, Perf_Type, As_White] | None = None
 
     def get_next_opponent(self, online_bots: dict[Perf_Type, list[Bot]]) -> Tuple[Bot, Perf_Type, As_White]:
         perf_type = random.choice(self.perf_types)
@@ -75,6 +76,8 @@ class Opponents:
         return self.get_next_opponent(online_bots)
 
     def add_timeout(self, success: bool, game_duration: timedelta) -> None:
+        assert self.last_opponent
+
         bot, perf_type, as_white = self.last_opponent
         opponent = self._find(perf_type, bot.username)
         opponent_data = opponent.data[perf_type]
@@ -107,6 +110,8 @@ class Opponents:
         self._save()
 
     def skip_bot(self) -> None:
+        assert self.last_opponent
+
         self.busy_bots.append(self.last_opponent[0])
 
     def reset_release_time(self, perf_type: Perf_Type, full_reset: bool = False) -> None:

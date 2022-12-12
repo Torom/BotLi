@@ -60,6 +60,8 @@ class Matchmaking:
         self.game_start_time = datetime.now()
 
     def on_game_finished(self, game: Game) -> None:
+        assert game.lichess_game
+
         game_duration = datetime.now() - self.game_start_time
         was_aborted = game.lichess_game.is_abortable()
 
