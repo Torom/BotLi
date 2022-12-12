@@ -54,10 +54,10 @@ class Challenge_Validator:
         is_rated = challenge_event['challenge']['rated']
         is_casual = not is_rated
         if is_rated and 'rated' not in modes:
-            print(f'Rated is not allowed according to config.')
+            print('Rated is not allowed according to config.')
             return Decline_Reason.CASUAL
         elif is_casual and 'casual' not in modes:
-            print(f'Casual is not allowed according to config.')
+            print('Casual is not allowed according to config.')
             return Decline_Reason.RATED
 
     def format_challenge_event(self, challenge_event: dict) -> str:
