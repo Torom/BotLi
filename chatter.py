@@ -40,7 +40,7 @@ class Chatter:
 
     def print_eval(self, lichess_game: Lichess_Game) -> None:
         for room in self.print_eval_rooms:
-            self.api.send_chat_message(self.game_id, room, lichess_game.last_message)
+            self.api.send_chat_message(self.game_id, room, ' '.join(lichess_game.last_message.split()))
 
     def _handle_command(self, chat_message: Chat_Message, lichess_game: Lichess_Game) -> str | None:
         command = chat_message.text[1:].lower()
