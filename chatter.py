@@ -31,10 +31,8 @@ class Chatter:
             if chat_message.room == 'player':
                 print(f'{chat_message.username}: {chat_message.text}')
             return
-        elif chat_message.username == self.username:
-            return
-
-        print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
+        elif chat_message.username != self.username:
+            print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
 
         if chat_message.text.startswith('!'):
             if response := self._handle_command(chat_message, lichess_game):
@@ -53,14 +51,14 @@ class Chatter:
         elif command == 'engine':
             return lichess_game.engine.id['name']
         elif command == 'eval':
-            return lichess_game.last_message
+            return ' '.join(lichess_game.last_message.split())
         elif command == 'name':
             return f'{self.username} running {lichess_game.engine.id["name"]} (BotLi)'
         elif command == 'printeval':
             if not lichess_game.increment and lichess_game.initial_time < 180_000:
                 return 'Time control is too fast for this function.'
             self.print_eval_rooms.add(chat_message.room)
-            return lichess_game.last_message
+            return ' '.join(lichess_game.last_message.split())
         elif command == 'stopeval':
             self.print_eval_rooms.discard(chat_message.room)
         elif command == 'ram':
