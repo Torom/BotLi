@@ -27,7 +27,10 @@ EnumT = TypeVar('EnumT', bound=Enum)
 
 
 class UserInterface:
-    def __init__(self) -> None:
+    def __init__(self, non_interactive: bool, start_matchmaking: bool, allow_upgrade: bool) -> None:
+        self.non_interactive = non_interactive
+        self.start_matchmaking = start_matchmaking
+        self.allow_upgrade = allow_upgrade
         self.config = load_config()
         self.api = API(self.config['token'])
         self.is_running = True
@@ -37,22 +40,16 @@ class UserInterface:
     def main(self) -> None:
         print(LOGO)
 
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--non_interactive', '-n', action='store_true', help='Set if run as a service.')
-        parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
-        parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
-        args = parser.parse_args()
-
-        self._handle_bot_status(args.non_interactive, args.upgrade)
+        self._handle_bot_status(self.non_interactive, self.allow_upgrade)
 
         print('Handling challenges ...')
         self.event_handler.start()
         self.game_manager.start()
 
-        if args.matchmaking:
+        if self.start_matchmaking:
             self._matchmaking()
 
-        if args.non_interactive:
+        if self.non_interactive:
             return
 
         try:
@@ -233,5 +230,11 @@ class Autocompleter:
 
 
 if __name__ == '__main__':
-    ui = UserInterface()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--non_interactive', '-n', action='store_true', help='Set if run as a service.')
+    parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
+    parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
+    args = parser.parse_args()
+
+    ui = UserInterface(args.non_interactive, args.matchmaking, args.upgrade)
     ui.main()
