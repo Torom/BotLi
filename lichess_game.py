@@ -219,6 +219,7 @@ class Lichess_Game:
         if out_of_book or too_deep:
             return
 
+        read_learn = self.config['engine']['opening_books'].get('read_learn')
         selection = self.config['engine']['opening_books']['selection']
         for book_reader in self.book_readers:
             entries = list(book_reader.find_all(self.board))
@@ -233,7 +234,8 @@ class Lichess_Game:
                 if not self._is_repetition(entry.move):
                     self.out_of_book_counter = 0
                     weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
-                    return entry.move, weight, entry.learn
+                    learn = entry.learn if read_learn else 0
+                    return entry.move, weight, learn
 
         self.out_of_book_counter += 1
 
