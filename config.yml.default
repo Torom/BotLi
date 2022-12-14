@@ -38,7 +38,7 @@ engine:                                   # Engine settings.
 #     black:                              # List of names of books to use as black.
 #       - "BlackBook"
       standard:                           # List of names of books to use if there is no specific book for white, black or chess960.
-        - "DefaultBook" 
+        - "DefaultBook"
 #     chess960:                           # List of names of books to use for chess960.
 #       - "Chess960Book"
 #     Use the same pattern for 'antichess', 'atomic', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
@@ -83,7 +83,7 @@ engine:                                   # Engine settings.
     consecutive_moves: 5                  # How many moves in a row the score has to be below the resign value.
 
 move_overhead_multiplier: 1.0             # Increase if your bot flags games too often. Default move overhead is 1 second per 1 minute initital time.
-    
+
 challenge:                                # Incoming challenges. (Commenting allowed)
   concurrency: 1                          # Number of games to play simultaneously.
   bullet_with_increment_only: false       # Whether bullet games against BOTs should only be accepted with increment.
