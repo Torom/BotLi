@@ -5,12 +5,12 @@ import sys
 import yaml
 
 
-def load_config() -> dict:
-    with open('config.yml', encoding='utf-8') as yml_input:
+def load_config(config_path: str) -> dict:
+    with open(config_path, encoding='utf-8') as yml_input:
         try:
             CONFIG = yaml.safe_load(yml_input)
         except Exception as e:
-            print('There appears to be a syntax problem with your config.yml', file=sys.stderr)
+            print(f'There appears to be a syntax problem with your {config_path}', file=sys.stderr)
             raise e
 
         if 'LICHESS_BOT_TOKEN' in os.environ:
@@ -25,7 +25,7 @@ def load_config() -> dict:
             ['books', dict, 'Section `books` must be a dictionary with indented keys followed by colons.']]
         for section in sections:
             if section[0] not in CONFIG:
-                raise Exception(f'Your config.yml does not have required section `{section[0]}`.')
+                raise Exception(f'Your {config_path} does not have required section `{section[0]}`.')
             elif not isinstance(CONFIG[section[0]], section[1]):
                 raise Exception(section[2])
 
@@ -43,7 +43,7 @@ def load_config() -> dict:
             ['resign', dict, '"resign" must be a dictionary with indented keys followed by colons.']]
         for subsection in engine_sections:
             if subsection[0] not in CONFIG['engine']:
-                raise Exception(f'Your config.yml does not have required `engine` subsection `{subsection[0]}`.')
+                raise Exception(f'Your {config_path} does not have required `engine` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine'][subsection[0]], subsection[1]):
                 raise Exception(f'`engine` subsection {subsection[2]}')
 
@@ -55,7 +55,7 @@ def load_config() -> dict:
         for subsection in syzygy_sections:
             if subsection[0] not in CONFIG['engine']['syzygy']:
                 raise Exception(
-                    f'Your config.yml does not have required `engine` `syzygy` subsection `{subsection[0]}`.')
+                    f'Your {config_path} does not have required `engine` `syzygy` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine']['syzygy'][subsection[0]], subsection[1]):
                 raise Exception(f'`engine` `syzygy` subsection {subsection[2]}')
 
@@ -66,7 +66,7 @@ def load_config() -> dict:
         for subsection in gaviota_sections:
             if subsection[0] not in CONFIG['engine']['gaviota']:
                 raise Exception(
-                    f'Your config.yml does not have required `engine` `gaviota` subsection `{subsection[0]}`.')
+                    f'Your {config_path} does not have required `engine` `gaviota` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine']['gaviota'][subsection[0]], subsection[1]):
                 raise Exception(f'`engine` `gaviota` subsection {subsection[2]}')
 
@@ -79,7 +79,7 @@ def load_config() -> dict:
         for subsection in variants_sections:
             if subsection[0] not in CONFIG['engine']['variants']:
                 raise Exception(
-                    f'Your config.yml does not have required `engine` `variants` subsection `{subsection[0]}`.')
+                    f'Your {config_path} does not have required `engine` `variants` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine']['variants'][subsection[0]], subsection[1]):
                 raise Exception(f'`engine` `variants` subsection {subsection[2]}')
 
@@ -91,7 +91,7 @@ def load_config() -> dict:
         for subsection in online_moves_sections:
             if subsection[0] not in CONFIG['engine']['online_moves']:
                 raise Exception(
-                    f'Your config.yml does not have required `engine` `online_moves` subsection `{subsection[0]}`.')
+                    f'Your {config_path} does not have required `engine` `online_moves` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine']['online_moves'][subsection[0]], subsection[1]):
                 raise Exception(f'`engine` `online_moves` subsection {subsection[2]}')
 

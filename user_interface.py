@@ -27,11 +27,11 @@ EnumT = TypeVar('EnumT', bound=Enum)
 
 
 class UserInterface:
-    def __init__(self, non_interactive: bool, start_matchmaking: bool, allow_upgrade: bool) -> None:
+    def __init__(self, config_path: str, non_interactive: bool, start_matchmaking: bool, allow_upgrade: bool) -> None:
         self.non_interactive = non_interactive
         self.start_matchmaking = start_matchmaking
         self.allow_upgrade = allow_upgrade
-        self.config = load_config()
+        self.config = load_config(config_path)
         self.api = API(self.config['token'])
         self.is_running = True
         self.game_manager = Game_Manager(self.config, self.api)
@@ -231,10 +231,11 @@ class Autocompleter:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--config', '-c', default='config.yml', type=str, help='Path to config.yml.')
     parser.add_argument('--non_interactive', '-n', action='store_true', help='Set if run as a service.')
     parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
     parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
     args = parser.parse_args()
 
-    ui = UserInterface(args.non_interactive, args.matchmaking, args.upgrade)
+    ui = UserInterface(args.config, args.non_interactive, args.matchmaking, args.upgrade)
     ui.main()
