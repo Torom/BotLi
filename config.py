@@ -22,6 +22,7 @@ def load_config(config_path: str) -> dict:
             ['engine', dict, 'Section `engine` must be a dictionary with indented keys followed by colons.'],
             ['challenge', dict, 'Section `challenge` must be a dictionary with indented keys followed by colons.'],
             ['matchmaking', dict, 'Section `matchmaking` must be a dictionary with indented keys followed by colons.'],
+            ['messages', dict, 'Section `messages` must be a dictionary with indented keys followed by colons.'],
             ['books', dict, 'Section `books` must be a dictionary with indented keys followed by colons.']]
         for section in sections:
             if section[0] not in CONFIG:

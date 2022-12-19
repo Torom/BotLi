@@ -1,5 +1,6 @@
 import os
 import platform
+from collections import defaultdict
 
 import psutil
 
@@ -15,16 +16,23 @@ class Chat_Message:
 
 
 class Chatter:
-    def __init__(self, api: API, config: dict, game_id: str) -> None:
+    def __init__(self, api: API, config: dict, gameFull_event: dict, lichess_game: Lichess_Game) -> None:
         self.api = api
-        self.game_id = game_id
+        self.game_id: str = gameFull_event['id']
+        self.lichess_game = lichess_game
         self.username = self.api.user['username']
+        is_white = gameFull_event['white']['name'] == self.username
+        self.opponent_username = gameFull_event['black']['name'] if is_white else gameFull_event['white']['name']
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
         self.ram_message = self._get_ram()
+        self.player_greeting = self._format_message(config['messages'].get('greeting', ''))
+        self.player_goodbye = self._format_message(config['messages'].get('goodbye', ''))
+        self.spectator_greeting = self._format_message(config['messages'].get('greeting_spectators', ''))
+        self.spectator_goodbye = self._format_message(config['messages'].get('goodbye_spectators', ''))
         self.print_eval_rooms: set[str] = set()
 
-    def handle_chat_message(self, chatLine_Event: dict, lichess_game: Lichess_Game) -> None:
+    def handle_chat_message(self, chatLine_Event: dict) -> None:
         chat_message = Chat_Message(chatLine_Event)
 
         if chat_message.username == 'lichess':
@@ -35,30 +43,42 @@ class Chatter:
             print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
 
         if chat_message.text.startswith('!'):
-            if response := self._handle_command(chat_message, lichess_game):
+            if response := self._handle_command(chat_message):
                 self.api.send_chat_message(self.game_id, chat_message.room, response)
 
-    def print_eval(self, lichess_game: Lichess_Game) -> None:
+    def print_eval(self) -> None:
         for room in self.print_eval_rooms:
-            self.api.send_chat_message(self.game_id, room, ' '.join(lichess_game.last_message.split()))
+            self.api.send_chat_message(self.game_id, room, ' '.join(self.lichess_game.last_message.split()))
 
-    def _handle_command(self, chat_message: Chat_Message, lichess_game: Lichess_Game) -> str | None:
+    def send_greetings(self) -> None:
+        self.api.send_chat_message(self.game_id, 'player', self.player_greeting)
+        self.api.send_chat_message(self.game_id, 'spectator', self.spectator_greeting)
+
+    def send_goodbyes(self) -> None:
+        self.api.send_chat_message(self.game_id, 'player', self.player_goodbye)
+        self.api.send_chat_message(self.game_id, 'spectator', self.spectator_goodbye)
+
+    def send_abortion_message(self) -> None:
+        message = 'Too bad you weren\'t there. Feel free to challenge me again, I will accept the challenge when I have time.'
+        self.api.send_chat_message(self.game_id, 'player', message)
+
+    def _handle_command(self, chat_message: Chat_Message) -> str | None:
         command = chat_message.text[1:].lower()
         if command == 'cpu':
             return self.cpu_message
         elif command == 'draw':
             return self.draw_message
         elif command == 'engine':
-            return lichess_game.engine.id['name']
+            return self.lichess_game.engine.id['name']
         elif command == 'eval':
-            return ' '.join(lichess_game.last_message.split())
+            return ' '.join(self.lichess_game.last_message.split())
         elif command == 'name':
-            return f'{self.username} running {lichess_game.engine.id["name"]} (BotLi)'
+            return f'{self.username} running {self.lichess_game.engine.id["name"]} (BotLi)'
         elif command == 'printeval':
-            if not lichess_game.increment and lichess_game.initial_time < 180_000:
+            if not self.lichess_game.increment and self.lichess_game.initial_time < 180_000:
                 return 'Time control is too fast for this function.'
             self.print_eval_rooms.add(chat_message.room)
-            return ' '.join(lichess_game.last_message.split())
+            return ' '.join(self.lichess_game.last_message.split())
         elif command == 'stopeval':
             self.print_eval_rooms.discard(chat_message.room)
         elif command == 'ram':
@@ -111,3 +131,8 @@ class Chatter:
 
         return f'The bot offers draw at move {min_game_length} or later ' \
             f'if the eval is within +{max_score:.2f} to -{max_score:.2f} for the last {consecutive_moves} moves.'
+
+    def _format_message(self, message: str) -> str:
+        mapping = defaultdict(str, {'opponent': self.opponent_username, 'me': self.username,
+                              'engine': self.lichess_game.engine.id['name'], 'cpu': self.cpu_message, 'ram': self.ram_message})
+        return message.format_map(mapping)

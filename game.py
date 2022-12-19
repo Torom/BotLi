@@ -16,11 +16,11 @@ class Game(Thread):
         self.config = config
         self.api = api
         self.game_id = game_id
-        self.chatter = Chatter(api, config, game_id)
         self.ping_counter = 0
         self.game_queue = Queue()
         self.abortion_counter = 0
         self.lichess_game: Lichess_Game | None = None
+        self.chatter: Chatter | None = None
 
     def start(self):
         Thread.start(self)
@@ -36,6 +36,8 @@ class Game(Thread):
                 if not self.lichess_game:
                     print(f'Game "{self.game_id}" was started.')
                     self.lichess_game = Lichess_Game(self.api, event, self.config)
+                    self.chatter = Chatter(self.api, self.config, event, self.lichess_game)
+                    self.chatter.send_greetings()
                 else:
                     self.lichess_game.update(event['state'])
 
@@ -45,12 +47,14 @@ class Game(Thread):
                     self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
                 assert self.lichess_game
+                assert self.chatter
 
                 self.ping_counter = 0
                 updated = self.lichess_game.update(event)
 
                 if self.lichess_game.status != Game_Status.STARTED:
                     print(self.lichess_game.get_result_message(event.get('winner')))
+                    self.chatter.send_goodbyes()
                     break
 
                 if self.lichess_game.is_game_over():
@@ -60,17 +64,20 @@ class Game(Thread):
                     self._make_move()
             elif event['type'] == 'chatLine':
                 assert self.lichess_game
+                assert self.chatter
 
-                self.chatter.handle_chat_message(event, self.lichess_game)
+                self.chatter.handle_chat_message(event)
             elif event['type'] == 'opponentGone':
                 continue
             elif event['type'] == 'ping':
                 assert self.lichess_game
+                assert self.chatter
 
                 self.ping_counter += 1
 
                 if self.ping_counter >= 10 and self.lichess_game.is_abortable():
                     print('Aborting game ...')
+                    self.chatter.send_abortion_message()
                     self.api.abort_game(self.game_id)
                     self.abortion_counter += 1
 
@@ -88,13 +95,14 @@ class Game(Thread):
 
     def _make_move(self) -> None:
         assert self.lichess_game
+        assert self.chatter
 
         uci_move, offer_draw, resign = self.lichess_game.make_move()
         if resign:
             self.api.resign_game(self.game_id)
         else:
             self.api.send_move(self.game_id, uci_move, offer_draw)
-            self.chatter.print_eval(self.lichess_game)
+            self.chatter.print_eval()
 
     @retry
     def _watch_game_stream(self) -> None:
