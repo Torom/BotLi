@@ -55,6 +55,9 @@ class Chatter:
         self.api.send_chat_message(self.game_id, 'spectator', self.spectator_greeting)
 
     def send_goodbyes(self) -> None:
+        if self.lichess_game.is_abortable():
+            return
+
         self.api.send_chat_message(self.game_id, 'player', self.player_goodbye)
         self.api.send_chat_message(self.game_id, 'spectator', self.spectator_goodbye)
 
