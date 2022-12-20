@@ -1,13 +1,17 @@
 import json
+import logging
 from queue import Queue
 from typing import Iterator
 
 import requests
 from tenacity import retry
+from tenacity.after import after_log
 from tenacity.retry import retry_if_exception_type
 
 from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
 from enums import Decline_Reason, Variant
+
+logger = logging.getLogger(__name__)
 
 
 class API:
@@ -17,7 +21,7 @@ class API:
         self.user = self.get_account()
         self.session.headers.update({'User-Agent': f'BotLi user:{self.user["username"]}'})
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def abort_game(self, game_id: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/abort', timeout=3.0)
@@ -27,7 +31,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def accept_challenge(self, challenge_id: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/accept', timeout=3.0)
@@ -37,7 +41,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def cancel_challenge(self, challenge_id: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/cancel', timeout=3.0)
@@ -47,7 +51,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type(requests.ConnectionError), after=after_log(logger, logging.DEBUG))
     def create_challenge(self, challenge_request: Challenge_Request, response_queue: Queue[API_Challenge_Reponse]) -> None:
         response = self.session.post(
             f'https://lichess.org/api/challenge/{challenge_request.opponent_username}',
@@ -69,7 +73,7 @@ class API:
             was_declined = data.get('done') == 'declined'
             response_queue.put(API_Challenge_Reponse(challenge_id, was_accepted, error, was_declined))
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/decline',
@@ -80,7 +84,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_account(self) -> dict:
         response = self.session.get('https://lichess.org/api/account', timeout=3.0)
         return response.json()
@@ -115,17 +119,17 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_event_stream(self) -> Iterator:
         response = self.session.get('https://lichess.org/api/stream/event', stream=True, timeout=9.0)
         return response.iter_lines()
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_game_stream(self, game_id: str) -> Iterator:
         response = self.session.get(f'https://lichess.org/api/bot/game/stream/{game_id}', stream=True, timeout=9.0)
         return response.iter_lines()
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_online_bots_stream(self) -> Iterator:
         response = self.session.get('https://lichess.org/api/bot/online', stream=True, timeout=9.0)
         return response.iter_lines()
@@ -144,17 +148,17 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_token_scopes(self, token: str) -> str:
         response = self.session.post('https://lichess.org/api/token/test', data=token, timeout=3.0)
         return response.json()[token]['scopes']
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_user_status(self, username: str) -> dict:
         response = self.session.get('https://lichess.org/api/users/status', params={'ids': username}, timeout=3.0)
         return response.json()[0]
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def resign_game(self, game_id: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/resign', timeout=3.0)
@@ -164,7 +168,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def send_chat_message(self, game_id: str, room: str, text: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/chat',
@@ -175,7 +179,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def send_move(self, game_id: str, uci_move: str, offer_draw: bool) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/move/{uci_move}',
@@ -186,7 +190,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type(requests.ConnectionError), after=after_log(logger, logging.DEBUG))
     def upgrade_account(self) -> bool:
         try:
             response = self.session.post('https://lichess.org/api/bot/account/upgrade')

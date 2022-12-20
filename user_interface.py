@@ -1,4 +1,5 @@
 import argparse
+import logging
 from enum import Enum
 from typing import Type, TypeVar
 
@@ -11,15 +12,12 @@ from game_manager import Game_Manager
 from logo import LOGO
 
 COMMANDS = {
-    'challenge': 'Challenges a player.\n\t\t\t'
-    '  Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED] [VARIANT]',
-    'create': 'Challenges a player to COUNT game pairs.\n\t\t\t'
-    '  Usage: create COUNT USERNAME [INITIAL_TIME] [INCREMENT] [RATED] [VARIANT]',
+    'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED] [VARIANT]',
+    'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [INITIAL_TIME] [INCREMENT] [RATED] [VARIANT]',
     'help': 'Prints this message.',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
-    'reset': 'Resets matchmaking.\n\t\t\t'
-    '  Usage: reset [PERF_TYPE]',
+    'reset': 'Resets matchmaking. Usage: reset [PERF_TYPE]',
     'stop': 'Stops matchmaking mode.'
 }
 
@@ -85,9 +83,9 @@ class UserInterface:
 
     def _handle_bot_status(self, non_interactive: bool, upgrade_account: bool) -> None:
         if 'bot:play' not in self.api.get_token_scopes(self.config['token']):
-            print('Your token is missing the bot:play scope. This is mandatory to use BotLi.')
-            print('You can create such a token by following this link:')
-            print('https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
+            print('Your token is missing the bot:play scope. This is mandatory to use BotLi.\n'
+                  'You can create such a token by following this link:\n'
+                  'https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
             exit(1)
 
         if self.api.user.get('title') == 'BOT':
@@ -98,8 +96,8 @@ class UserInterface:
         if non_interactive and not upgrade_account:
             exit(1)
         elif not non_interactive:
-            print('This will upgrade your account to a BOT account.')
-            print('WARNING: This is irreversible. The account will only be able to play as a BOT.')
+            print('This will upgrade your account to a BOT account.\n'
+                  'WARNING: This is irreversible. The account will only be able to play as a BOT.')
             approval = input('Do you want to continue? [y/N]: ')
 
             if approval.lower() not in ['y', 'yes']:
@@ -235,7 +233,11 @@ if __name__ == '__main__':
     parser.add_argument('--non_interactive', '-n', action='store_true', help='Set if run as a service.')
     parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
     parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
+    parser.add_argument('--debug', '-d', action="store_const", const=logging.DEBUG,
+                        default=logging.WARNING, help='Enable debug logging.')
     args = parser.parse_args()
+
+    logging.basicConfig(level=args.debug)
 
     ui = UserInterface(args.config, args.non_interactive, args.matchmaking, args.upgrade)
     ui.main()
