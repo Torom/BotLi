@@ -141,10 +141,10 @@ messages:
   #   {cpu} to insert CPU information
   #   {ram} to insert RAM size
   # Any other words in curly braces will be removed.
-  greeting: "Hello, I am {me} running {engine}. Good luck! Type !help for a list of commands." # Message sent to the opponent at the beginning of a game.
-  goodbye: "Good game, looking forward to next time."                                          # Message sent to the opponent after the end of a game.
-  greeting_spectators: "Hello, I am {me} running {engine}. Type !help for a list of commands." # Message sent to the spectators at the beginning of a game.
-  goodbye_spectators: "Thanks for watching."                                                   # Message sent to the spectators after the end of a game.
+  greeting: "Hello, I'm {me} running {engine}. Good luck! Type !help for a list of commands." # Message sent to the opponent at the beginning of a game.
+  goodbye: "Good game, looking forward to next time."                                         # Message sent to the opponent after the end of a game.
+  greeting_spectators: "Hello, I'm {me} running {engine}. Type !help for a list of commands." # Message sent to the spectators at the beginning of a game.
+  goodbye_spectators: "Thanks for watching."                                                  # Message sent to the spectators after the end of a game.
 
 books:                                    # Names of the opening books (to be used above in the opening_books section) and paths to the opening books.
   DefaultBook: "/path/to/DefaultBook.bin"
