@@ -47,7 +47,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
+    @retry(retry=retry_if_exception_type(requests.ConnectionError))
     def create_challenge(self, challenge_request: Challenge_Request, response_queue: Queue[API_Challenge_Reponse]) -> None:
         response = self.session.post(
             f'https://lichess.org/api/challenge/{challenge_request.opponent_username}',
@@ -55,7 +55,7 @@ class API:
                   'clock.limit': challenge_request.initial_time, 'clock.increment': challenge_request.increment,
                   'color': challenge_request.color.value, 'variant': challenge_request.variant.value,
                   'keepAliveStream': 'true'},
-            stream=True, timeout=1.0)
+            stream=True)
 
         if response.status_code == 429:
             response_queue.put(API_Challenge_Reponse(has_reached_rate_limit=True))
