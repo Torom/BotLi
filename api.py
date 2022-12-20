@@ -17,37 +17,37 @@ class API:
         self.user = self.get_account()
         self.session.headers.update({'User-Agent': f'BotLi user:{self.user["username"]}'})
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def abort_game(self, game_id: str) -> bool:
         try:
-            response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/abort')
+            response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/abort', timeout=1.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def accept_challenge(self, challenge_id: str) -> bool:
         try:
-            response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/accept')
+            response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/accept', timeout=1.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def cancel_challenge(self, challenge_id: str) -> bool:
         try:
-            response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/cancel')
+            response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/cancel', timeout=1.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def create_challenge(self, challenge_request: Challenge_Request, response_queue: Queue[API_Challenge_Reponse]) -> None:
         response = self.session.post(
             f'https://lichess.org/api/challenge/{challenge_request.opponent_username}',
@@ -55,7 +55,7 @@ class API:
                   'clock.limit': challenge_request.initial_time, 'clock.increment': challenge_request.increment,
                   'color': challenge_request.color.value, 'variant': challenge_request.variant.value,
                   'keepAliveStream': 'true'},
-            stream=True)
+            stream=True, timeout=1.0)
 
         if response.status_code == 429:
             response_queue.put(API_Challenge_Reponse(has_reached_rate_limit=True))
@@ -69,19 +69,20 @@ class API:
             was_declined = data.get('done') == 'declined'
             response_queue.put(API_Challenge_Reponse(challenge_id, was_accepted, error, was_declined))
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:
-            response = self.session.post(
-                f'https://lichess.org/api/challenge/{challenge_id}/decline', data={'reason': reason.value})
+            response = self.session.post(f'https://lichess.org/api/challenge/{challenge_id}/decline',
+                                         data={'reason': reason.value}, timeout=1.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
             print(e)
             return False
 
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def get_account(self) -> dict:
-        response = self.session.get('https://lichess.org/api/account')
+        response = self.session.get('https://lichess.org/api/account', timeout=1.0)
         return response.json()
 
     def get_chessdb_eval(self, fen: str, action: str, timeout: int) -> dict | None:
@@ -114,16 +115,19 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def get_event_stream(self) -> Iterator:
-        response = self.session.get('https://lichess.org/api/stream/event', stream=True)
+        response = self.session.get('https://lichess.org/api/stream/event', stream=True, timeout=9.0)
         return response.iter_lines()
 
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def get_game_stream(self, game_id: str) -> Iterator:
-        response = self.session.get(f'https://lichess.org/api/bot/game/stream/{game_id}', stream=True)
+        response = self.session.get(f'https://lichess.org/api/bot/game/stream/{game_id}', stream=True, timeout=9.0)
         return response.iter_lines()
 
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def get_online_bots_stream(self) -> Iterator:
-        response = self.session.get('https://lichess.org/api/bot/online', stream=True)
+        response = self.session.get('https://lichess.org/api/bot/online', stream=True, timeout=9.0)
         return response.iter_lines()
 
     def get_opening_explorer(self, username: str, fen: str, variant: Variant, color: str, timeout: int) -> dict | None:
@@ -140,43 +144,42 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def get_token_scopes(self, token: str) -> str:
-        response = self.session.post('https://lichess.org/api/token/test', data=token)
+        response = self.session.post('https://lichess.org/api/token/test', data=token, timeout=1.0)
         return response.json()[token]['scopes']
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def get_user_status(self, username: str) -> dict:
-        response = self.session.get('https://lichess.org/api/users/status', params={'ids': username})
+        response = self.session.get('https://lichess.org/api/users/status', params={'ids': username}, timeout=1.0)
         return response.json()[0]
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def resign_game(self, game_id: str) -> bool:
         try:
-            response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/resign')
+            response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/resign', timeout=1.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def send_chat_message(self, game_id: str, room: str, text: str) -> bool:
         try:
-            response = self.session.post(
-                f'https://lichess.org/api/bot/game/{game_id}/chat', data={'room': room, 'text': text})
+            response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/chat',
+                                         data={'room': room, 'text': text}, timeout=1.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)))
     def send_move(self, game_id: str, uci_move: str, offer_draw: bool) -> bool:
         try:
-            response = self.session.post(
-                f'https://lichess.org/api/bot/game/{game_id}/move/{uci_move}',
-                params={'offeringDraw': str(offer_draw).lower()})
+            response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/move/{uci_move}',
+                                         params={'offeringDraw': str(offer_draw).lower()}, timeout=1.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:

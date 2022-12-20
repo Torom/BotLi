@@ -2,8 +2,6 @@ import json
 from queue import Queue
 from threading import Thread
 
-from tenacity import retry
-
 from api import API
 from chatter import Chatter
 from enums import Game_Status
@@ -104,12 +102,11 @@ class Game(Thread):
             self.api.send_move(self.game_id, uci_move, offer_draw)
             self.chatter.print_eval()
 
-    @retry
     def _watch_game_stream(self) -> None:
         game_stream = self.api.get_game_stream(self.game_id)
         for line in game_stream:
             if line:
-                event = json.loads(line.decode('utf-8'))
+                event = json.loads(line)
             else:
                 event = {'type': 'ping'}
             self.game_queue.put_nowait(event)

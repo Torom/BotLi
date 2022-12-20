@@ -4,8 +4,6 @@ import sys
 from queue import Queue
 from threading import Thread
 
-from tenacity import retry
-
 from api import API
 from challenge_validator import Challenge_Validator
 from game_manager import Game_Manager
@@ -75,10 +73,8 @@ class Event_Handler(Thread):
                 print('Event type not caught:', file=sys.stderr)
                 print(event)
 
-    @retry
     def _watch_challenge_stream(self) -> None:
         event_stream = self.api.get_event_stream()
-        for line in event_stream:
-            if line:
-                event = json.loads(line.decode('utf-8'))
-                self.challenge_queue.put_nowait(event)
+        for line in filter(None, event_stream):
+            event = json.loads(line)
+            self.challenge_queue.put_nowait(event)
