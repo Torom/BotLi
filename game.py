@@ -1,6 +1,12 @@
 import json
+import logging
 from queue import Queue
 from threading import Thread
+
+from requests import ConnectionError
+from tenacity import retry
+from tenacity.after import after_log
+from tenacity.retry import retry_if_exception_type
 
 from api import API
 from chatter import Chatter
@@ -102,6 +108,7 @@ class Game(Thread):
             self.api.send_move(self.game_id, uci_move, offer_draw)
             self.chatter.print_eval()
 
+    @retry(retry=retry_if_exception_type(ConnectionError), after=after_log(logging.getLogger(__name__), logging.DEBUG))
     def _watch_game_stream(self) -> None:
         game_stream = self.api.get_game_stream(self.game_id)
         for line in game_stream:

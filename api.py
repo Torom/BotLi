@@ -119,17 +119,14 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_event_stream(self) -> Iterator:
         response = self.session.get('https://lichess.org/api/stream/event', stream=True, timeout=9.0)
         return response.iter_lines()
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_game_stream(self, game_id: str) -> Iterator:
         response = self.session.get(f'https://lichess.org/api/bot/game/stream/{game_id}', stream=True, timeout=9.0)
         return response.iter_lines()
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_online_bots_stream(self) -> Iterator:
         response = self.session.get('https://lichess.org/api/bot/online', stream=True, timeout=9.0)
         return response.iter_lines()
