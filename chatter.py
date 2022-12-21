@@ -32,6 +32,11 @@ class Chatter:
         self.spectator_goodbye = self._format_message(config['messages'].get('goodbye_spectators', ''))
         self.print_eval_rooms: set[str] = set()
 
+    @property
+    def last_message(self) -> str:
+        last_message = self.lichess_game.last_message.replace('Engine', 'Eval')
+        return ' '.join(last_message.split())
+
     def handle_chat_message(self, chatLine_Event: dict) -> None:
         chat_message = Chat_Message(chatLine_Event)
 
@@ -48,7 +53,7 @@ class Chatter:
 
     def print_eval(self) -> None:
         for room in self.print_eval_rooms:
-            self.api.send_chat_message(self.game_id, room, ' '.join(self.lichess_game.last_message.split()))
+            self.api.send_chat_message(self.game_id, room, self.last_message)
 
     def send_greetings(self) -> None:
         self.api.send_chat_message(self.game_id, 'player', self.player_greeting)
@@ -72,7 +77,7 @@ class Chatter:
         elif command == 'draw':
             return self.draw_message
         elif command == 'eval':
-            return ' '.join(self.lichess_game.last_message.split())
+            return self.last_message
         elif command == 'motor':
             return self.lichess_game.engine.id['name']
         elif command == 'name':
@@ -81,7 +86,7 @@ class Chatter:
             if not self.lichess_game.increment and self.lichess_game.initial_time < 180_000:
                 return 'Time control is too fast for this function.'
             self.print_eval_rooms.add(chat_message.room)
-            return ' '.join(self.lichess_game.last_message.split())
+            return self.last_message
         elif command == 'stopeval':
             self.print_eval_rooms.discard(chat_message.room)
         elif command == 'ram':
