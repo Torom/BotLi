@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 
-from requests import ConnectionError
+from requests import ConnectionError as RequestsConnectionError
 from tenacity import retry
 from tenacity.after import after_log
 from tenacity.retry import retry_if_exception_type
@@ -81,7 +81,7 @@ class Matchmaking:
             print('Updating online bots and rankings ...')
             self.online_bots = self._get_online_bots()
 
-    @retry(retry=retry_if_exception_type(ConnectionError), after=after_log(logging.getLogger(__name__), logging.DEBUG))
+    @retry(retry=retry_if_exception_type(RequestsConnectionError), after=after_log(logging.getLogger(__name__), logging.DEBUG))
     def _get_online_bots(self) -> dict[Perf_Type, list[Bot]]:
         user_ratings = self._get_user_ratings()
 
