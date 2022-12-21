@@ -71,10 +71,10 @@ class Chatter:
             return self.cpu_message
         elif command == 'draw':
             return self.draw_message
-        elif command == 'engine':
-            return self.lichess_game.engine.id['name']
         elif command == 'eval':
             return ' '.join(self.lichess_game.last_message.split())
+        elif command == 'motor':
+            return self.lichess_game.engine.id['name']
         elif command == 'name':
             return f'{self.username} running {self.lichess_game.engine.id["name"]} (BotLi)'
         elif command == 'printeval':
@@ -87,7 +87,7 @@ class Chatter:
         elif command == 'ram':
             return self.ram_message
         else:
-            return 'Supported commands: !cpu, !draw, !engine, !eval, !name, !printeval / !stopeval, !ram'
+            return 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval / !stopeval, !ram'
 
     def _get_cpu(self) -> str:
         cpu = ''
