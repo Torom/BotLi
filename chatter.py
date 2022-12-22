@@ -34,7 +34,7 @@ class Chatter:
 
     @property
     def last_message(self) -> str:
-        last_message = self.lichess_game.last_message.replace('Engine', 'Eval')
+        last_message = self.lichess_game.last_message.replace('Engine', 'Evaluation')
         return ' '.join(last_message.split())
 
     def handle_chat_message(self, chatLine_Event: dict) -> None:
