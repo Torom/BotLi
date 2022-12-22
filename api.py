@@ -1,7 +1,7 @@
 import json
 import logging
 from queue import Queue
-from typing import Iterator
+from typing import Any, Iterator
 
 import requests
 from tenacity import retry
@@ -85,11 +85,11 @@ class API:
             return False
 
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
-    def get_account(self) -> dict:
+    def get_account(self) -> dict[str, Any]:
         response = self.session.get('https://lichess.org/api/account', timeout=3.0)
         return response.json()
 
-    def get_chessdb_eval(self, fen: str, action: str, timeout: int) -> dict | None:
+    def get_chessdb_eval(self, fen: str, action: str, timeout: int) -> dict[str, Any] | None:
         try:
             response = self.session.get('http://www.chessdb.cn/cdb.php',
                                         params={'action': action, 'board': fen, 'json': 1},
@@ -100,7 +100,7 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
-    def get_cloud_eval(self, fen: str, variant: Variant, timeout: int) -> dict | None:
+    def get_cloud_eval(self, fen: str, variant: Variant, timeout: int) -> dict[str, Any] | None:
         try:
             response = self.session.get('https://lichess.org/api/cloud-eval',
                                         params={'fen': fen, 'variant': variant.value}, timeout=timeout)
@@ -108,7 +108,7 @@ class API:
         except (requests.Timeout, requests.ConnectionError) as e:
             print(e)
 
-    def get_egtb(self, fen: str, variant: str, timeout: int) -> dict | None:
+    def get_egtb(self, fen: str, variant: str, timeout: int) -> dict[str, Any] | None:
         try:
             response = self.session.get(
                 f'https://tablebase.lichess.ovh/{variant}', params={'fen': fen},
@@ -119,17 +119,26 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
-    def get_event_stream(self) -> Iterator:
+    @retry(after=after_log(logger, logging.DEBUG))
+    def get_event_stream(self) -> Iterator[dict[str, Any]]:
         response = self.session.get('https://lichess.org/api/stream/event', stream=True, timeout=9.0)
-        return response.iter_lines()
+        for line in filter(None, response.iter_lines()):
+            yield json.loads(line)
 
-    def get_game_stream(self, game_id: str) -> Iterator:
+    @retry(after=after_log(logger, logging.DEBUG))
+    def get_game_stream(self, game_id: str) -> Iterator[dict[str, Any]]:
         response = self.session.get(f'https://lichess.org/api/bot/game/stream/{game_id}', stream=True, timeout=9.0)
-        return response.iter_lines()
+        for line in response.iter_lines():
+            if line:
+                yield json.loads(line)
+            else:
+                yield {'type': 'ping'}
 
-    def get_online_bots_stream(self) -> Iterator:
+    @retry(after=after_log(logger, logging.DEBUG))
+    def get_online_bots_stream(self) -> Iterator[dict[str, Any]]:
         response = self.session.get('https://lichess.org/api/bot/online', stream=True, timeout=9.0)
-        return response.iter_lines()
+        for line in filter(None, response.iter_lines()):
+            yield json.loads(line)
 
     def get_opening_explorer(self, username: str, fen: str, variant: Variant, color: str, timeout: int) -> dict | None:
         try:
@@ -151,7 +160,7 @@ class API:
         return response.json()[token]['scopes']
 
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
-    def get_user_status(self, username: str) -> dict:
+    def get_user_status(self, username: str) -> dict[str, Any]:
         response = self.session.get('https://lichess.org/api/users/status', params={'ids': username}, timeout=3.0)
         return response.json()[0]
 

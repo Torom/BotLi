@@ -1,11 +1,4 @@
-import json
-import logging
 from datetime import datetime, timedelta
-
-from requests import ConnectionError as RequestsConnectionError
-from tenacity import retry
-from tenacity.after import after_log
-from tenacity.retry import retry_if_exception_type
 
 from api import API
 from botli_dataclasses import Bot, Challenge_Request, Challenge_Response
@@ -81,14 +74,11 @@ class Matchmaking:
             print('Updating online bots and rankings ...')
             self.online_bots = self._get_online_bots()
 
-    @retry(retry=retry_if_exception_type(RequestsConnectionError), after=after_log(logging.getLogger(__name__), logging.DEBUG))
     def _get_online_bots(self) -> dict[Perf_Type, list[Bot]]:
         user_ratings = self._get_user_ratings()
 
         online_bots: dict[Perf_Type, list[Bot]] = {perf_type: list() for perf_type in self.perf_types}
-        for line in filter(None, self.api.get_online_bots_stream()):
-            bot = json.loads(line)
-
+        for bot in self.api.get_online_bots_stream():
             is_ourselves = bot['username'] == self.api.user['username']
             is_disabled = 'disabled' in bot
             has_tosViolation = self.is_rated and 'tosViolation' in bot

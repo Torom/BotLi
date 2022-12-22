@@ -1,14 +1,7 @@
-import json
-import logging
 import queue
 import sys
 from queue import Queue
 from threading import Thread
-
-from requests import ConnectionError as RequestsConnectionError
-from tenacity import retry
-from tenacity.after import after_log
-from tenacity.retry import retry_if_exception_type
 
 from api import API
 from challenge_validator import Challenge_Validator
@@ -79,9 +72,6 @@ class Event_Handler(Thread):
                 print('Event type not caught:', file=sys.stderr)
                 print(event)
 
-    @retry(retry=retry_if_exception_type(RequestsConnectionError), after=after_log(logging.getLogger(__name__), logging.DEBUG))
     def _watch_challenge_stream(self) -> None:
-        event_stream = self.api.get_event_stream()
-        for line in filter(None, event_stream):
-            event = json.loads(line)
-            self.challenge_queue.put_nowait(event)
+        for event in self.api.get_event_stream():
+            self.challenge_queue.put(event)
