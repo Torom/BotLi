@@ -129,10 +129,10 @@ class API:
         for line in response.iter_lines():
             yield json.loads(line) if line else {'type': 'ping'}
 
-    def get_online_bots_stream(self) -> Iterator[dict[str, Any]]:
+    @retry(after=after_log(logger, logging.DEBUG))
+    def get_online_bots_stream(self) -> list[dict[str, Any]]:
         response = self.session.get('https://lichess.org/api/bot/online', stream=True, timeout=9.0)
-        for line in filter(None, response.iter_lines()):
-            yield json.loads(line)
+        return [json.loads(line) for line in response.iter_lines() if line]
 
     def get_opening_explorer(self, username: str, fen: str, variant: Variant, color: str, timeout: int) -> dict | None:
         try:
