@@ -1,5 +1,9 @@
+import logging
 from queue import Queue
 from threading import Thread
+
+from tenacity import retry
+from tenacity.after import after_log
 
 from api import API
 from chatter import Chatter
@@ -101,6 +105,7 @@ class Game(Thread):
             self.api.send_move(self.game_id, uci_move, offer_draw)
             self.chatter.print_eval()
 
+    @retry(after=after_log(logging.getLogger(__name__), logging.DEBUG))
     def _watch_game_stream(self) -> None:
         for event in self.api.get_game_stream(self.game_id):
             self.game_queue.put(event)

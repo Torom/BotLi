@@ -1,7 +1,11 @@
+import logging
 import queue
 import sys
 from queue import Queue
 from threading import Thread
+
+from tenacity import retry
+from tenacity.after import after_log
 
 from api import API
 from challenge_validator import Challenge_Validator
@@ -72,6 +76,7 @@ class Event_Handler(Thread):
                 print('Event type not caught:', file=sys.stderr)
                 print(event)
 
+    @retry(after=after_log(logging.getLogger(__name__), logging.DEBUG))
     def _watch_challenge_stream(self) -> None:
         for event in self.api.get_event_stream():
             self.challenge_queue.put(event)
