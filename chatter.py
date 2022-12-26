@@ -20,9 +20,11 @@ class Chatter:
         self.api = api
         self.game_id: str = gameFull_event['id']
         self.lichess_game = lichess_game
-        self.username = self.api.user['username']
-        is_white = gameFull_event['white']['name'] == self.username
-        self.opponent_username = gameFull_event['black']['name'] if is_white else gameFull_event['white']['name']
+        white_name = gameFull_event['white'].get('name') or f'AI Level {gameFull_event["white"]["aiLevel"]}'
+        black_name = gameFull_event['black'].get('name') or f'AI Level {gameFull_event["black"]["aiLevel"]}'
+        self.username: str = self.api.user['username']
+        is_white = white_name == self.username
+        self.opponent_username = black_name if is_white else white_name
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
         self.ram_message = self._get_ram()
