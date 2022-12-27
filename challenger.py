@@ -34,6 +34,12 @@ class Challenger:
                 elif response.has_reached_rate_limit:
                     print(f'Challenge against {challenge_request.opponent_username} failed due to Lichess rate limit.')
                     yield Challenge_Response(success=False, has_reached_rate_limit=True)
+                elif response.invalid_initial:
+                    print('Challenge failed due to invalid initial time.')
+                    yield Challenge_Response(success=False, is_misconfigured=True)
+                elif response.invalid_increment:
+                    print('Challenge failed due to invalid increment time.')
+                    yield Challenge_Response(success=False, is_misconfigured=True)
 
                 # End of api challenge response
                 return

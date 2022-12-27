@@ -71,7 +71,10 @@ class API:
             was_accepted = data.get('done') == 'accepted'
             error = data.get('error')
             was_declined = data.get('done') == 'declined'
-            response_queue.put(API_Challenge_Reponse(challenge_id, was_accepted, error, was_declined))
+            invalid_initial = 'Invalid value' in data.get('clock.limit', [])
+            invalid_increment = 'Invalid value' in data.get('clock.increment', [])
+            response_queue.put(API_Challenge_Reponse(challenge_id, was_accepted, error,
+                               was_declined, invalid_initial, invalid_increment))
 
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:

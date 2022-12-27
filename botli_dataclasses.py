@@ -10,7 +10,8 @@ class API_Challenge_Reponse:
     was_accepted: bool = False
     error: str | None = None
     was_declined: bool = False
-    has_timed_out: bool = False
+    invalid_initial: bool = False
+    invalid_increment: bool = False
     has_reached_rate_limit: bool = False
 
 
@@ -48,3 +49,4 @@ class Challenge_Response:
     challenge_id: Challenge_ID | None = None
     success: bool = False
     has_reached_rate_limit: bool = False
+    is_misconfigured: bool = False

@@ -145,7 +145,7 @@ class Game_Manager(Thread):
         challenge_id = pending_challenge.get_challenge_id()
         self.current_matchmaking_game_id = challenge_id
 
-        success, has_reached_rate_limit = pending_challenge.get_final_state()
+        success, has_reached_rate_limit, is_misconfigured = pending_challenge.get_final_state()
 
         if success:
             assert challenge_id
@@ -156,6 +156,9 @@ class Game_Manager(Thread):
             self.current_matchmaking_game_id = None
             if has_reached_rate_limit:
                 print('Matchmaking stopped due to rate limiting.')
+                self.is_matchmaking_allowed = False
+            if is_misconfigured:
+                print('Matchmaking stopped due to misconfiguration.')
                 self.is_matchmaking_allowed = False
 
     def _get_next_challenge_request(self) -> Challenge_Request | None:
