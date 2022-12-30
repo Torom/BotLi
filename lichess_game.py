@@ -137,9 +137,11 @@ class Lichess_Game:
 
         return message
 
+    @property
     def is_our_turn(self) -> bool:
         return self.is_white == self.board.turn
 
+    @property
     def is_game_over(self) -> bool:
         return self.board.is_checkmate() or \
             self.board.is_stalemate() or \
@@ -147,8 +149,13 @@ class Lichess_Game:
             self.board.is_fifty_moves() or \
             self.board.is_repetition()
 
+    @property
     def is_abortable(self) -> bool:
         return len(self.board.move_stack) < 2
+
+    @property
+    def is_finished(self) -> bool:
+        return self.status != Game_Status.STARTED
 
     def start_pondering(self) -> None:
         if self.ponder_enabled:

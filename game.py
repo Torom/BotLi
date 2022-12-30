@@ -3,7 +3,6 @@ from threading import Thread
 
 from api import API
 from chatter import Chatter
-from enums import Game_Status
 from lichess_game import Lichess_Game
 
 
@@ -38,7 +37,7 @@ class Game(Thread):
                 else:
                     self.lichess_game.update(event['state'])
 
-                if self.lichess_game.is_our_turn():
+                if self.lichess_game.is_our_turn:
                     self._make_move()
                 else:
                     self.lichess_game.start_pondering()
@@ -49,15 +48,15 @@ class Game(Thread):
                 self.ping_counter = 0
                 updated = self.lichess_game.update(event)
 
-                if self.lichess_game.status != Game_Status.STARTED:
+                if self.lichess_game.is_finished:
                     print(self.lichess_game.get_result_message(event.get('winner')))
                     self.chatter.send_goodbyes()
                     break
 
-                if self.lichess_game.is_game_over():
+                if self.lichess_game.is_game_over:
                     continue
 
-                if self.lichess_game.is_our_turn() and updated:
+                if self.lichess_game.is_our_turn and updated:
                     self._make_move()
             elif event['type'] == 'chatLine':
                 assert self.lichess_game
@@ -72,7 +71,7 @@ class Game(Thread):
 
                 self.ping_counter += 1
 
-                if self.ping_counter >= 10 and self.lichess_game.is_abortable():
+                if self.ping_counter >= 10 and self.lichess_game.is_abortable:
                     print('Aborting game ...')
                     self.chatter.send_abortion_message()
                     self.api.abort_game(self.game_id)
