@@ -1,11 +1,6 @@
-import logging
 import queue
-import sys
 from queue import Queue
 from threading import Thread
-
-from tenacity import retry
-from tenacity.after import after_log
 
 from api import API
 from challenge_validator import Challenge_Validator
@@ -18,7 +13,6 @@ class Event_Handler(Thread):
         self.config = config
         self.api = api
         self.is_running = True
-        self.challenge_queue = Queue()
         self.game_manager = game_manager
         self.challenge_validator = Challenge_Validator(config)
 
@@ -29,12 +23,13 @@ class Event_Handler(Thread):
         self.is_running = False
 
     def run(self) -> None:
-        challenge_queue_thread = Thread(target=self._watch_challenge_stream, daemon=True)
+        challenge_queue = Queue()
+        challenge_queue_thread = Thread(target=self.api.get_event_stream, args=(challenge_queue,), daemon=True)
         challenge_queue_thread.start()
 
         while self.is_running:
             try:
-                event = self.challenge_queue.get(timeout=2)
+                event = challenge_queue.get(timeout=2)
             except queue.Empty:
                 continue
 
@@ -73,10 +68,4 @@ class Event_Handler(Thread):
                 challenge_id = event['challenge']['id']
                 self.game_manager.remove_challenge(challenge_id)
             else:
-                print('Event type not caught:', file=sys.stderr)
                 print(event)
-
-    @retry(after=after_log(logging.getLogger(__name__), logging.DEBUG))
-    def _watch_challenge_stream(self) -> None:
-        for event in self.api.get_event_stream():
-            self.challenge_queue.put(event)

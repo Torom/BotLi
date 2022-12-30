@@ -1,9 +1,5 @@
-import logging
 from queue import Queue
 from threading import Thread
-
-from tenacity import retry
-from tenacity.after import after_log
 
 from api import API
 from chatter import Chatter
@@ -18,7 +14,6 @@ class Game(Thread):
         self.api = api
         self.game_id = game_id
         self.ping_counter = 0
-        self.game_queue = Queue()
         self.abortion_counter = 0
         self.lichess_game: Lichess_Game | None = None
         self.chatter: Chatter | None = None
@@ -27,11 +22,12 @@ class Game(Thread):
         Thread.start(self)
 
     def run(self) -> None:
-        game_queue_thread = Thread(target=self._watch_game_stream, daemon=True)
+        game_queue = Queue()
+        game_queue_thread = Thread(target=self.api.get_game_stream, args=(self.game_id, game_queue), daemon=True)
         game_queue_thread.start()
 
         while True:
-            event = self.game_queue.get()
+            event = game_queue.get()
 
             if event['type'] == 'gameFull':
                 if not self.lichess_game:
@@ -84,9 +80,6 @@ class Game(Thread):
 
                     if self.abortion_counter >= 3:
                         break
-            elif event['type'] == 'endOfStream':
-                print('Game stream ended unexpectedly.')
-                break
             else:
                 print(event)
 
@@ -104,10 +97,3 @@ class Game(Thread):
         else:
             self.api.send_move(self.game_id, uci_move, offer_draw)
             self.chatter.print_eval()
-
-    @retry(after=after_log(logging.getLogger(__name__), logging.DEBUG))
-    def _watch_game_stream(self) -> None:
-        for event in self.api.get_game_stream(self.game_id):
-            self.game_queue.put(event)
-
-        self.game_queue.put_nowait({'type': 'endOfStream'})

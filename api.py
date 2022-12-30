@@ -1,7 +1,7 @@
 import json
 import logging
 from queue import Queue
-from typing import Any, Iterator
+from typing import Any
 
 import requests
 from tenacity import retry
@@ -122,15 +122,18 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
-    def get_event_stream(self) -> Iterator[dict[str, Any]]:
+    @retry(after=after_log(logger, logging.DEBUG))
+    def get_event_stream(self, queue: Queue) -> None:
         response = self.session.get('https://lichess.org/api/stream/event', stream=True, timeout=9.0)
         for line in filter(None, response.iter_lines()):
-            yield json.loads(line)
+            queue.put(json.loads(line))
 
-    def get_game_stream(self, game_id: str) -> Iterator[dict[str, Any]]:
+    @retry(after=after_log(logger, logging.DEBUG))
+    def get_game_stream(self, game_id: str, queue: Queue) -> None:
         response = self.session.get(f'https://lichess.org/api/bot/game/stream/{game_id}', stream=True, timeout=9.0)
         for line in response.iter_lines():
-            yield json.loads(line) if line else {'type': 'ping'}
+            event = json.loads(line) if line else {'type': 'ping'}
+            queue.put(event)
 
     @retry(after=after_log(logger, logging.DEBUG))
     def get_online_bots_stream(self) -> list[dict[str, Any]]:
