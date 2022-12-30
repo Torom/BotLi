@@ -1,6 +1,6 @@
+from collections.abc import Iterator
 from queue import Empty, Queue
 from threading import Thread
-from typing import Iterator
 
 from api import API
 from botli_dataclasses import API_Challenge_Reponse, Challenge_Request, Challenge_Response

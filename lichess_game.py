@@ -2,7 +2,6 @@ import os
 import random
 import subprocess
 from collections import deque
-from typing import Tuple
 
 import chess
 import chess.engine
@@ -49,7 +48,7 @@ class Lichess_Game:
         self.resign_scores: deque[chess.engine.PovScore] = deque(maxlen=consecutive_resign_moves)
         self.last_message = 'No eval available yet.'
 
-    def make_move(self) -> Tuple[UCI_Move, Offer_Draw, Resign]:
+    def make_move(self) -> tuple[UCI_Move, Offer_Draw, Resign]:
         offer_draw = False
         resign = False
         engine_move = False
@@ -206,7 +205,7 @@ class Lichess_Game:
 
         return True
 
-    def _make_book_move(self) -> Tuple[chess.Move, Weight, Learn] | None:
+    def _make_book_move(self) -> tuple[chess.Move, Weight, Learn] | None:
         enabled = self.config['engine']['opening_books']['enabled']
 
         if not enabled:
@@ -263,7 +262,7 @@ class Lichess_Game:
 
             return []
 
-    def _make_opening_explorer_move(self) -> Tuple[chess.Move, Performance, Tuple[int, int, int]] | None:
+    def _make_opening_explorer_move(self) -> tuple[chess.Move, Performance, tuple[int, int, int]] | None:
         enabled = self.config['engine']['online_moves']['opening_explorer']['enabled']
 
         if not enabled:
@@ -315,7 +314,7 @@ class Lichess_Game:
             top_move['losses'] = top_move['black'] if self.board.turn else top_move['white']
             return top_move
 
-    def _make_cloud_move(self) -> Tuple[chess.Move, CP_Score, Depth] | None:
+    def _make_cloud_move(self) -> tuple[chess.Move, CP_Score, Depth] | None:
         enabled = self.config['engine']['online_moves']['lichess_cloud']['enabled']
 
         if not enabled:
@@ -388,7 +387,7 @@ class Lichess_Game:
         else:
             self._reduce_own_time(timeout * 1000)
 
-    def _make_gaviota_move(self) -> Tuple[chess.Move, Outcome, DTM, Offer_Draw, Resign] | None:
+    def _make_gaviota_move(self) -> tuple[chess.Move, Outcome, DTM, Offer_Draw, Resign] | None:
         enabled = self.config['engine']['gaviota']['enabled']
 
         if not enabled:
@@ -441,7 +440,7 @@ class Lichess_Game:
         elif best_wdl == -2:
             return random.choice(best_moves), 'loss', best_dtm, False, True
 
-    def _make_syzygy_move(self) -> Tuple[chess.Move, Outcome, DTZ, Offer_Draw, Resign] | None:
+    def _make_syzygy_move(self) -> tuple[chess.Move, Outcome, DTZ, Offer_Draw, Resign] | None:
         enabled = self.config['engine']['syzygy']['enabled'] and self.config['engine']['syzygy']['instant_play']
 
         if not enabled:
@@ -548,7 +547,7 @@ class Lichess_Game:
 
         return tablebase
 
-    def _make_egtb_move(self) -> Tuple[UCI_Move, Outcome, DTZ, DTM | None, Offer_Draw, Resign] | None:
+    def _make_egtb_move(self) -> tuple[UCI_Move, Outcome, DTZ, DTM | None, Offer_Draw, Resign] | None:
         enabled = self.config['engine']['online_moves']['online_egtb']['enabled']
 
         if not enabled:
@@ -577,7 +576,7 @@ class Lichess_Game:
         else:
             self._reduce_own_time(timeout * 1000)
 
-    def _make_engine_move(self) -> Tuple[chess.Move, chess.engine.InfoDict]:
+    def _make_engine_move(self) -> tuple[chess.Move, chess.engine.InfoDict]:
         if len(self.board.move_stack) < 2:
             limit = chess.engine.Limit(time=15)
             ponder = False
@@ -681,7 +680,7 @@ class Lichess_Game:
 
         return delimiter.join([weight_str, performance_str, wdl_str])
 
-    def _deserialize_learn(self, learn: int) -> Tuple[Performance, Tuple[float, float, float]]:
+    def _deserialize_learn(self, learn: int) -> tuple[Performance, tuple[float, float, float]]:
         performance = (learn >> 20) & 0b111111111111
         win = ((learn >> 10) & 0b1111111111) / 1020.0 * 100.0
         draw = (learn & 0b1111111111) / 1020.0 * 100.0

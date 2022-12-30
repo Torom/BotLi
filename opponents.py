@@ -2,7 +2,6 @@ import json
 import os
 import random
 from datetime import datetime, timedelta
-from typing import Tuple
 
 from aliases import As_White
 from botli_dataclasses import Bot
@@ -56,9 +55,9 @@ class Opponents:
         self.delay = timedelta(seconds=delay)
         self.opponent_list = self._load()
         self.busy_bots: list[Bot] = []
-        self.last_opponent: Tuple[Bot, Perf_Type, As_White] | None = None
+        self.last_opponent: tuple[Bot, Perf_Type, As_White] | None = None
 
-    def get_next_opponent(self, online_bots: dict[Perf_Type, list[Bot]]) -> Tuple[Bot, Perf_Type, As_White]:
+    def get_next_opponent(self, online_bots: dict[Perf_Type, list[Bot]]) -> tuple[Bot, Perf_Type, As_White]:
         perf_type = random.choice(self.perf_types)
 
         for bot in sorted(online_bots[perf_type], key=lambda bot: abs(bot.rating_diff)):
@@ -136,7 +135,7 @@ class Opponents:
 
     def _load(self) -> list[Opponent]:
         if os.path.isfile('matchmaking.json'):
-            with open('matchmaking.json', 'r', encoding='utf-8') as json_input:
+            with open('matchmaking.json', encoding='utf-8') as json_input:
                 return [Opponent.from_dict(opponent) for opponent in json.load(json_input)]
         else:
             return []

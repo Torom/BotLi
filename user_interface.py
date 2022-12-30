@@ -1,7 +1,7 @@
 import argparse
 import logging
 from enum import Enum
-from typing import Type, TypeVar
+from typing import TypeVar
 
 from api import API
 from botli_dataclasses import Challenge_Request
@@ -201,7 +201,7 @@ class UserInterface:
         for key, value in COMMANDS.items():
             print(f'{key:11}\t\t# {value}')
 
-    def _find_enum(self, name: str, enum_type: Type[EnumT]) -> EnumT:
+    def _find_enum(self, name: str, enum_type: type[EnumT]) -> EnumT:
         for enum in enum_type:
             if enum.value.lower() == name.lower():
                 return enum
