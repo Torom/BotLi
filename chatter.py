@@ -93,7 +93,7 @@ class Chatter:
             self.print_eval_rooms.discard(chat_message.room)
         elif command == 'ram':
             return self.ram_message
-        else:
+        elif command in ['help', 'commands']:
             return 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval / !stopeval, !ram'
 
     def _get_cpu(self) -> str:
