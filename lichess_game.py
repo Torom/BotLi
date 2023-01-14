@@ -700,25 +700,30 @@ class Lichess_Game:
             engine_path = self.config['engine']['variants']['path']
             engine_options = self.config['engine']['variants']['uci_options']
             self.ponder_enabled = self.config['engine']['variants']['ponder']
-            silence_stderr = self.config['engine']['variants'].get('silence_stderr', False)
+            stderr = subprocess.DEVNULL if self.config['engine']['variants'].get('silence_stderr') else None
         else:
             engine_path = self.config['engine']['path']
             engine_options = self.config['engine']['uci_options']
             self.ponder_enabled = self.config['engine']['ponder']
-            silence_stderr = self.config['engine'].get('silence_stderr', False)
+            stderr = subprocess.DEVNULL if self.config['engine'].get('silence_stderr') else None
 
             if self.config['engine']['syzygy']['enabled']:
                 delimiter = ';' if os.name == 'nt' else ':'
                 syzygy_path = delimiter.join(self.config['engine']['syzygy']['paths'])
                 engine_options['SyzygyPath'] = syzygy_path
-
-        def is_managed(key: str): return chess.engine.Option(key, '', None, None, None, None).is_managed()
-        engine_options = {key: value for key, value in engine_options.items() if not is_managed(key)}
-
-        stderr = subprocess.DEVNULL if silence_stderr else None
+                engine_options['SyzygyProbeLimit'] = self.config['engine']['syzygy']['max_pieces']
 
         engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=stderr)
-        engine.configure(engine_options)
+
+        for name, value in engine_options.items():
+            if chess.engine.Option(name, '', None, None, None, None).is_managed():
+                print(f'UCI option "{name}" ignored as it is managed by the bot.')
+            elif name in engine.options:
+                engine.configure({name: value})
+            elif name == 'SyzygyProbeLimit':
+                continue
+            else:
+                print(f'UCI option "{name}" ignored as it is not supported by the engine.')
 
         return engine
 
