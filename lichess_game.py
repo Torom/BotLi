@@ -289,9 +289,16 @@ class Lichess_Game:
         timeout = self.config['engine']['online_moves']['opening_explorer']['timeout']
         min_games = max(self.config['engine']['online_moves']['opening_explorer']['min_games'], 1)
         only_with_wins = self.config['engine']['online_moves']['opening_explorer']['only_with_wins']
-        color = 'white' if self.board.turn else 'black'
+        anti = self.config['engine']['online_moves']['opening_explorer']['anti']
 
-        if response := self.api.get_opening_explorer(self.username, self.board.fen(), self.variant, color, timeout):
+        if anti:
+            color = 'black' if self.board.turn else 'white'
+            username = self.black_name if self.board.turn else self.white_name
+        else:
+            color = 'white' if self.board.turn else 'black'
+            username = self.white_name if self.board.turn else self.black_name
+
+        if response := self.api.get_opening_explorer(username, self.board.fen(), self.variant, color, timeout):
             game_count = response['white'] + response['draws'] + response['black']
             if game_count >= min_games:
                 top_move = self._get_opening_explorer_top_move(response['moves'])

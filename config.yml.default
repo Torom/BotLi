@@ -53,6 +53,7 @@ engine:                                   # Engine settings.
       min_games: 5                        # Minimum number of games in which the position must have occurred.
       only_with_wins: false               # Whether to play only moves that have won before.
       selection: "performance"            # Move selection is "performance" or "win_rate".
+      anti: false                         # Whether to play the moves in wich the opponent performs the worst.
 #     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
     chessdb:
       enabled: false                      # Activate online moves from https://chessdb.cn/queryc_en/
