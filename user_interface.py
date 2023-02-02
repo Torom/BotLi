@@ -11,6 +11,12 @@ from event_handler import Event_Handler
 from game_manager import Game_Manager
 from logo import LOGO
 
+try:
+    import readline
+    readline_available = True
+except ImportError:
+    readline_available = False
+
 COMMANDS = {
     'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED] [VARIANT]',
     'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [INITIAL_TIME] [INCREMENT] [RATED] [VARIANT]',
@@ -50,14 +56,10 @@ class UserInterface:
         if self.non_interactive:
             return
 
-        try:
-            import readline
-
+        if readline_available:
             completer = Autocompleter(list(COMMANDS.keys()))
             readline.set_completer(completer.complete)
             readline.parse_and_bind('tab: complete')
-        except ImportError:
-            pass
 
         while self.is_running:
             command = input().split()
