@@ -82,7 +82,7 @@ class Lichess_Game:
             message = f'Engine:  {self._format_move(move):14} {self._format_engine_info(info)}'
             offer_draw = self._is_drawish()
             resign = self._is_resignable()
-            engine_move = True if len(self.board.move_stack) > 1 else False
+            engine_move = len(self.board.move_stack) > 1
 
         print(message)
         self.last_message = message
