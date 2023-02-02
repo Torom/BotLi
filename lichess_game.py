@@ -315,6 +315,7 @@ class Lichess_Game:
 
     def _get_opening_explorer_top_move(self, moves: list[dict]) -> dict:
         selection = self.config['engine']['online_moves']['opening_explorer']['selection']
+        anti = self.config['engine']['online_moves']['opening_explorer']['anti']
 
         if selection == 'win_rate':
             for move in moves:
@@ -323,7 +324,8 @@ class Lichess_Game:
 
             return max(moves, key=lambda move: move['wins'] / (move['white'] + move['draws'] + move['black']))
         else:
-            top_move = max(moves, key=lambda move: move['performance'])
+            min_or_max = min if anti else max
+            top_move = min_or_max(moves, key=lambda move: move['performance'])
             top_move['wins'] = top_move['white'] if self.board.turn else top_move['black']
             top_move['losses'] = top_move['black'] if self.board.turn else top_move['white']
             return top_move
