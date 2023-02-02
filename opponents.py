@@ -41,11 +41,11 @@ class Opponent:
 
         return dict_
 
-    def __eq__(self, o: object) -> bool:
-        if isinstance(o, Opponent):
-            return self.username == o.username
-        else:
-            raise NotImplementedError
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, Opponent):
+            return __o.username == self.username
+
+        return NotImplemented
 
 
 class Opponents:
