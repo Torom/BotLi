@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 from enum import Enum
 from typing import TypeVar
 
@@ -88,7 +89,7 @@ class UserInterface:
             print('Your token is missing the bot:play scope. This is mandatory to use BotLi.\n'
                   'You can create such a token by following this link:\n'
                   'https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
-            exit(1)
+            sys.exit(1)
 
         if self.api.user.get('title') == 'BOT':
             return
@@ -96,7 +97,7 @@ class UserInterface:
         print('\nBotLi can only be used by BOT accounts!\n')
 
         if non_interactive and not upgrade_account:
-            exit(1)
+            sys.exit(1)
         elif not non_interactive:
             print('This will upgrade your account to a BOT account.\n'
                   'WARNING: This is irreversible. The account will only be able to play as a BOT.')
@@ -104,13 +105,13 @@ class UserInterface:
 
             if approval.lower() not in ['y', 'yes']:
                 print('Upgrade aborted.')
-                exit()
+                sys.exit()
 
         if self.api.upgrade_account():
             print('Upgrade successful.')
         else:
             print('Upgrade failed.')
-            exit(1)
+            sys.exit(1)
 
     def _challenge(self, command: list[str]) -> None:
         command_length = len(command)
