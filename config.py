@@ -55,8 +55,8 @@ def load_config(config_path: str) -> dict:
             ['instant_play', bool, '"instant_play" must be a bool.']]
         for subsection in syzygy_sections:
             if subsection[0] not in CONFIG['engine']['syzygy']:
-                raise RuntimeError(
-                    f'Your {config_path} does not have required `engine` `syzygy` subsection `{subsection[0]}`.')
+                raise RuntimeError(f'Your {config_path} does not have required '
+                                   f'`engine` `syzygy` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine']['syzygy'][subsection[0]], subsection[1]):
                 raise TypeError(f'`engine` `syzygy` subsection {subsection[2]}')
 
@@ -66,8 +66,8 @@ def load_config(config_path: str) -> dict:
             ['max_pieces', int, '"max_pieces" must be a integer.']]
         for subsection in gaviota_sections:
             if subsection[0] not in CONFIG['engine']['gaviota']:
-                raise RuntimeError(
-                    f'Your {config_path} does not have required `engine` `gaviota` subsection `{subsection[0]}`.')
+                raise RuntimeError(f'Your {config_path} does not have required '
+                                   f'`engine` `gaviota` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine']['gaviota'][subsection[0]], subsection[1]):
                 raise TypeError(f'`engine` `gaviota` subsection {subsection[2]}')
 
@@ -79,8 +79,8 @@ def load_config(config_path: str) -> dict:
             ['uci_options', dict, '"uci_options" must be a dictionary with indented keys followed by colons.']]
         for subsection in variants_sections:
             if subsection[0] not in CONFIG['engine']['variants']:
-                raise RuntimeError(
-                    f'Your {config_path} does not have required `engine` `variants` subsection `{subsection[0]}`.')
+                raise RuntimeError(f'Your {config_path} does not have required '
+                                   f'`engine` `variants` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine']['variants'][subsection[0]], subsection[1]):
                 raise TypeError(f'`engine` `variants` subsection {subsection[2]}')
 
@@ -91,8 +91,8 @@ def load_config(config_path: str) -> dict:
             ['online_egtb', dict, '"online_egtb" must be a dictionary with indented keys followed by colons.']]
         for subsection in online_moves_sections:
             if subsection[0] not in CONFIG['engine']['online_moves']:
-                raise RuntimeError(
-                    f'Your {config_path} does not have required `engine` `online_moves` subsection `{subsection[0]}`.')
+                raise RuntimeError(f'Your {config_path} does not have required '
+                                   f'`engine` `online_moves` subsection `{subsection[0]}`.')
             if not isinstance(CONFIG['engine']['online_moves'][subsection[0]], subsection[1]):
                 raise TypeError(f'`engine` `online_moves` subsection {subsection[2]}')
 
@@ -105,13 +105,13 @@ def load_config(config_path: str) -> dict:
             raise RuntimeError(f'The engine "{CONFIG["engine"]["path"]}" file does not exist.')
 
         if not os.access(CONFIG['engine']['path'], os.X_OK):
-            raise RuntimeError(
-                f'The engine "{CONFIG["engine"]["path"]}" doesnt have execute (x) permission. Try: chmod +x {CONFIG["engine"]["path"]}')
+            raise RuntimeError(f'The engine "{CONFIG["engine"]["path"]}" doesnt have execute (x) permission. '
+                               f'Try: chmod +x {CONFIG["engine"]["path"]}')
 
         if CONFIG['engine']['variants']['enabled']:
             if not os.path.isdir(CONFIG['engine']['variants']['dir']):
-                raise RuntimeError(
-                    f'Your variants engine directory "{CONFIG["engine"]["variants"]["dir"]}" is not a directory.')
+                raise RuntimeError(f'Your variants engine directory "{CONFIG["engine"]["variants"]["dir"]}" '
+                                   'is not a directory.')
 
             CONFIG['engine']['variants']['path'] = os.path.join(
                 CONFIG['engine']['variants']['dir'],
@@ -121,8 +121,8 @@ def load_config(config_path: str) -> dict:
                 raise RuntimeError(f'The variants engine "{CONFIG["engine"]["variants"]["path"]}" file does not exist.')
 
             if not os.access(CONFIG['engine']['variants']['path'], os.X_OK):
-                raise RuntimeError(
-                    f'The variants engine "{CONFIG["engine"]["variants"]["path"]}" doesnt have execute (x) permission. Try: chmod +x {CONFIG["engine"]["variants"]["path"]}')
+                raise RuntimeError(f'The variants engine "{CONFIG["engine"]["variants"]["path"]}" doesnt have execute '
+                                   f'(x) permission. Try: chmod +x {CONFIG["engine"]["variants"]["path"]}')
 
         if CONFIG['engine']['syzygy']['enabled']:
             for path in CONFIG['engine']['syzygy']['paths']:
@@ -137,8 +137,8 @@ def load_config(config_path: str) -> dict:
         if CONFIG['engine']['opening_books']['enabled']:
             for key, book_list in CONFIG['engine']['opening_books']['books'].items():
                 if not isinstance(book_list, list):
-                    raise TypeError(
-                        f'The `engine: opening_books: books: {key}` section must be a list of book names or commented.')
+                    raise TypeError(f'The `engine: opening_books: books: {key}` section must be a '
+                                    'list of book names or commented.')
 
                 for book in book_list:
                     if book not in CONFIG['books']:
