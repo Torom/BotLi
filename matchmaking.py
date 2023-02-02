@@ -75,7 +75,7 @@ class Matchmaking:
     def _get_online_bots(self) -> dict[Perf_Type, list[Bot]]:
         user_ratings = self._get_user_ratings()
 
-        online_bots: dict[Perf_Type, list[Bot]] = {perf_type: list() for perf_type in self.perf_types}
+        online_bots: dict[Perf_Type, list[Bot]] = {perf_type: [] for perf_type in self.perf_types}
         for bot in self.api.get_online_bots_stream():
             is_ourselves = bot['username'] == self.api.user['username']
             is_disabled = 'disabled' in bot
