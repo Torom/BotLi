@@ -4,9 +4,7 @@ from queue import Queue
 from typing import Any
 
 import requests
-from tenacity import retry
-from tenacity.after import after_log
-from tenacity.retry import retry_if_exception_type
+from tenacity import after_log, retry, retry_if_exception_type
 
 from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
 from enums import Decline_Reason, Variant
