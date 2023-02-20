@@ -35,7 +35,14 @@ class Game(Thread):
                     self.chatter = Chatter(self.api, self.config, event, self.lichess_game)
                     self.chatter.send_greetings()
                 else:
+                    assert self.chatter
+
                     self.lichess_game.update(event['state'])
+
+                    if self.lichess_game.is_finished:
+                        print(self.lichess_game.get_result_message(event['state'].get('winner')))
+                        self.chatter.send_goodbyes()
+                        break
 
                 if self.lichess_game.is_our_turn:
                     self._make_move()
