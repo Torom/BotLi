@@ -172,14 +172,13 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def send_chat_message(self, game_id: str, room: str, text: str) -> bool:
         try:
             response = self.session.post(f'https://lichess.org/api/bot/game/{game_id}/chat',
                                          data={'room': room, 'text': text}, timeout=1.0)
             response.raise_for_status()
             return True
-        except requests.HTTPError as e:
+        except (requests.HTTPError, requests.ConnectionError, requests.Timeout) as e:
             print(e)
             return False
 
