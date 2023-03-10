@@ -32,7 +32,10 @@ class Challenge_Validator:
         speed = challenge_event['challenge']['speed']
         increment = challenge_event['challenge']['timeControl'].get('increment')
         initial = challenge_event['challenge']['timeControl'].get('limit')
-        if speed not in time_controls:
+        if speed == 'correspondence':
+            print('Time control "Correspondence" is not supported by BotLi.')
+            return Decline_Reason.TIME_CONTROL
+        elif speed not in time_controls:
             print(f'Time control "{speed}" is not allowed according to config.')
             return Decline_Reason.TIME_CONTROL
         elif increment < min_increment:
