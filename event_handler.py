@@ -15,6 +15,7 @@ class Event_Handler(Thread):
         self.is_running = True
         self.game_manager = game_manager
         self.challenge_validator = Challenge_Validator(config)
+        self.last_challenge_event: dict | None = None
 
     def start(self):
         Thread.start(self)
@@ -39,6 +40,7 @@ class Event_Handler(Thread):
                 if challenger_name == self.api.user['username']:
                     continue
 
+                self.last_challenge_event = event
                 print(self.challenge_validator.format_challenge_event(event))
 
                 challenge_id = event['challenge']['id']

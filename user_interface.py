@@ -24,6 +24,7 @@ COMMANDS = {
     'help': 'Prints this message.',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
+    'rechallenge': 'Challenges the opponent to the last received challenge.',
     'reset': 'Resets matchmaking. Usage: reset [PERF_TYPE]',
     'stop': 'Stops matchmaking mode.'
 }
@@ -77,6 +78,8 @@ class UserInterface:
                 self._matchmaking()
             elif command[0] == 'quit':
                 self._quit()
+            elif command[0] == 'rechallenge':
+                self._rechallenge()
             elif command[0] == 'reset':
                 self._reset(command)
             elif command[0] == 'stop':
@@ -176,6 +179,34 @@ class UserInterface:
         self.game_manager.join()
         self.event_handler.stop()
         self.event_handler.join()
+
+    def _rechallenge(self) -> None:
+        last_challenge_event = self.event_handler.last_challenge_event
+        if last_challenge_event is None:
+            print('No last challenge available.')
+            return
+
+        if last_challenge_event['challenge']['speed'] == 'correspondence':
+            print('Correspondence is not supported by BotLi.')
+            return
+
+        opponent_username: str = last_challenge_event['challenge']['challenger']['name']
+        initial_time: int = last_challenge_event['challenge']['timeControl']['limit']
+        increment: int = last_challenge_event['challenge']['timeControl']['increment']
+        rated: bool = last_challenge_event['challenge']['rated']
+        event_color: str = last_challenge_event['challenge']['color']
+        variant = Variant(last_challenge_event['challenge']['variant']['key'])
+
+        if event_color == 'white':
+            color = Challenge_Color.BLACK
+        elif event_color == 'black':
+            color = Challenge_Color.WHITE
+        else:
+            color = Challenge_Color.RANDOM
+
+        challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 30)
+        self.game_manager.request_challenge(challenge_request)
+        print(f'Challenge against {challenge_request.opponent_username} added to the queue.')
 
     def _reset(self, command: list[str]) -> None:
         if len(command) != 2:
