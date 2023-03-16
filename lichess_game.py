@@ -104,39 +104,6 @@ class Lichess_Game:
 
         return True
 
-    def get_result_message(self, winner: str | None) -> str:
-        winning_name = self.white_name if winner == 'white' else self.black_name
-        losing_name = self.white_name if winner == 'black' else self.black_name
-
-        if winner:
-            message = f'{winning_name} won'
-
-            if self.status == Game_Status.MATE:
-                message += ' by checkmate!'
-            elif self.status == Game_Status.OUT_OF_TIME:
-                message += f'! {losing_name} ran out of time.'
-            elif self.status == Game_Status.RESIGN:
-                message += f'! {losing_name} resigned.'
-            elif self.status == Game_Status.VARIANT_END:
-                message += ' by variant rules!'
-        elif self.status == Game_Status.DRAW:
-            if self.board.is_fifty_moves():
-                message = 'Game drawn by 50-move rule.'
-            elif self.board.is_repetition():
-                message = 'Game drawn by threefold repetition.'
-            elif self.board.is_insufficient_material():
-                message = 'Game drawn due to insufficient material.'
-            elif self.board.is_variant_draw():
-                message = 'Game drawn by variant rules.'
-            else:
-                message = 'Game drawn by agreement.'
-        elif self.status == Game_Status.STALEMATE:
-            message = 'Game drawn by stalemate.'
-        else:
-            message = 'Game aborted.'
-
-        return message
-
     @property
     def is_our_turn(self) -> bool:
         return self.is_white == self.board.turn
