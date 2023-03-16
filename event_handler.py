@@ -35,39 +35,55 @@ class Event_Handler(Thread):
                 continue
 
             if event['type'] == 'challenge':
-                challenger_name = event['challenge']['challenger']['name']
-
-                if challenger_name == self.api.user['username']:
+                if event['challenge']['challenger']['name'] == self.api.user['username']:
                     continue
 
                 self.last_challenge_event = event
-                print(self.challenge_validator.format_challenge_event(event))
+                self._print_challenge_event(event)
 
                 challenge_id = event['challenge']['id']
                 if decline_reason := self.challenge_validator.get_decline_reason(event):
+                    print(128 * '‾')
                     self.api.decline_challenge(challenge_id, decline_reason)
                     continue
 
                 self.game_manager.add_challenge(challenge_id)
-                print(f'Challenge "{challenge_id}" added to queue.')
+                print('Challenge added to queue.')
+                print(128 * '‾')
             elif event['type'] == 'gameStart':
-                game_id = event['game']['id']
-
-                self.game_manager.on_game_started(game_id)
+                self.game_manager.on_game_started(event['game']['id'])
             elif event['type'] == 'gameFinish':
-                game_id = event['game']['id']
-
-                self.game_manager.on_game_finished(game_id)
+                self.game_manager.on_game_finished(event['game']['id'])
             elif event['type'] == 'challengeDeclined':
                 opponent_name = event['challenge']['destUser']['name']
 
                 if opponent_name == self.api.user['username']:
                     continue
 
-                decline_reason = event['challenge']['declineReason']
-                print(f'{opponent_name} declined challenge: {decline_reason}')
+                print(f'{opponent_name} declined challenge: {event["challenge"]["declineReason"]}')
             elif event['type'] == 'challengeCanceled':
-                challenge_id = event['challenge']['id']
-                self.game_manager.remove_challenge(challenge_id)
+                if event['challenge']['challenger']['name'] == self.api.user['username']:
+                    continue
+
+                self.game_manager.remove_challenge(event['challenge']['id'])
+                self._print_challenge_event(event)
+                print('Challenge has been canceled.')
+                print(128 * '‾')
             else:
                 print(event)
+
+    def _print_challenge_event(self, challenge_event: dict) -> None:
+        id_str = f'ID: {challenge_event["challenge"]["id"]}'
+        title = challenge_event['challenge']['challenger'].get('title') or ''
+        name = challenge_event['challenge']['challenger']['name']
+        rating = challenge_event['challenge']['challenger']['rating']
+        provisional = '?' if challenge_event['challenge']['challenger'].get('provisional') else ''
+        challenger_str = f'Challenger: {title}{" " if title else ""}{name} ({rating}{provisional})'
+        tc_str = f'TC: {challenge_event["challenge"]["timeControl"].get("show", "Correspondence")}'
+        rated_str = 'Rated' if challenge_event['challenge']['rated'] else 'Unrated'
+        color_str = f'Color: {challenge_event["challenge"]["color"].capitalize()}'
+        variant_str = f'Variant: {challenge_event["challenge"]["variant"]["name"]}'
+        delimiter = 5 * ' '
+
+        print(128 * '_')
+        print(delimiter.join([id_str, challenger_str, tc_str, rated_str, color_str, variant_str]))

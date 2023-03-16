@@ -62,18 +62,3 @@ class Challenge_Validator:
         elif is_casual and 'casual' not in modes:
             print('Casual is not allowed according to config.')
             return Decline_Reason.RATED
-
-    def format_challenge_event(self, challenge_event: dict) -> str:
-        id_str = f'ID: {challenge_event["challenge"]["id"]}'
-        title = challenge_event['challenge']['challenger'].get('title') or ''
-        name = challenge_event['challenge']['challenger']['name']
-        rating = challenge_event['challenge']['challenger']['rating']
-        provisional = '?' if challenge_event['challenge']['challenger'].get('provisional') else ''
-        challenger_str = f'Challenger: {title}{" " if title else ""}{name} ({rating}{provisional})'
-        tc_str = f'TC: {challenge_event["challenge"]["timeControl"].get("show", "Correspondence")}'
-        rated_str = f'Rated: {challenge_event["challenge"]["rated"]}'
-        color_str = f'Color: {challenge_event["challenge"]["color"].capitalize()}'
-        variant_str = f'Variant: {challenge_event["challenge"]["variant"]["name"]}'
-        delimiter = 5 * ' '
-
-        return delimiter.join([id_str, challenger_str, tc_str, rated_str, color_str, variant_str])

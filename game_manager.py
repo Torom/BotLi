@@ -75,7 +75,6 @@ class Game_Manager(Thread):
     def remove_challenge(self, challenge_id: Challenge_ID) -> None:
         if challenge_id in self.open_challenge_ids:
             self.open_challenge_ids.remove(challenge_id)
-            print(f'Challenge "{challenge_id}" has been canceled.')
             self.changed_event.set()
 
     def on_game_started(self, game_id: Game_ID) -> None:
