@@ -137,6 +137,40 @@ python user_interface.py --non_interactive --upgrade
 
 The account **cannot have played any game** before becoming a Bot account. The upgrade is **irreversible**. The account will only be able to play as a Bot.
 
+## Running with Docker
+
+The project comes with a Dockerfile, this uses Ubuntu 22.04, installs all dependencies, downloads the latest version of Stockfish and starts the bot.
+
+If Docker is used, all configurations must be done in `config.yml.default`. This is automatically renamed to `config.yml` in the build process.
+
+The Dockerfile also contains all commands to download Fairy-Stockfish and all NNUEs needed for the Lichess chess variants. These commands must be uncommented if desired. In addition, the variants engine must be enabled in the `config.yml.default`. To use NNUE for the Lichess chess variants the following UCI option for Fairy-Stockfish must be set in the config: `EvalFile: "3check-313cc226a173.nnue:antichess-689c016df8e0.nnue:atomic-2cf13ff256cc.nnue:crazyhouse-8ebf84784ad2.nnue:horde-28173ddccabe.nnue:kingofthehill-978b86d0e6a4.nnue:racingkings-636b95f085e3.nnue"`
+
+## Running as a service
+
+This is an example systemd service definition:
+
+```ini
+[Unit]
+Description=BotLi
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/usr/bin/python3 /home/ubuntu/BotLi/user_interface.py --non_interactive
+WorkingDirectory=/home/ubuntu/BotLi
+User=ubuntu
+Group=ubuntu
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+If the service should run with matchmaking the `--matchmaking` flag must be appended at the end of the `ExecStart` line.
+
+**Note**: If you want the bot to run in matchmaking mode for a long time, it is recommended to set the `matchmaking` `delay` higher to avoid problems with the Lichess rate limit. I recommend the following formula: `delay = 430 - 2 * initial_time - 160 * increment`
+
 ## Acknowledgements
 Thanks to the Lichess team, especially T. Alexander Lystad and Thibault Duplessis for working with the LeelaChessZero team to get this API up. Thanks to the [Niklas Fiekas](https://github.com/niklasf) and his [python-chess](https://github.com/niklasf/python-chess) code which allows engine communication seamlessly. In addition, the idea of this bot is based on [ShailChoksi/lichess-bot](https://github.com/ShailChoksi/lichess-bot).
 
