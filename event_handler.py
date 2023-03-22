@@ -62,6 +62,11 @@ class Event_Handler(Thread):
 
                 print(f'{opponent_name} declined challenge: {event["challenge"]["declineReason"]}')
             elif event['type'] == 'challengeCanceled':
+                # REMOVE WHEN FIXED
+                if 'challenger' not in event['challenge']:
+                    print('Report to: https://discord.com/channels/280713822073913354/1088228085687660635/1088228085687660635')
+                    print(event)
+
                 if event['challenge']['challenger']['name'] == self.api.user['username']:
                     continue
 
