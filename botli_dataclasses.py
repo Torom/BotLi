@@ -109,7 +109,7 @@ class Game_Information:
 
     @property
     def rated_str(self) -> str:
-        return 'Rated' if self.rated else 'Unrated'
+        return 'Rated' if self.rated else 'Casual'
 
     @property
     def variant_str(self) -> str:

@@ -85,7 +85,7 @@ class Event_Handler(Thread):
         provisional = '?' if challenge_event['challenge']['challenger'].get('provisional') else ''
         challenger_str = f'Challenger: {title}{" " if title else ""}{name} ({rating}{provisional})'
         tc_str = f'TC: {challenge_event["challenge"]["timeControl"].get("show", "Correspondence")}'
-        rated_str = 'Rated' if challenge_event['challenge']['rated'] else 'Unrated'
+        rated_str = 'Rated' if challenge_event['challenge']['rated'] else 'Casual'
         color_str = f'Color: {challenge_event["challenge"]["color"].capitalize()}'
         variant_str = f'Variant: {challenge_event["challenge"]["variant"]["name"]}'
         delimiter = 5 * ' '
