@@ -62,15 +62,14 @@ class Event_Handler(Thread):
 
                 print(f'{opponent_name} declined challenge: {event["challenge"]["declineReason"]}')
             elif event['type'] == 'challengeCanceled':
-                # REMOVE WHEN FIXED
+                # WORKAROUND FOR INCOMPLETE challengeCanceled EVENTS
+                self.game_manager.remove_challenge(event['challenge']['id'])
                 if 'challenger' not in event['challenge']:
-                    print('Report to: https://discord.com/channels/280713822073913354/1088228085687660635/1088228085687660635')
-                    print(event)
+                    continue
 
                 if event['challenge']['challenger']['name'] == self.api.user['username']:
                     continue
 
-                self.game_manager.remove_challenge(event['challenge']['id'])
                 self._print_challenge_event(event)
                 print('Challenge has been canceled.')
                 print(128 * '‾')
