@@ -3,16 +3,15 @@ import os
 import random
 from datetime import datetime, timedelta
 
-from aliases import As_White
 from botli_dataclasses import Bot
-from enums import Perf_Type
+from enums import Challenge_Color, Perf_Type
 
 
 class Matchmaking_Data:
-    def __init__(self, release_time: datetime = datetime.now(), multiplier: int = 1, as_white: bool = True) -> None:
+    def __init__(self, release_time: datetime = datetime.now(), multiplier: int = 1, color: Challenge_Color = Challenge_Color.WHITE) -> None:
         self.release_time = release_time
         self.multiplier = multiplier
-        self.as_white = as_white
+        self.color = color
 
     def __dict__(self) -> dict:
         return {'release_time': self.release_time.isoformat(timespec='seconds'),
@@ -55,9 +54,9 @@ class Opponents:
         self.delay = timedelta(seconds=delay)
         self.opponent_list = self._load()
         self.busy_bots: list[Bot] = []
-        self.last_opponent: tuple[Bot, Perf_Type, As_White] | None = None
+        self.last_opponent: tuple[Bot, Perf_Type, Challenge_Color] | None = None
 
-    def get_next_opponent(self, online_bots: dict[Perf_Type, list[Bot]]) -> tuple[Bot, Perf_Type, As_White]:
+    def get_next_opponent(self, online_bots: dict[Perf_Type, list[Bot]]) -> tuple[Bot, Perf_Type, Challenge_Color]:
         perf_type = random.choice(self.perf_types)
 
         for bot in sorted(online_bots[perf_type], key=lambda bot: abs(bot.rating_diff)):
@@ -65,9 +64,9 @@ class Opponents:
             opponent_data = opponent.data[perf_type]
             if bot in self.busy_bots:
                 continue
-            if not opponent_data.as_white or opponent_data.release_time <= datetime.now():
-                self.last_opponent = (bot, perf_type, opponent_data.as_white)
-                return (bot, perf_type, opponent_data.as_white)
+            if opponent_data.color == Challenge_Color.BLACK or opponent_data.release_time <= datetime.now():
+                self.last_opponent = (bot, perf_type, opponent_data.color)
+                return (bot, perf_type, opponent_data.color)
 
         print('Resetting matchmaking ...')
         self.reset_release_time(perf_type)
@@ -77,7 +76,7 @@ class Opponents:
     def add_timeout(self, success: bool, game_duration: timedelta) -> None:
         assert self.last_opponent
 
-        bot, perf_type, as_white = self.last_opponent
+        bot, perf_type, color = self.last_opponent
         opponent = self._find(perf_type, bot.username)
         opponent_data = opponent.data[perf_type]
 
@@ -97,10 +96,10 @@ class Opponents:
         release_str = opponent_data.release_time.isoformat(sep=" ", timespec="seconds")
         print(f'{bot.username} will not be challenged to a new game pair before {release_str}.')
 
-        if success:
-            opponent_data.as_white = not as_white
+        if success and color == Challenge_Color.WHITE:
+            opponent_data.color = Challenge_Color.BLACK
         else:
-            opponent_data.as_white = True
+            opponent_data.color = Challenge_Color.WHITE
 
         if opponent not in self.opponent_list:
             self.opponent_list.append(opponent)
@@ -125,11 +124,10 @@ class Opponents:
         try:
             opponent = self.opponent_list[self.opponent_list.index(Opponent(username, {}))]
 
-            if perf_type in opponent.data:
-                return opponent
-            else:
+            if perf_type not in opponent.data:
                 opponent.data[perf_type] = Matchmaking_Data()
-                return opponent
+
+            return opponent
         except ValueError:
             return Opponent(username, {perf_type: Matchmaking_Data()})
 

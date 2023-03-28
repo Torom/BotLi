@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from api import API
 from botli_dataclasses import Bot, Challenge_Request, Challenge_Response
 from challenger import Challenger
-from enums import Challenge_Color, Perf_Type, Variant
+from enums import Perf_Type, Variant
 from game import Game
 from opponents import Opponents
 from pending_challenge import Pending_Challenge
@@ -30,16 +30,14 @@ class Matchmaking:
     def create_challenge(self, pending_challenge: Pending_Challenge) -> None:
         self._call_update()
 
-        opponent, perf_type, as_white = self.opponents.get_next_opponent(self.online_bots)
+        opponent, perf_type, color = self.opponents.get_next_opponent(self.online_bots)
 
         while self._is_bot_busy(opponent):
-            print(f'Skipping {opponent.username} ({opponent.rating_diff:+}) because it is playing a game ...')
+            print(f'Skipping {opponent.username} ({opponent.rating_diff:+}) as {color.value} because it is playing a game ...')
             self.opponents.skip_bot()
-            opponent, perf_type, as_white = self.opponents.get_next_opponent(self.online_bots)
+            opponent, perf_type, color = self.opponents.get_next_opponent(self.online_bots)
 
-        color = Challenge_Color.WHITE if as_white else Challenge_Color.BLACK
         print(f'Challenging {opponent.username} ({opponent.rating_diff:+}) as {color.value} to {perf_type.value} ...')
-
         challenge_request = Challenge_Request(opponent.username, self.initial_time, self.increment,
                                               self.is_rated, color, self._perf_type_to_variant(perf_type), self.timeout)
 
