@@ -28,40 +28,40 @@ class Game(Thread):
         game_queue_thread = Thread(target=self.api.get_game_stream, args=(self.game_id, game_queue), daemon=True)
         game_queue_thread.start()
 
+        gameFull_event = game_queue.get()
+        self.game_information = Game_Information.from_gameFull_event(gameFull_event)
+        self._print_game_information()
+        self.lichess_game = Lichess_Game(self.api, gameFull_event, self.config)
+        self.chatter = Chatter(self.api, self.config, gameFull_event, self.lichess_game)
+        self.chatter.send_greetings()
+
+        if self._finish_game(gameFull_event['state'].get('winner')):
+            self.lichess_game.end_game()
+            return
+
+        if self.lichess_game.is_our_turn:
+            self._make_move()
+        else:
+            self.lichess_game.start_pondering()
+
         while True:
             event = game_queue.get()
 
             if event['type'] == 'gameFull':
-                if not self.lichess_game:
-                    self.game_information = Game_Information.from_gameFull_event(event)
-                    self._print_game_information()
-                    self.lichess_game = Lichess_Game(self.api, event, self.config)
-                    self.chatter = Chatter(self.api, self.config, event, self.lichess_game)
-                    self.chatter.send_greetings()
-                else:
-                    assert self.chatter
+                self.lichess_game.update(event['state'])
 
-                    self.lichess_game.update(event['state'])
-
-                    if self.lichess_game.is_finished:
-                        self._print_result_message(event['state'].get('winner'))
-                        self.chatter.send_goodbyes()
-                        break
+                if self._finish_game(event['state'].get('winner')):
+                    break
 
                 if self.lichess_game.is_our_turn:
                     self._make_move()
                 else:
                     self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
-                assert self.lichess_game
-                assert self.chatter
-
                 self.ping_counter = 0
                 updated = self.lichess_game.update(event)
 
-                if self.lichess_game.is_finished:
-                    self._print_result_message(event.get('winner'))
-                    self.chatter.send_goodbyes()
+                if self._finish_game(event.get('winner')):
                     break
 
                 if self.lichess_game.is_game_over:
@@ -70,19 +70,14 @@ class Game(Thread):
                 if self.lichess_game.is_our_turn and updated:
                     self._make_move()
             elif event['type'] == 'chatLine':
-                assert self.lichess_game
-                assert self.chatter
-
                 self.chatter.handle_chat_message(event)
             elif event['type'] == 'opponentGone':
                 continue
             elif event['type'] == 'ping':
-                assert self.lichess_game
-                assert self.chatter
-
                 self.ping_counter += 1
 
-                if self.ping_counter >= 10 and self.lichess_game.is_abortable:
+                max_pings = 5 if self.game_information.opponent_is_bot(self.lichess_game.is_white) else 10
+                if self.ping_counter >= max_pings and self.lichess_game.is_abortable:
                     print('Aborting game ...')
                     self.chatter.send_abortion_message()
                     self.api.abort_game(self.game_id)
@@ -92,8 +87,6 @@ class Game(Thread):
                         break
             else:
                 print(event)
-
-        assert self.lichess_game
 
         self.lichess_game.end_game()
 
@@ -107,6 +100,17 @@ class Game(Thread):
         else:
             self.api.send_move(self.game_id, uci_move, offer_draw)
             self.chatter.print_eval()
+
+    def _finish_game(self, winner: str | None) -> bool:
+        assert self.lichess_game
+        assert self.chatter
+
+        if self.lichess_game.is_finished:
+            self._print_result_message(winner)
+            self.chatter.send_goodbyes()
+            return True
+
+        return False
 
     def _print_game_information(self) -> None:
         assert self.game_information

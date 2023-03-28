@@ -70,6 +70,8 @@ class Game_Information:
 
     @classmethod
     def from_gameFull_event(cls, gameFull_event: dict) -> 'Game_Information':
+        assert gameFull_event['type'] == 'gameFull'
+
         id_ = gameFull_event['id']
         white_title = gameFull_event['white'].get('title') or ''
         white_name = gameFull_event['white'].get('name', 'AI')
@@ -114,3 +116,6 @@ class Game_Information:
     @property
     def variant_str(self) -> str:
         return f'Variant: {self.variant_name}'
+
+    def opponent_is_bot(self, is_white: bool) -> bool:
+        return self.black_title == 'BOT' if is_white else self.white_title == 'BOT'
