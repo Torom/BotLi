@@ -38,8 +38,11 @@ class Lichess_Game:
         self.syzygy_tablebase = self._get_syzygy_tablebase()
         self.gaviota_tablebase = self._get_gaviota_tablebase()
         self.out_of_book_counter = 0
+        self.opening_explorer_counter = 0
         self.out_of_opening_explorer_counter = 0
+        self.cloud_counter = 0
         self.out_of_cloud_counter = 0
+        self.chessdb_counter = 0
         self.out_of_chessdb_counter = 0
         self.engine = self._get_engine()
         consecutive_draw_moves = config['engine']['offer_draw']['consecutive_moves']
@@ -245,12 +248,14 @@ class Lichess_Game:
         out_of_book = self.out_of_opening_explorer_counter >= 10
         max_depth = self.config['engine']['online_moves']['opening_explorer'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
+        max_moves = self.config['engine']['online_moves']['opening_explorer'].get('max_moves', float('inf'))
+        too_many_moves = self.opening_explorer_counter >= max_moves
         has_time = self._has_time(self.config['engine']['online_moves']['opening_explorer']['min_time'])
         is_variant = self.board.uci_variant != 'chess'
         use_for_variants = self.config['engine']['online_moves']['opening_explorer']['use_for_variants']
         forbidden_variant = is_variant and not use_for_variants
 
-        if out_of_book or too_deep or not has_time or forbidden_variant:
+        if out_of_book or too_deep or too_many_moves or not has_time or forbidden_variant:
             return
 
         timeout = self.config['engine']['online_moves']['opening_explorer']['timeout']
@@ -274,6 +279,7 @@ class Lichess_Game:
                     self.out_of_opening_explorer_counter = 0
                     move = chess.Move.from_uci(top_move['uci'])
                     if not self._is_repetition(move):
+                        self.opening_explorer_counter += 1
                         return move, top_move['performance'], (top_move['wins'], top_move['draws'], top_move['losses'])
 
             self.out_of_opening_explorer_counter += 1
@@ -306,11 +312,13 @@ class Lichess_Game:
         out_of_book = self.out_of_cloud_counter >= 10
         max_depth = self.config['engine']['online_moves']['lichess_cloud'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
+        max_moves = self.config['engine']['online_moves']['lichess_cloud'].get('max_moves', float('inf'))
+        too_many_moves = self.cloud_counter >= max_moves
         has_time = self._has_time(self.config['engine']['online_moves']['lichess_cloud']['min_time'])
         only_without_book = self.config['engine']['online_moves']['lichess_cloud'].get('only_without_book', False)
         blocking_book = only_without_book and bool(self.book_readers)
 
-        if out_of_book or too_deep or not has_time or blocking_book:
+        if out_of_book or too_deep or too_many_moves or not has_time or blocking_book:
             return
 
         timeout = self.config['engine']['online_moves']['lichess_cloud']['timeout']
@@ -324,6 +332,7 @@ class Lichess_Game:
                     self.out_of_cloud_counter = 0
                     move = chess.Move.from_uci(response['pvs'][0]['moves'].split()[0])
                     if not self._is_repetition(move):
+                        self.cloud_counter += 1
                         return move, response['pvs'][0]['cp'], response['depth']
 
             self.out_of_cloud_counter += 1
@@ -339,11 +348,13 @@ class Lichess_Game:
         out_of_book = self.out_of_chessdb_counter >= 10
         max_depth = self.config['engine']['online_moves']['chessdb'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
+        max_moves = self.config['engine']['online_moves']['chessdb'].get('max_moves', float('inf'))
+        too_many_moves = self.chessdb_counter >= max_moves
         has_time = self._has_time(self.config['engine']['online_moves']['chessdb']['min_time'])
         incompatible_variant = self.board.uci_variant != 'chess'
         is_endgame = chess.popcount(self.board.occupied) <= 7
 
-        if out_of_book or too_deep or not has_time or incompatible_variant or is_endgame:
+        if out_of_book or too_deep or too_many_moves or not has_time or incompatible_variant or is_endgame:
             return
 
         timeout = self.config['engine']['online_moves']['chessdb']['timeout']
@@ -359,11 +370,12 @@ class Lichess_Game:
 
         if response := self.api.get_chessdb_eval(self.board.fen(), action, timeout):
             if response['status'] == 'ok':
-                if response.get('depth', 50) >= min_eval_depth:
+                if response.get('depth', float('inf')) >= min_eval_depth:
                     self.out_of_chessdb_counter = 0
                     uci_move = response['move'] if 'move' in response else response['pv'][0]
                     move = chess.Move.from_uci(uci_move)
                     if not self._is_repetition(move):
+                        self.chessdb_counter += 1
                         return move
 
             self.out_of_chessdb_counter += 1

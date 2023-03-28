@@ -55,6 +55,7 @@ engine:                                   # Engine settings.
       selection: "performance"            # Move selection is "performance" or "win_rate".
       anti: false                         # Whether to play the moves in wich the opponent performs the worst.
 #     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
+#     max_moves: 1                        # Max number of moves played from Lichess opening explorer. (Comment this line for max moves)
     chessdb:
       enabled: false                      # Activate online moves from https://chessdb.cn/queryc_en/
       min_eval_depth: 10                  # Minimum evaluation depth. Only for selection: "best".
@@ -62,6 +63,7 @@ engine:                                   # Engine settings.
       timeout: 5                          # Time the server has to respond.
       selection: "best"                   # Move selection is one of "best", "good" or "all".
 #     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
+#     max_moves: 1                        # Max number of moves played from chessdb. (Comment this line for max moves)
     lichess_cloud:
       enabled: false                      # Activate online moves from Lichess cloud eval.
       only_without_book: false            # Whether the cloud should only be used if there is no matching book.
@@ -69,6 +71,7 @@ engine:                                   # Engine settings.
       min_time: 20                        # Time the bot must have at least to use the online move.
       timeout: 5                          # Time the server has to respond.
 #     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
+#     max_moves: 1                        # Max number of moves played from Lichess cloud eval. (Comment this line for max moves)
     online_egtb:
       enabled: false                      # Activate online endgame tablebases from Lichess.
       min_time: 10                        # Time the bot must have at least to use the online move.
