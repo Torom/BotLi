@@ -52,7 +52,7 @@ class Challenge_Response:
     is_misconfigured: bool = False
 
 
-@dataclass
+@dataclass(frozen=True)
 class Game_Information:
     id_: str
     white_title: str
@@ -66,10 +66,14 @@ class Game_Information:
     initial_time_ms: int
     increment_ms: int
     rated: bool
+    variant: Variant
     variant_name: str
+    initial_fen: str
+    is_white: bool
+    state: dict
 
     @classmethod
-    def from_gameFull_event(cls, gameFull_event: dict) -> 'Game_Information':
+    def from_gameFull_event(cls, gameFull_event: dict, username: str) -> 'Game_Information':
         assert gameFull_event['type'] == 'gameFull'
 
         id_ = gameFull_event['id']
@@ -84,10 +88,15 @@ class Game_Information:
         initial_time_ms = gameFull_event['clock']['initial']
         increment_ms = gameFull_event['clock']['increment']
         rated = gameFull_event['rated']
+        variant = Variant(gameFull_event['variant']['key'])
         variant_name = gameFull_event['variant']['name']
+        initial_fen = gameFull_event['initialFen']
+        is_white = white_name == username
+        state = gameFull_event['state']
 
-        return Game_Information(id_, white_title, white_name, white_rating, white_provisional, black_title, black_name,
-                                black_rating, black_provisional, initial_time_ms, increment_ms, rated, variant_name)
+        return Game_Information(id_, white_title, white_name, white_rating, white_provisional, black_title,
+                                black_name, black_rating, black_provisional, initial_time_ms, increment_ms, rated,
+                                variant, variant_name, initial_fen, is_white, state)
 
     @property
     def id_str(self) -> str:
@@ -117,5 +126,6 @@ class Game_Information:
     def variant_str(self) -> str:
         return f'Variant: {self.variant_name}'
 
-    def opponent_is_bot(self, is_white: bool) -> bool:
-        return self.black_title == 'BOT' if is_white else self.white_title == 'BOT'
+    @property
+    def opponent_is_bot(self) -> bool:
+        return self.black_title == 'BOT' if self.is_white else self.white_title == 'BOT'

@@ -18,7 +18,7 @@ class Game(Thread):
         self.abortion_counter = 0
         self.lichess_game: Lichess_Game | None = None
         self.chatter: Chatter | None = None
-        self.game_information: Game_Information | None = None
+        self.game_info: Game_Information | None = None
 
     def start(self):
         Thread.start(self)
@@ -29,10 +29,10 @@ class Game(Thread):
         game_queue_thread.start()
 
         gameFull_event = game_queue.get()
-        self.game_information = Game_Information.from_gameFull_event(gameFull_event)
+        self.game_info = Game_Information.from_gameFull_event(gameFull_event, self.api.user['username'])
         self._print_game_information()
-        self.lichess_game = Lichess_Game(self.api, gameFull_event, self.config)
-        self.chatter = Chatter(self.api, self.config, gameFull_event, self.lichess_game)
+        self.lichess_game = Lichess_Game(self.api, self.game_info, self.config)
+        self.chatter = Chatter(self.api, self.config, self.game_info, self.lichess_game)
         self.chatter.send_greetings()
 
         if self._finish_game(gameFull_event['state'].get('winner')):
@@ -76,7 +76,7 @@ class Game(Thread):
             elif event['type'] == 'ping':
                 self.ping_counter += 1
 
-                max_pings = 5 if self.game_information.opponent_is_bot(self.lichess_game.is_white) else 10
+                max_pings = 5 if self.game_info.opponent_is_bot else 10
                 if self.ping_counter >= max_pings and self.lichess_game.is_abortable:
                     print('Aborting game ...')
                     self.chatter.send_abortion_message()
@@ -113,24 +113,24 @@ class Game(Thread):
         return False
 
     def _print_game_information(self) -> None:
-        assert self.game_information
+        assert self.game_info
 
-        opponents_str = f'{self.game_information.white_str}   -   {self.game_information.black_str}'
+        opponents_str = f'{self.game_info.white_str}   -   {self.game_info.black_str}'
         delimiter = 5 * ' '
 
         print()
-        print(delimiter.join([self.game_information.id_str, opponents_str, self.game_information.tc_str,
-                              self.game_information.rated_str, self.game_information.variant_str]))
+        print(delimiter.join([self.game_info.id_str, opponents_str, self.game_info.tc_str,
+                              self.game_info.rated_str, self.game_info.variant_str]))
         print(128 * '‾')
 
     def _print_result_message(self, winner: str | None) -> None:
         assert self.lichess_game
-        assert self.game_information
+        assert self.game_info
 
-        winning_name = self.game_information.white_name if winner == 'white' else self.game_information.black_name
-        winning_title = self.game_information.white_title if winner == 'white' else self.game_information.black_title
-        losing_name = self.game_information.white_name if winner == 'black' else self.game_information.black_name
-        losing_title = self.game_information.white_title if winner == 'black' else self.game_information.black_title
+        winning_name = self.game_info.white_name if winner == 'white' else self.game_info.black_name
+        winning_title = self.game_info.white_title if winner == 'white' else self.game_info.black_title
+        losing_name = self.game_info.white_name if winner == 'black' else self.game_info.black_name
+        losing_title = self.game_info.white_title if winner == 'black' else self.game_info.black_title
 
         if winner:
             if winner == 'white':
@@ -173,8 +173,8 @@ class Game(Thread):
                 white_result = 'X'
                 black_result = 'X'
 
-        opponents_str = f'{self.game_information.white_str} {white_result} - {black_result} {self.game_information.black_str}'
+        opponents_str = f'{self.game_info.white_str} {white_result} - {black_result} {self.game_info.black_str}'
         delimiter = 5 * ' '
 
-        print(delimiter.join([self.game_information.id_str, opponents_str, message]))
+        print(delimiter.join([self.game_info.id_str, opponents_str, message]))
         print(128 * '‾')

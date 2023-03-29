@@ -12,28 +12,23 @@ from chess.variant import find_variant
 
 from aliases import DTM, DTZ, CP_Score, Depth, Learn, Offer_Draw, Outcome, Performance, Resign, UCI_Move, Weight
 from api import API
+from botli_dataclasses import Game_Information
 from enums import Game_Status, Variant
 
 
 class Lichess_Game:
-    def __init__(self, api: API, gameFull_event: dict, config: dict) -> None:
+    def __init__(self, api: API, game_information: Game_Information, config: dict) -> None:
         self.config = config
         self.api = api
-        self.board = self._setup_board(gameFull_event)
-        self.username: str = self.api.user['username']
-        self.white_name: str = gameFull_event['white'].get('name') or f'AI Level {gameFull_event["white"]["aiLevel"]}'
-        self.black_name: str = gameFull_event['black'].get('name') or f'AI Level {gameFull_event["black"]["aiLevel"]}'
-        self.is_white: bool = gameFull_event['white'].get('name') == self.username
-        self.initial_time: int = gameFull_event['clock']['initial']
-        self.increment: int = gameFull_event['clock']['increment']
-        self.white_time: int = gameFull_event['state']['wtime']
-        self.black_time: int = gameFull_event['state']['btime']
-        self.variant = Variant(gameFull_event['variant']['key'])
-        self.status = Game_Status(gameFull_event['state']['status'])
+        self.game_info = game_information
+        self.board = self._setup_board()
+        self.white_time_ms = game_information.state['wtime']
+        self.black_time_ms = game_information.state['btime']
+        self.status = Game_Status(game_information.state['status'])
         self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
         self.resign_enabled: bool = config['engine']['resign']['enabled']
         self.ponder_enabled: bool = True
-        self.move_overhead = self._get_move_overhead()
+        self.move_overhead_ms = self._get_move_overhead()
         self.book_readers = self._get_book_readers()
         self.syzygy_tablebase = self._get_syzygy_tablebase()
         self.gaviota_tablebase = self._get_gaviota_tablebase()
@@ -102,14 +97,14 @@ class Lichess_Game:
             return False
 
         self.board.push(chess.Move.from_uci(moves[-1]))
-        self.white_time = gameState_event['wtime']
-        self.black_time = gameState_event['btime']
+        self.white_time_ms = gameState_event['wtime']
+        self.black_time_ms = gameState_event['btime']
 
         return True
 
     @property
     def is_our_turn(self) -> bool:
-        return self.is_white == self.board.turn
+        return self.game_info.is_white == self.board.turn
 
     @property
     def is_game_over(self) -> bool:
@@ -226,9 +221,9 @@ class Lichess_Game:
         if self.board.chess960 and 'chess960' in books:
             return [chess.polyglot.open_reader(book) for book in books['chess960']]
         elif self.board.uci_variant == 'chess':
-            if self.is_white and 'white' in books:
+            if self.game_info.is_white and 'white' in books:
                 return [chess.polyglot.open_reader(book) for book in books['white']]
-            elif not self.is_white and 'black' in books:
+            elif not self.game_info.is_white and 'black' in books:
                 return [chess.polyglot.open_reader(book) for book in books['black']]
 
             return [chess.polyglot.open_reader(book) for book in books['standard']] if 'standard' in books else []
@@ -265,12 +260,12 @@ class Lichess_Game:
 
         if anti:
             color = 'black' if self.board.turn else 'white'
-            username = self.black_name if self.board.turn else self.white_name
+            username = self.game_info.black_name if self.board.turn else self.game_info.white_name
         else:
             color = 'white' if self.board.turn else 'black'
-            username = self.white_name if self.board.turn else self.black_name
+            username = self.game_info.white_name if self.board.turn else self.game_info.black_name
 
-        if response := self.api.get_opening_explorer(username, self.board.fen(), self.variant, color, timeout):
+        if response := self.api.get_opening_explorer(username, self.board.fen(), self.game_info.variant, color, timeout):
             game_count = response['white'] + response['draws'] + response['black']
             if game_count >= min_games:
                 top_move = self._get_opening_explorer_top_move(response['moves'])
@@ -326,7 +321,7 @@ class Lichess_Game:
 
         if response := self.api.get_cloud_eval(
                 self.board.fen().replace('[', '/').replace(']', ''),
-                self.variant, timeout):
+                self.game_info.variant, timeout):
             if 'error' not in response:
                 if response['depth'] >= min_eval_depth:
                     self.out_of_cloud_counter = 0
@@ -576,15 +571,15 @@ class Lichess_Game:
             limit = chess.engine.Limit(time=15)
             ponder = False
         else:
-            if self.is_white:
-                white_time = self.white_time - self.move_overhead if self.white_time > self.move_overhead else self.white_time / 2
+            if self.game_info.is_white:
+                white_time = self.white_time_ms - self.move_overhead_ms if self.white_time_ms > self.move_overhead_ms else self.white_time_ms / 2
                 white_time /= 1000
-                black_time = self.black_time / 1000
+                black_time = self.black_time_ms / 1000
             else:
-                black_time = self.black_time - self.move_overhead if self.black_time > self.move_overhead else self.black_time / 2
+                black_time = self.black_time_ms - self.move_overhead_ms if self.black_time_ms > self.move_overhead_ms else self.black_time_ms / 2
                 black_time /= 1000
-                white_time = self.white_time / 1000
-            increment = self.increment / 1000
+                white_time = self.white_time_ms / 1000
+            increment = self.game_info.increment_ms / 1000
 
             limit = chess.engine.Limit(white_clock=white_time, white_inc=increment,
                                        black_clock=black_time, black_inc=increment)
@@ -715,36 +710,36 @@ class Lichess_Game:
 
         return engine
 
-    def _setup_board(self, gameFull_event: dict) -> chess.Board:
-        if gameFull_event['variant']['key'] == 'chess960':
-            board = chess.Board(gameFull_event['initialFen'], chess960=True)
-        elif gameFull_event['variant']['name'] == 'From Position':
-            board = chess.Board(gameFull_event['initialFen'])
+    def _setup_board(self) -> chess.Board:
+        if self.game_info.variant == Variant.CHESS960:
+            board = chess.Board(self.game_info.initial_fen, chess960=True)
+        elif self.game_info.variant == Variant.FROM_POSITION:
+            board = chess.Board(self.game_info.initial_fen)
         else:
-            VariantBoard = find_variant(gameFull_event['variant']['name'])
+            VariantBoard = find_variant(self.game_info.variant_name)
             board = VariantBoard()
 
-        for move in gameFull_event['state']['moves'].split():
-            board.push_uci(move)
+        for uci_move in self.game_info.state['moves'].split():
+            board.push_uci(uci_move)
 
         return board
 
     def _get_move_overhead(self) -> int:
         multiplier = self.config.get('move_overhead_multiplier', 1.0)
-        return max(int(self.initial_time / 60 * multiplier), 1000)
+        return max(int(self.game_info.initial_time_ms / 60 * multiplier), 1000)
 
     def _has_time(self, min_time: int) -> bool:
         if len(self.board.move_stack) < 2:
             return True
 
         min_time *= 1000
-        return self.white_time >= min_time if self.is_white else self.black_time >= min_time
+        return self.white_time_ms >= min_time if self.game_info.is_white else self.black_time_ms >= min_time
 
     def _reduce_own_time(self, milliseconds: int) -> None:
-        if self.is_white:
-            self.white_time -= milliseconds
+        if self.game_info.is_white:
+            self.white_time_ms -= milliseconds
         else:
-            self.black_time -= milliseconds
+            self.black_time_ms -= milliseconds
 
     def _is_repetition(self, move: chess.Move) -> bool:
         board = self.board.copy()
