@@ -62,14 +62,10 @@ class Event_Handler(Thread):
 
                 print(f'{opponent_name} declined challenge: {event["challenge"]["declineReason"]}')
             elif event['type'] == 'challengeCanceled':
-                # WORKAROUND FOR INCOMPLETE challengeCanceled EVENTS
-                self.game_manager.remove_challenge(event['challenge']['id'])
-                if 'challenger' not in event['challenge']:
-                    continue
-
                 if event['challenge']['challenger']['name'] == self.api.user['username']:
                     continue
 
+                self.game_manager.remove_challenge(event['challenge']['id'])
                 self._print_challenge_event(event)
                 print('Challenge has been canceled.')
                 print(128 * '‾')
