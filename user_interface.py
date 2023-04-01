@@ -267,7 +267,7 @@ if __name__ == '__main__':
     parser.add_argument('--non_interactive', '-n', action='store_true', help='Set if run as a service.')
     parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
     parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
-    parser.add_argument('--debug', '-d', action="store_const", const=logging.DEBUG,
+    parser.add_argument('--debug', '-d', action='store_const', const=logging.DEBUG,
                         default=logging.WARNING, help='Enable debug logging.')
     args = parser.parse_args()
 

@@ -93,7 +93,7 @@ class Opponents:
             timeout += opponent_data.release_time - datetime.now()
 
         opponent_data.release_time = datetime.now() + timeout
-        release_str = opponent_data.release_time.isoformat(sep=" ", timespec="seconds")
+        release_str = opponent_data.release_time.isoformat(sep=' ', timespec='seconds')
         print(f'{bot.username} will not be challenged to a new game pair before {release_str}.')
 
         if success and color == Challenge_Color.WHITE:
