@@ -407,6 +407,9 @@ class Lichess_Game:
                 except chess.gaviota.MissingTableError:
                     return
 
+            if wdl == 0 and board_copy.halfmove_clock == 0:
+                dtm = -1
+
             if best_moves:
                 if wdl > best_wdl:
                     best_moves = [move]
@@ -426,7 +429,7 @@ class Lichess_Game:
         if best_wdl == 2:
             return random.choice(best_moves), 'win', best_dtm, False, False
         elif best_wdl == 0:
-            return random.choice(best_moves), 'draw', best_dtm, True, False
+            return random.choice(best_moves), 'draw', 0, True, False
         elif best_wdl == -2:
             return random.choice(best_moves), 'loss', best_dtm, False, True
 
@@ -462,7 +465,7 @@ class Lichess_Game:
             if board_copy.halfmove_clock == 0:
                 if wdl < 0:
                     dtz += 10_000
-                elif wdl > 0:
+                else:
                     dtz -= 10_000
 
             if best_moves:
