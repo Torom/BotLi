@@ -61,8 +61,10 @@ class Lichess_Game:
             move, cp_score, depth = response
             pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), chess.WHITE)
             message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
-        elif move := self._make_chessdb_move():
-            message = f'ChessDB: {self._format_move(move):14}'
+        elif response := self._make_chessdb_move():
+            move, cp_score, depth = response
+            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), self.board.turn)
+            message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
         elif response := self._make_gaviota_move():
             move, outcome, dtm, offer_draw, resign = response
             message = f'Gaviota: {self._format_move(move):14} {self._format_egtb_info(outcome, dtm=dtm)}'
@@ -334,7 +336,7 @@ class Lichess_Game:
         else:
             self._reduce_own_time(timeout * 1000)
 
-    def _make_chessdb_move(self) -> chess.Move | None:
+    def _make_chessdb_move(self) -> tuple[chess.Move, CP_Score, Depth] | None:
         enabled = self.config['engine']['online_moves']['chessdb']['enabled']
 
         if not enabled:
@@ -354,24 +356,15 @@ class Lichess_Game:
 
         timeout = self.config['engine']['online_moves']['chessdb']['timeout']
         min_eval_depth = self.config['engine']['online_moves']['chessdb']['min_eval_depth']
-        selection = self.config['engine']['online_moves']['chessdb']['selection']
 
-        if selection == 'good':
-            action = 'querybest'
-        elif selection == 'all':
-            action = 'query'
-        else:
-            action = 'querypv'
-
-        if response := self.api.get_chessdb_eval(self.board.fen(), action, timeout):
+        if response := self.api.get_chessdb_eval(self.board.fen(), timeout):
             if response['status'] == 'ok':
-                if response.get('depth', float('inf')) >= min_eval_depth:
+                if response['depth'] >= min_eval_depth:
                     self.out_of_chessdb_counter = 0
-                    uci_move = response['move'] if 'move' in response else response['pv'][0]
-                    move = chess.Move.from_uci(uci_move)
+                    move = chess.Move.from_uci(response['pv'][0])
                     if not self._is_repetition(move):
                         self.chessdb_counter += 1
-                        return move
+                        return move, response['score'], response['depth']
 
             self.out_of_chessdb_counter += 1
         else:
