@@ -422,7 +422,7 @@ class Lichess_Game:
         if best_wdl == 2:
             return random.choice(best_moves), 'win', best_dtm, False, False
         elif best_wdl == 0:
-            return random.choice(best_moves), 'draw', 0, True, False
+            return best_moves[0], 'draw', 0, True, False
         elif best_wdl == -2:
             return random.choice(best_moves), 'loss', best_dtm, False, True
 
@@ -485,9 +485,9 @@ class Lichess_Game:
         elif best_wdl == 1:
             return random.choice(best_moves), 'cursed win', best_real_dtz, False, False
         elif best_wdl == 0:
-            return random.choice(best_moves), 'draw', best_real_dtz, True, False
+            return best_moves[0], 'draw', best_real_dtz, True, False
         elif best_wdl == -1:
-            return random.choice(best_moves), 'blessed loss', best_real_dtz, True, False
+            return best_moves[0], 'blessed loss', best_real_dtz, True, False
         else:
             return random.choice(best_moves), 'loss', best_real_dtz, False, True
 
