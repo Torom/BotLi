@@ -60,11 +60,11 @@ class Lichess_Game:
         elif response := self._make_cloud_move():
             move, cp_score, depth = response
             pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), chess.WHITE)
-            message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
+            message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     Depth: {depth}'
         elif response := self._make_chessdb_move():
             move, cp_score, depth = response
             pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), self.board.turn)
-            message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     {depth}'
+            message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     Depth: {depth}'
         elif response := self._make_gaviota_move():
             move, outcome, dtm, offer_draw, resign = response
             message = f'Gaviota: {self._format_move(move):14} {self._format_egtb_info(outcome, dtm=dtm)}'
