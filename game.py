@@ -29,7 +29,7 @@ class Game(Thread):
         game_queue_thread.start()
 
         gameFull_event = game_queue.get()
-        self.game_info = Game_Information.from_gameFull_event(gameFull_event, self.api.user['username'])
+        self.game_info = Game_Information.from_gameFull_event(gameFull_event, self.api.username)
         self._print_game_information()
         self.lichess_game = Lichess_Game(self.api, self.game_info, self.config)
         self.chatter = Chatter(self.api, self.config, self.game_info, self.lichess_game)

@@ -38,7 +38,7 @@ class UserInterface:
         self.start_matchmaking = start_matchmaking
         self.allow_upgrade = allow_upgrade
         self.config = load_config(config_path)
-        self.api = API(self.config['token'])
+        self.api = API(self.config)
         self.is_running = True
         self.game_manager = Game_Manager(self.config, self.api)
         self.event_handler = Event_Handler(self.config, self.api, self.game_manager)
@@ -94,7 +94,7 @@ class UserInterface:
                   'https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
             sys.exit(1)
 
-        if self.api.user.get('title') == 'BOT':
+        if self.api.user_title == 'BOT':
             return
 
         print('\nBotLi can only be used by BOT accounts!\n')

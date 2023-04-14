@@ -42,7 +42,7 @@ class Chatter:
             if chat_message.room == 'player':
                 print(f'{chat_message.username}: {chat_message.text}')
             return
-        elif chat_message.username != self.api.user['username']:
+        elif chat_message.username != self.api.username:
             print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
 
         if chat_message.text.startswith('!'):
@@ -140,7 +140,7 @@ class Chatter:
 
     def _format_message(self, message: str) -> str:
         opponent_username = self.game_info.black_name if self.game_info.is_white else self.game_info.white_name
-        mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.api.user['username'],
+        mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.api.username,
                                     'engine': self.lichess_game.engine.id['name'], 'cpu': self.cpu_message,
                                     'ram': self.ram_message})
         return message.format_map(mapping)
