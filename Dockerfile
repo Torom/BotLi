@@ -1,7 +1,7 @@
 FROM ubuntu:jammy
 COPY . .
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y wget unzip python3 python3-pip
+RUN apt-get update && apt-get upgrade -y && apt-get install -y wget unzip python3 python3-pip git
 RUN mv config.yml.default config.yml
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
 

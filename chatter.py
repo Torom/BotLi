@@ -21,6 +21,7 @@ class Chatter:
         self.api = api
         self.game_info = game_information
         self.lichess_game = lichess_game
+        self.commit_SHA: str = config['commit_SHA']
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
         self.ram_message = self._get_ram()
@@ -79,7 +80,7 @@ class Chatter:
         elif command == 'motor':
             return self.lichess_game.engine.id['name']
         elif command == 'name':
-            return f'{self.api.user["username"]} running {self.lichess_game.engine.id["name"]} (BotLi)'
+            return f'{self.api.username} running {self.lichess_game.engine.id["name"]} (BotLi {self.commit_SHA})'
         elif command == 'printeval':
             if not self.game_info.increment_ms and self.game_info.initial_time_ms < 180_000:
                 return 'Time control is too fast for this function.'
