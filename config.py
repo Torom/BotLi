@@ -150,9 +150,13 @@ def load_config(config_path: str) -> dict:
             CONFIG['engine']['opening_books']['books'][key] = [CONFIG['books'][book] for book in book_list]
 
     try:
+        output = subprocess.check_output(['git', 'show', '-s', '--date=format:%Y%m%d',
+                                         '--format=%cd', 'HEAD'], stderr=subprocess.DEVNULL)
+        commit_date = output.decode('utf-8').strip()
         output = subprocess.check_output(['git', 'rev-parse', 'HEAD'], stderr=subprocess.DEVNULL)
-        CONFIG['commit_SHA'] = output.decode('utf-8').strip()[:7]
+        commit_SHA = output.decode('utf-8').strip()[:7]
+        CONFIG['version'] = f'{commit_date}-{commit_SHA}'
     except (FileNotFoundError, subprocess.CalledProcessError):
-        CONFIG['commit_SHA'] = 'nogit'
+        CONFIG['version'] = 'nogit'
 
     return CONFIG

@@ -16,12 +16,12 @@ class API:
     def __init__(self, config: dict) -> None:
         self.session = requests.session()
         self.session.headers.update({'Authorization': f'Bearer {config["token"]}'})
-        self.session.headers.update({'User-Agent': f'BotLi/{config["commit_SHA"]}'})
+        self.session.headers.update({'User-Agent': f'BotLi/{config["version"]}'})
 
         account = self.get_account()
         self.username: str = account['username']
         self.user_title: str | None = account.get('title')
-        self.session.headers.update({'User-Agent': f'BotLi/{config["commit_SHA"]} user:{self.username}'})
+        self.session.headers.update({'User-Agent': f'BotLi/{config["version"]} user:{self.username}'})
 
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def abort_game(self, game_id: str) -> bool:
