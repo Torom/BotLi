@@ -45,7 +45,7 @@ class UserInterface:
 
     def main(self) -> None:
         print(LOGO, end='')
-        print(' ' + self.config['version'], end="\n\n")
+        print(' ' + self.config['version'], end='\n\n')
 
         self._handle_bot_status(self.non_interactive, self.allow_upgrade)
 
