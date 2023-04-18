@@ -103,26 +103,17 @@ The bot will always wait until the current game is finished.
 
 ## Non interactive mode
 
-In this mode, the bot is controlled by flags that are set at the start. This is useful when the bot is running as a service.
-
-### Start
-
-To start the bot in the non interactive mode, type:
-
-```bash
-python user_interface.py --non_interactive
-```
-The bot automatically accepts challenges. Which challenges are accepted is defined in the config in the section `challenge`.
+This mode is used automatically when BotLi is used without an interactive terminal, for example as a service. In this case, the bot is controlled by setting flags at start time.
 
 ### Matchmaking
 
 To let the bot challenge other bots in non interactive mode, start it like this:
 
 ```bash
-python user_interface.py --non_interactive --matchmaking
+python user_interface.py --matchmaking
 ```
 
-**CAUTION**: Lichess will rate limit you if you let matchmaking run for too long.
+**CAUTION**: Lichess will rate limit you if you let matchmaking run too long without adjusting the delay accordingly.
 
 ## Upgrade to Bot account
 
@@ -132,7 +123,7 @@ In non interactive mode the `--upgrade` flag must be set at start.
 
 
 ```bash
-python user_interface.py --non_interactive --upgrade
+python user_interface.py --upgrade
 ```
 
 The account **cannot have played any game** before becoming a Bot account. The upgrade is **irreversible**. The account will only be able to play as a Bot.
@@ -157,7 +148,7 @@ Wants=network-online.target
 
 [Service]
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=/usr/bin/python3 /home/ubuntu/BotLi/user_interface.py --non_interactive
+ExecStart=/usr/bin/python3 /home/ubuntu/BotLi/user_interface.py
 WorkingDirectory=/home/ubuntu/BotLi
 User=ubuntu
 Group=ubuntu

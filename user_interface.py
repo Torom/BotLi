@@ -33,8 +33,7 @@ EnumT = TypeVar('EnumT', bound=Enum)
 
 
 class UserInterface:
-    def __init__(self, config_path: str, non_interactive: bool, start_matchmaking: bool, allow_upgrade: bool) -> None:
-        self.non_interactive = non_interactive
+    def __init__(self, config_path: str, start_matchmaking: bool, allow_upgrade: bool) -> None:
         self.start_matchmaking = start_matchmaking
         self.allow_upgrade = allow_upgrade
         self.config = load_config(config_path)
@@ -44,10 +43,10 @@ class UserInterface:
         self.event_handler = Event_Handler(self.config, self.api, self.game_manager)
 
     def main(self) -> None:
-        print(LOGO, end='')
-        print(' ' + self.config['version'], end='\n\n')
+        print(LOGO, end=' ')
+        print(self.config['version'], end='\n\n')
 
-        self._handle_bot_status(self.non_interactive, self.allow_upgrade)
+        self._handle_bot_status()
 
         print('Handling challenges ...')
         self.event_handler.start()
@@ -56,7 +55,7 @@ class UserInterface:
         if self.start_matchmaking:
             self._matchmaking()
 
-        if self.non_interactive:
+        if not sys.stdin.isatty():
             return
 
         if readline_available:
@@ -88,7 +87,7 @@ class UserInterface:
             else:
                 self._help()
 
-    def _handle_bot_status(self, non_interactive: bool, upgrade_account: bool) -> None:
+    def _handle_bot_status(self) -> None:
         if 'bot:play' not in self.api.get_token_scopes(self.config['token']):
             print('Your token is missing the bot:play scope. This is mandatory to use BotLi.\n'
                   'You can create such a token by following this link:\n'
@@ -100,9 +99,11 @@ class UserInterface:
 
         print('\nBotLi can only be used by BOT accounts!\n')
 
-        if non_interactive and not upgrade_account:
+        if not sys.stdin.isatty() and not self.allow_upgrade:
+            print('Start BotLi with the "--upgrade" flag if you are sure you want to upgrade this account.\n'
+                  'WARNING: This is irreversible. The account will only be able to play as a BOT.')
             sys.exit(1)
-        elif not non_interactive:
+        elif sys.stdin.isatty():
             print('This will upgrade your account to a BOT account.\n'
                   'WARNING: This is irreversible. The account will only be able to play as a BOT.')
             approval = input('Do you want to continue? [y/N]: ')
@@ -265,7 +266,6 @@ class Autocompleter:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', '-c', default='config.yml', type=str, help='Path to config.yml.')
-    parser.add_argument('--non_interactive', '-n', action='store_true', help='Set if run as a service.')
     parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
     parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
     parser.add_argument('--debug', '-d', action='store_const', const=logging.DEBUG,
@@ -274,5 +274,5 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=args.debug)
 
-    ui = UserInterface(args.config, args.non_interactive, args.matchmaking, args.upgrade)
+    ui = UserInterface(args.config, args.matchmaking, args.upgrade)
     ui.main()
