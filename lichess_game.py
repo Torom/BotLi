@@ -702,7 +702,7 @@ class Lichess_Game:
                 engine_options['SyzygyPath'] = syzygy_path
                 engine_options['SyzygyProbeLimit'] = self.config['engine']['syzygy']['max_pieces']
 
-        engine = chess.engine.SimpleEngine.popen_uci(engine_path, timeout=None, stderr=stderr)
+        engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=stderr)
 
         for name, value in engine_options.items():
             if chess.engine.Option(name, '', None, None, None, None).is_managed():
