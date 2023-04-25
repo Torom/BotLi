@@ -464,10 +464,11 @@ class Lichess_Game:
                     dtz += 10_000
                 elif wdl > 0:
                     dtz -= 10_000
-                else:
-                    dtz = -1
 
             if wdl == 0:
+                if board_copy.halfmove_clock == 0:
+                    dtz = -1
+
                 if board_copy.is_check():
                     dtz = -2
 
