@@ -21,7 +21,8 @@ class Matchmaking:
         self.max_rating_diff: int = config['matchmaking'].get('max_rating_diff', float('inf'))
         self.estimated_game_duration = timedelta(seconds=(self.initial_time + self.increment * 80) * 2)
         self.perf_types = [self._variant_to_perf_type(variant) for variant in config['matchmaking']['variants']]
-        self.opponents = Opponents(self.perf_types, self.estimated_game_duration, config['matchmaking']['delay'])
+        self.opponents = Opponents(self.perf_types, self.estimated_game_duration,
+                                   config['matchmaking']['delay'], config['matchmaking'].get('multiplier', 15))
         self.challenger = Challenger(config, self.api)
 
         self.game_start_time: datetime = datetime.now()

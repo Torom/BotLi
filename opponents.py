@@ -48,10 +48,11 @@ class Opponent:
 
 
 class Opponents:
-    def __init__(self, perf_types: list[Perf_Type], estimated_game_duration: timedelta, delay: int) -> None:
+    def __init__(self, perf_types: list[Perf_Type], estimated_game_duration: timedelta, delay: int, matchmaking_multiplier: int) -> None:
         self.perf_types = perf_types
         self.estimated_game_duration = estimated_game_duration
         self.delay = timedelta(seconds=delay)
+        self.matchmaking_multiplier = matchmaking_multiplier
         self.opponent_list = self._load()
         self.busy_bots: list[Bot] = []
         self.last_opponent: tuple[Bot, Perf_Type, Challenge_Color] | None = None
@@ -85,9 +86,10 @@ class Opponents:
         elif not success:
             opponent_data.multiplier += 1
 
-        multiplier = opponent_data.multiplier if opponent_data.multiplier >= 5 else 1
+        opponent_multiplier = opponent_data.multiplier if opponent_data.multiplier >= 5 else 1
         duration_ratio = game_duration / self.estimated_game_duration
-        timeout = (duration_ratio ** 2 * self.estimated_game_duration + self.delay) * 15 * multiplier
+        timeout = duration_ratio ** 2 * self.estimated_game_duration + self.delay
+        timeout *= self.matchmaking_multiplier * opponent_multiplier
 
         if opponent_data.release_time > datetime.now():
             timeout += opponent_data.release_time - datetime.now()
