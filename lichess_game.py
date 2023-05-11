@@ -387,7 +387,7 @@ class Lichess_Game:
         best_wdl = -2
         best_dtm = 1_000_000
         for move in self.board.legal_moves:
-            board_copy = self.board.copy()
+            board_copy = self.board.copy(stack=False)
             board_copy.push(move)
 
             if board_copy.is_checkmate():
@@ -448,7 +448,7 @@ class Lichess_Game:
         best_dtz = 1_000_000
         best_real_dtz = best_dtz
         for move in self.board.legal_moves:
-            board_copy = self.board.copy()
+            board_copy = self.board.copy(stack=False)
             board_copy.push(move)
 
             try:
