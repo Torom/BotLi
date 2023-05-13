@@ -35,7 +35,7 @@ class Opponent:
         return Opponent(username, data)
 
     def __dict__(self) -> dict:
-        dict_ = {'username': self.username}
+        dict_: dict[str, str | dict] = {'username': self.username}
         dict_.update({perf_type.value: data.__dict__() for perf_type, data in self.data.items()})
 
         return dict_
