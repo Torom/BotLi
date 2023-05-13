@@ -134,7 +134,11 @@ class Lichess_Game:
             self.engine.analysis(self.board, chess.engine.Limit(time=0.001))
 
     def end_game(self) -> None:
-        self.engine.quit()
+        try:
+            self.engine.quit()
+        except TimeoutError:
+            print('Enginge could not be terminated cleanly.')
+
         self.engine.close()
 
         for book_reader in self.book_readers:
