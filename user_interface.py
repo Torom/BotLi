@@ -221,7 +221,7 @@ class UserInterface:
             print(e)
             return
 
-        self.game_manager.matchmaking.opponents.reset_release_time(perf_type, full_reset=True)
+        self.game_manager.matchmaking.opponents.reset_release_time(perf_type)
         print('Matchmaking has been reset.')
 
     def _stop(self) -> None:

@@ -60,19 +60,18 @@ class Opponents:
     def get_next_opponent(self, online_bots: dict[Perf_Type, list[Bot]]) -> tuple[Bot, Perf_Type, Challenge_Color]:
         perf_type = random.choice(self.perf_types)
 
-        for bot in sorted(online_bots[perf_type], key=lambda bot: abs(bot.rating_diff)):
-            opponent = self._find(perf_type, bot.username)
-            opponent_data = opponent.data[perf_type]
-            if bot in self.busy_bots:
-                continue
-            if opponent_data.color == Challenge_Color.BLACK or opponent_data.release_time <= datetime.now():
-                self.last_opponent = (bot, perf_type, opponent_data.color)
-                return (bot, perf_type, opponent_data.color)
+        while True:
+            for bot in sorted(online_bots[perf_type], key=lambda bot: abs(bot.rating_diff)):
+                opponent = self._find(perf_type, bot.username)
+                opponent_data = opponent.data[perf_type]
+                if bot in self.busy_bots:
+                    continue
+                if opponent_data.color == Challenge_Color.BLACK or opponent_data.release_time <= datetime.now():
+                    self.last_opponent = (bot, perf_type, opponent_data.color)
+                    return bot, perf_type, opponent_data.color
 
-        print('Resetting matchmaking ...')
-        self.reset_release_time(perf_type)
-
-        return self.get_next_opponent(online_bots)
+            print('Resetting matchmaking ...')
+            self.reset_release_time(perf_type)
 
     def add_timeout(self, success: bool, game_duration: timedelta) -> None:
         assert self.last_opponent
@@ -114,11 +113,10 @@ class Opponents:
 
         self.busy_bots.append(self.last_opponent[0])
 
-    def reset_release_time(self, perf_type: Perf_Type, full_reset: bool = False) -> None:
+    def reset_release_time(self, perf_type: Perf_Type) -> None:
         for opponent in self.opponent_list:
             if perf_type in opponent.data:
-                if full_reset or opponent.data[perf_type].multiplier < 5:
-                    opponent.data[perf_type].release_time = datetime.now()
+                opponent.data[perf_type].release_time = datetime.now()
 
         self.busy_bots.clear()
 
