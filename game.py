@@ -1,5 +1,5 @@
 from queue import Queue
-from threading import Thread
+from threading import Event, Thread
 
 from api import API
 from botli_dataclasses import Game_Information
@@ -9,11 +9,12 @@ from lichess_game import Lichess_Game
 
 
 class Game(Thread):
-    def __init__(self, config: dict, api: API, game_id: str) -> None:
+    def __init__(self, config: dict, api: API, game_id: str, game_finished_event: Event) -> None:
         Thread.__init__(self)
         self.config = config
         self.api = api
         self.game_id = game_id
+        self.game_finished_event = game_finished_event
         self.ping_counter = 0
         self.abortion_counter = 0
         self.lichess_game: Lichess_Game | None = None
@@ -89,6 +90,7 @@ class Game(Thread):
                 print(event)
 
         self.lichess_game.end_game()
+        self.game_finished_event.set()
 
     def _make_move(self) -> None:
         assert self.lichess_game

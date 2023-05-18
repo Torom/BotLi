@@ -53,7 +53,7 @@ class Event_Handler(Thread):
             elif event['type'] == 'gameStart':
                 self.game_manager.on_game_started(event['game']['id'])
             elif event['type'] == 'gameFinish':
-                self.game_manager.on_game_finished(event['game']['id'])
+                continue
             elif event['type'] == 'challengeDeclined':
                 opponent_name = event['challenge']['destUser']['name']
 

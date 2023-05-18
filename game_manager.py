@@ -21,7 +21,6 @@ class Game_Manager(Thread):
         self.games: dict[Game_ID, Game] = {}
         self.open_challenge_ids: deque[Challenge_ID] = deque()
         self.reserved_game_ids: list[Game_ID] = []
-        self.finished_game_ids: deque[Game_ID] = deque()
         self.started_game_ids: deque[Game_ID] = deque()
         self.challenge_requests: deque[Challenge_Request] = deque()
         self.changed_event = Event()
@@ -47,11 +46,10 @@ class Game_Manager(Thread):
 
             self.changed_event.clear()
 
+            self._check_for_finished_games()
+
             while self.started_game_ids:
                 self._start_game(self.started_game_ids.popleft())
-
-            while self.finished_game_ids:
-                self._finish_game(self.finished_game_ids.popleft())
 
             while challenge_request := self._get_next_challenge_request():
                 self._create_challenge(challenge_request)
@@ -83,15 +81,17 @@ class Game_Manager(Thread):
             self.matchmaking.on_game_started()
         self.changed_event.set()
 
-    def on_game_finished(self, game_id: Game_ID) -> None:
-        if game_id not in self.games:
-            return
+    def _check_for_finished_games(self) -> None:
+        for game_id, game in list(self.games.items()):
+            if game.is_alive():
+                continue
 
-        self.finished_game_ids.append(game_id)
-        if game_id == self.current_matchmaking_game_id:
-            self.matchmaking.on_game_finished(self.games[game_id])
-            self.current_matchmaking_game_id = None
-        self.changed_event.set()
+            if game_id == self.current_matchmaking_game_id:
+                self.matchmaking.on_game_finished(game)
+                self.current_matchmaking_game_id = None
+
+            del self.games[game_id]
+            self.game_counter.decrement()
 
     def _start_game(self, game_id: Game_ID) -> None:
         if game_id in self.reserved_game_ids:
@@ -103,7 +103,7 @@ class Game_Manager(Thread):
             self.api.abort_game(game_id)
             return
 
-        self.games[game_id] = Game(self.config, self.api, game_id)
+        self.games[game_id] = Game(self.config, self.api, game_id, self.changed_event)
         self.games[game_id].start()
 
     def _finish_game(self, game_id: Game_ID) -> None:
