@@ -131,20 +131,20 @@ class Opponents:
     def _find(self, perf_type: Perf_Type, username: str) -> Opponent:
         try:
             opponent = self.opponent_list[self.opponent_list.index(Opponent(username, {}))]
-
-            if perf_type not in opponent.data:
-                opponent.data[perf_type] = Matchmaking_Data()
-
-            return opponent
         except ValueError:
             return Opponent(username, {perf_type: Matchmaking_Data()})
+
+        if perf_type not in opponent.data:
+            opponent.data[perf_type] = Matchmaking_Data()
+
+        return opponent
 
     def _load(self) -> list[Opponent]:
         if os.path.isfile(self.matchmaking_path):
             with open(self.matchmaking_path, encoding='utf-8') as json_input:
                 return [Opponent.from_dict(opponent) for opponent in json.load(json_input)]
         else:
-            print(f'Matchmaking file "{self.matchmaking_path}" not found. Create new one.')
+            print(f'Matchmaking file "{self.matchmaking_path}" not found. Creating a new one.')
             return []
 
     def _save(self) -> None:
