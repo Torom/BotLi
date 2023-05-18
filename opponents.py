@@ -48,11 +48,19 @@ class Opponent:
 
 
 class Opponents:
-    def __init__(self, perf_types: list[Perf_Type], estimated_game_duration: timedelta, delay: int, matchmaking_multiplier: int) -> None:
+    def __init__(
+            self,
+            perf_types: list[Perf_Type],
+            estimated_game_duration: timedelta,
+            delay: int,
+            matchmaking_multiplier: int,
+            matchmaking_path: str
+    ) -> None:
         self.perf_types = perf_types
         self.estimated_game_duration = estimated_game_duration
         self.delay = timedelta(seconds=delay)
         self.matchmaking_multiplier = matchmaking_multiplier
+        self.matchmaking_path = matchmaking_path
         self.opponent_list = self._load()
         self.busy_bots: list[Bot] = []
         self.last_opponent: tuple[Bot, Perf_Type, Challenge_Color] | None = None
@@ -132,12 +140,13 @@ class Opponents:
             return Opponent(username, {perf_type: Matchmaking_Data()})
 
     def _load(self) -> list[Opponent]:
-        if os.path.isfile('matchmaking.json'):
-            with open('matchmaking.json', encoding='utf-8') as json_input:
+        if os.path.isfile(self.matchmaking_path):
+            with open(self.matchmaking_path, encoding='utf-8') as json_input:
                 return [Opponent.from_dict(opponent) for opponent in json.load(json_input)]
         else:
+            print(f'Matchmaking file "{self.matchmaking_path}" not found. Create new one.')
             return []
 
     def _save(self) -> None:
-        with open('matchmaking.json', 'w', encoding='utf-8') as json_output:
+        with open(self.matchmaking_path, 'w', encoding='utf-8') as json_output:
             json.dump([opponent.__dict__() for opponent in self.opponent_list], json_output, indent=4)

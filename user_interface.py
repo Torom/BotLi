@@ -33,13 +33,13 @@ EnumT = TypeVar('EnumT', bound=Enum)
 
 
 class UserInterface:
-    def __init__(self, config_path: str, start_matchmaking: bool, allow_upgrade: bool) -> None:
+    def __init__(self, config_path: str, matchmaking_path: str, start_matchmaking: bool, allow_upgrade: bool) -> None:
         self.start_matchmaking = start_matchmaking
         self.allow_upgrade = allow_upgrade
         self.config = load_config(config_path)
         self.api = API(self.config)
         self.is_running = True
-        self.game_manager = Game_Manager(self.config, self.api)
+        self.game_manager = Game_Manager(self.config, self.api, matchmaking_path)
         self.event_handler = Event_Handler(self.config, self.api, self.game_manager)
 
     def main(self) -> None:
@@ -266,6 +266,8 @@ class Autocompleter:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', '-c', default='config.yml', type=str, help='Path to config.yml.')
+    parser.add_argument('--matchmaking_file', '-mf', default='matchmaking.json',
+                        type=str, help='Path to matchmaking.json.')
     parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
     parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
     parser.add_argument('--debug', '-d', action='store_const', const=logging.DEBUG,
@@ -274,5 +276,5 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=args.debug)
 
-    ui = UserInterface(args.config, args.matchmaking, args.upgrade)
+    ui = UserInterface(args.config, args.matchmaking_file, args.matchmaking, args.upgrade)
     ui.main()

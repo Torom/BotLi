@@ -10,7 +10,7 @@ from pending_challenge import Pending_Challenge
 
 
 class Matchmaking:
-    def __init__(self, config: dict, api: API) -> None:
+    def __init__(self, config: dict, api: API, matchmaking_path: str) -> None:
         self.api = api
         self.next_update = datetime.now()
         self.initial_time: int = config['matchmaking']['initial_time']
@@ -21,8 +21,10 @@ class Matchmaking:
         self.max_rating_diff: int = config['matchmaking'].get('max_rating_diff', float('inf'))
         self.estimated_game_duration = timedelta(seconds=(self.initial_time + self.increment * 80) * 2)
         self.perf_types = [self._variant_to_perf_type(variant) for variant in config['matchmaking']['variants']]
+        matchmaking_delay = config['matchmaking'].get('delay', 10)
+        matchmaking_multiplier = config['matchmaking'].get('multiplier', 15)
         self.opponents = Opponents(self.perf_types, self.estimated_game_duration,
-                                   config['matchmaking']['delay'], config['matchmaking'].get('multiplier', 15))
+                                   matchmaking_delay, matchmaking_multiplier, matchmaking_path)
         self.challenger = Challenger(config, self.api)
 
         self.game_start_time: datetime = datetime.now()
