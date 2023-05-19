@@ -12,7 +12,7 @@ from pending_challenge import Pending_Challenge
 
 
 class Game_Manager(Thread):
-    def __init__(self, config: dict, api: API, matchmaking_path: str) -> None:
+    def __init__(self, config: dict, api: API) -> None:
         Thread.__init__(self)
         self.config = config
         self.api = api
@@ -24,7 +24,7 @@ class Game_Manager(Thread):
         self.started_game_ids: deque[Game_ID] = deque()
         self.challenge_requests: deque[Challenge_Request] = deque()
         self.changed_event = Event()
-        self.matchmaking = Matchmaking(self.config, self.api, matchmaking_path)
+        self.matchmaking = Matchmaking(self.config, self.api)
         self.is_matchmaking_allowed = False
         self.current_matchmaking_game_id: Game_ID | None = None
         self.challenger = Challenger(self.config, self.api)
