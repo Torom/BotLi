@@ -94,6 +94,9 @@ class Game_Manager(Thread):
             self.game_counter.decrement()
 
     def _start_game(self, game_id: Game_ID) -> None:
+        if game_id in self.games:
+            return
+
         if game_id in self.reserved_game_ids:
             # Remove reserved spot, if it exists:
             self.reserved_game_ids.remove(game_id)
