@@ -26,6 +26,7 @@ class Matchmaking:
         self.opponents = Opponents(self.perf_types, self.estimated_game_duration,
                                    matchmaking_delay, matchmaking_multiplier, self.api.username)
         self.challenger = Challenger(config, self.api)
+        self.blacklist: list[str] = config.get('blacklist', [])
 
         self.game_start_time: datetime = datetime.now()
         self.online_bots: dict[Perf_Type, list[Bot]] = {}
@@ -79,10 +80,11 @@ class Matchmaking:
         online_bots: dict[Perf_Type, list[Bot]] = {perf_type: [] for perf_type in self.perf_types}
         for bot in self.api.get_online_bots_stream():
             is_ourselves = bot['username'] == self.api.username
+            is_blacklisted = bot['id'] in self.blacklist
             is_disabled = 'disabled' in bot
             has_tosViolation = self.is_rated and 'tosViolation' in bot
 
-            if is_ourselves or is_disabled or has_tosViolation:
+            if is_ourselves or is_blacklisted or is_disabled or has_tosViolation:
                 continue
 
             for perf_type in self.perf_types:

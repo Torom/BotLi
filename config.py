@@ -97,6 +97,12 @@ def load_config(config_path: str) -> dict:
         if not isinstance(CONFIG['engine']['online_moves'][subsection[0]], subsection[1]):
             raise TypeError(f'`engine` `online_moves` subsection {subsection[2]}')
 
+    if 'blacklist' in CONFIG:
+        if not isinstance(CONFIG['blacklist'], list):
+            raise TypeError('If uncommented, blacklist must be a list of usernames.')
+
+        CONFIG['blacklist'] = [username.lower() for username in CONFIG['blacklist']]
+
     if not os.path.isdir(CONFIG['engine']['dir']):
         raise RuntimeError(f'Your engine directory "{CONFIG["engine"]["dir"]}" is not a directory.')
 
