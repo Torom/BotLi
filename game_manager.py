@@ -6,7 +6,6 @@ from api import API
 from botli_dataclasses import Challenge_Request, Challenge_Response
 from challenger import Challenger
 from game import Game
-from game_counter import Game_Counter
 from matchmaking import Matchmaking
 from pending_challenge import Pending_Challenge
 
@@ -17,7 +16,6 @@ class Game_Manager(Thread):
         self.config = config
         self.api = api
         self.is_running = True
-        self.game_counter = Game_Counter(self.config['challenge'].get('concurrency', 1))
         self.games: dict[Game_ID, Game] = {}
         self.open_challenge_ids: deque[Challenge_ID] = deque()
         self.reserved_game_ids: list[Game_ID] = []
@@ -29,6 +27,7 @@ class Game_Manager(Thread):
         self.current_matchmaking_game_id: Game_ID | None = None
         self.challenger = Challenger(self.config, self.api)
         self.matchmaking_delay: int = max(self.config['matchmaking'].get('delay', 10), 1)
+        self.concurrency: int = config['challenge'].get('concurrency', 1)
 
     def start(self):
         Thread.start(self)
@@ -57,9 +56,8 @@ class Game_Manager(Thread):
             while challenge_id := self._get_next_challenge_id():
                 self._accept_challenge(challenge_id)
 
-        for thread in self.games.values():
-            thread.join()
-            self.game_counter.decrement()
+        for game in self.games.values():
+            game.join()
 
     def add_challenge(self, challenge_id: Challenge_ID) -> None:
         if challenge_id not in self.open_challenge_ids:
@@ -91,7 +89,6 @@ class Game_Manager(Thread):
                 self.current_matchmaking_game_id = None
 
             del self.games[game_id]
-            self.game_counter.decrement()
 
     def _start_game(self, game_id: Game_ID) -> None:
         if game_id in self.games:
@@ -101,8 +98,8 @@ class Game_Manager(Thread):
             # Remove reserved spot, if it exists:
             self.reserved_game_ids.remove(game_id)
 
-        if not self.game_counter.increment():
-            print(f'Max number of concurrent games reached. Aborting an already started game {game_id}.')
+        if len(self.games) >= self.concurrency:
+            print(f'Max number of concurrent games exceeded. Aborting already started game {game_id}.')
             self.api.abort_game(game_id)
             return
 
@@ -112,13 +109,12 @@ class Game_Manager(Thread):
     def _finish_game(self, game_id: Game_ID) -> None:
         self.games[game_id].join()
         del self.games[game_id]
-        self.game_counter.decrement()
 
     def _get_next_challenge_id(self) -> Challenge_ID | None:
         if not self.open_challenge_ids:
             return
 
-        if self.game_counter.is_max(len(self.reserved_game_ids)):
+        if len(self.games) + len(self.reserved_game_ids) >= self.concurrency:
             return
 
         return self.open_challenge_ids.popleft()
@@ -134,7 +130,7 @@ class Game_Manager(Thread):
         if not self.is_matchmaking_allowed:
             return
 
-        if self.game_counter.is_max(len(self.reserved_game_ids)):
+        if len(self.games) + len(self.reserved_game_ids) >= self.concurrency:
             return
 
         if self.current_matchmaking_game_id:
@@ -167,7 +163,7 @@ class Game_Manager(Thread):
         if not self.challenge_requests:
             return
 
-        if self.game_counter.is_max(len(self.reserved_game_ids)):
+        if len(self.games) + len(self.reserved_game_ids) >= self.concurrency:
             return
 
         return self.challenge_requests.popleft()
