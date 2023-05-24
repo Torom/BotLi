@@ -113,8 +113,16 @@ class Game_Information:
     @property
     def tc_str(self) -> str:
         initial_time_min = self.initial_time_ms / 60_000
-        initial_time_str = str(int(initial_time_min)) if int(
-            initial_time_min) == initial_time_min else str(initial_time_min)
+        if initial_time_min.is_integer():
+            initial_time_str = str(int(initial_time_min))
+        elif initial_time_min == 0.25:
+            initial_time_str = '¼'
+        elif initial_time_min == 0.5:
+            initial_time_str = '½'
+        elif initial_time_min == 0.75:
+            initial_time_str = '¾'
+        else:
+            initial_time_str = str(initial_time_min)
         increment_sec = self.increment_ms // 1000
         return f'TC: {initial_time_str}+{increment_sec}'
 
