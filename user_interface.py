@@ -19,6 +19,7 @@ except ImportError:
     readline_available = False
 
 COMMANDS = {
+    'blacklist': 'Temporarily blacklists a user. Use config for permanent blacklisting. Usage: blacklist USERNAME',
     'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED] [VARIANT]',
     'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [INITIAL_TIME] [INCREMENT] [RATED] [VARIANT]',
     'help': 'Prints this message.',
@@ -68,6 +69,8 @@ class UserInterface:
 
             if len(command) == 0:
                 continue
+            elif command[0] == 'blacklist':
+                self._blacklist(command)
             elif command[0] == 'challenge':
                 self._challenge(command)
             elif command[0] == 'create':
@@ -117,6 +120,16 @@ class UserInterface:
         else:
             print('Upgrade failed.')
             sys.exit(1)
+
+    def _blacklist(self, command: list[str]) -> None:
+        if len(command) != 2:
+            print(COMMANDS['blacklist'])
+            return
+
+        username = command[1].lower()
+        self.event_handler.challenge_validator.blacklist.append(username)
+        self.game_manager.matchmaking.blacklist.append(username)
+        print(f'Added {command[1]} to the blacklist.')
 
     def _challenge(self, command: list[str]) -> None:
         command_length = len(command)
@@ -168,7 +181,7 @@ class UserInterface:
 
     def _matchmaking(self) -> None:
         if self.game_manager.is_matchmaking_allowed:
-            print('matchmaking already running ...')
+            print('Matchmaking is already running.')
             return
 
         print('Starting matchmaking ...')
