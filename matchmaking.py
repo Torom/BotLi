@@ -22,7 +22,7 @@ class Matchmaking:
         self.estimated_game_duration = timedelta(seconds=(self.initial_time + self.increment * 80) * 2)
         self.perf_types = [self._variant_to_perf_type(variant) for variant in config['matchmaking']['variants']]
         matchmaking_delay = config['matchmaking'].get('delay', 10)
-        matchmaking_multiplier = config['matchmaking'].get('multiplier', 15)
+        matchmaking_multiplier = max(config['matchmaking'].get('multiplier', 15), 1)
         self.opponents = Opponents(self.perf_types, self.estimated_game_duration,
                                    matchmaking_delay, matchmaking_multiplier, self.api.username)
         self.challenger = Challenger(config, self.api)
