@@ -180,12 +180,8 @@ class UserInterface:
         print(f'Challenges for {count} game pairs against {opponent_username} added to the queue.')
 
     def _matchmaking(self) -> None:
-        if self.game_manager.is_matchmaking_allowed:
-            print('Matchmaking is already running.')
-            return
-
         print('Starting matchmaking ...')
-        self.game_manager.is_matchmaking_allowed = True
+        self.game_manager.start_matchmaking()
 
     def _quit(self) -> None:
         self.is_running = False
@@ -238,12 +234,10 @@ class UserInterface:
         print('Matchmaking has been reset.')
 
     def _stop(self) -> None:
-        if not self.game_manager.is_matchmaking_allowed:
+        if self.game_manager.stop_matchmaking():
+            print('Stopping matchmaking ...')
+        else:
             print('Matchmaking isn\'t currently running ...')
-            return
-
-        print('Stopping matchmaking ...')
-        self.game_manager.is_matchmaking_allowed = False
 
     def _help(self) -> None:
         print('These commands are supported by BotLi:\n')

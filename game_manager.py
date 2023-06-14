@@ -1,4 +1,5 @@
 from collections import deque
+from datetime import datetime, timedelta
 from threading import Event, Thread
 
 from aliases import Challenge_ID, Game_ID
@@ -23,10 +24,11 @@ class Game_Manager(Thread):
         self.challenge_requests: deque[Challenge_Request] = deque()
         self.changed_event = Event()
         self.matchmaking = Matchmaking(self.config, self.api)
-        self.is_matchmaking_allowed = False
         self.current_matchmaking_game_id: Game_ID | None = None
         self.challenger = Challenger(self.config, self.api)
-        self.matchmaking_delay: int = max(self.config['matchmaking'].get('delay', 10), 1)
+        self.is_rate_limited = False
+        self.next_matchmaking = datetime.max
+        self.matchmaking_delay = timedelta(seconds=config['matchmaking'].get('delay', 10))
         self.concurrency: int = config['challenge'].get('concurrency', 1)
 
     def start(self):
@@ -38,7 +40,7 @@ class Game_Manager(Thread):
 
     def run(self) -> None:
         while self.is_running:
-            event_received = self.changed_event.wait(self.matchmaking_delay)
+            event_received = self.changed_event.wait(5.0)
             if not event_received:
                 self._check_matchmaking()
                 continue
@@ -82,6 +84,25 @@ class Game_Manager(Thread):
             self.matchmaking.on_game_started()
         self.changed_event.set()
 
+    def start_matchmaking(self) -> None:
+        self.next_matchmaking = datetime.now()
+
+    def stop_matchmaking(self) -> bool:
+        if self.next_matchmaking != datetime.max:
+            self.next_matchmaking = datetime.max
+            return True
+
+        return False
+
+    def _delay_matchmaking(self, delay: timedelta) -> None:
+        if self.next_matchmaking == datetime.max:
+            return
+
+        if self.is_rate_limited:
+            return
+
+        self.next_matchmaking = datetime.now() + delay
+
     def _check_for_finished_games(self) -> None:
         for game_id, game in list(self.games.items()):
             if game.is_alive():
@@ -90,6 +111,8 @@ class Game_Manager(Thread):
             if game_id == self.current_matchmaking_game_id:
                 self.matchmaking.on_game_finished(game)
                 self.current_matchmaking_game_id = None
+
+            self._delay_matchmaking(self.matchmaking_delay)
 
             del self.games[game_id]
 
@@ -130,7 +153,7 @@ class Game_Manager(Thread):
             print(f'Challenge "{challenge_id}" could not be accepted!')
 
     def _check_matchmaking(self) -> None:
-        if not self.is_matchmaking_allowed:
+        if self.next_matchmaking > datetime.now():
             return
 
         if len(self.games) + len(self.reserved_game_ids) >= self.concurrency:
@@ -147,6 +170,7 @@ class Game_Manager(Thread):
         self.current_matchmaking_game_id = challenge_id
 
         success, has_reached_rate_limit, is_misconfigured = pending_challenge.get_final_state()
+        self.is_rate_limited = False
 
         if success:
             assert challenge_id
@@ -156,11 +180,12 @@ class Game_Manager(Thread):
         else:
             self.current_matchmaking_game_id = None
             if has_reached_rate_limit:
-                print('Matchmaking stopped due to rate limiting.')
-                self.is_matchmaking_allowed = False
+                print('Rate limit reached, next attempt in one hour.')
+                self._delay_matchmaking(timedelta(hours=1.0))
+                self.is_rate_limited = True
             if is_misconfigured:
                 print('Matchmaking stopped due to misconfiguration.')
-                self.is_matchmaking_allowed = False
+                self.stop_matchmaking()
 
     def _get_next_challenge_request(self) -> Challenge_Request | None:
         if not self.challenge_requests:
