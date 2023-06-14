@@ -56,8 +56,11 @@ class Game_Manager(Thread):
             while challenge_id := self._get_next_challenge_id():
                 self._accept_challenge(challenge_id)
 
-        for game in self.games.values():
+        for game_id, game in self.games.items():
             game.join()
+
+            if game_id == self.current_matchmaking_game_id:
+                self.matchmaking.on_game_finished(game)
 
     def add_challenge(self, challenge_id: Challenge_ID) -> None:
         if challenge_id not in self.open_challenge_ids:
