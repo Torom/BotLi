@@ -1,4 +1,4 @@
-token: "XXXXXXXXXXXXXXXXXXXXXXXX"         # Lichess OAuth2 Token.
+token: "lip_yourtokenherexxxxxxx"         # Lichess OAuth2 Token.
 
 engine:                                   # Engine settings.
   dir: "./engines"                        # Directory containing the engine.
@@ -9,7 +9,7 @@ engine:                                   # Engine settings.
     enabled: false                        # Activate local syzygy endgame tablebases.
     paths:                                # Paths to local syzygy endgame tablebases.
       - "/path/to/syzygy"
-    max_pieces: 6                         # Count of max pieces in the local syzygy endgame tablebases.
+    max_pieces: 5                         # Count of max pieces in the local syzygy endgame tablebases.
     instant_play: true                    # Whether the bot should play directly from syzygy without engine if possible.
   gaviota:
     enabled: false                        # Activate local gaviota endgame tablebases.
@@ -17,19 +17,20 @@ engine:                                   # Engine settings.
       - "/path/to/gaviota"
     max_pieces: 5                         # Count of max pieces in the local gaviota endgame tablebases.
   uci_options:                            # Arbitrary UCI options passed to the engine. (Commenting allowed)
-    Move Overhead: 100                    # Increase if your bot flags games too often.
+    Move Overhead: 1000                   # Increase if your bot flags games too often.
     Threads: 4                            # Max CPU threads the engine can use.
-    Hash: 256                             # Max memory (in megabytes) the engine can allocate.
+    Hash: 512                             # Max memory (in megabytes) the engine can allocate.
   variants:
-    enabled: false                        # Activate seperate engine for other chess variants than standard and chess960.
+    enabled: true                         # Activate seperate engine for other chess variants than standard and chess960.
     dir: "./engines"                      # Directory containing the engine.
     name: "fairy-stockfish"               # Binary name of the engine to use.
     ponder: true                          # Think on opponent's time.
     silence_stderr: false                 # Suppresses stderr output.
     uci_options:                          # Arbitrary UCI options passed to the engine. (Commenting allowed)
-      Move Overhead: 100                  # Increase if your bot flags games too often.
+      Move Overhead: 1000                 # Increase if your bot flags games too often.
       Threads: 4                          # Max CPU threads the engine can use.
-      Hash: 256                           # Max memory (in megabytes) the engine can allocate.
+      Hash: 512                           # Max memory (in megabytes) the engine can allocate.
+      EvalFile: "3check-313cc226a173.nnue:antichess-689c016df8e0.nnue:atomic-e801e22d2c32.nnue:crazyhouse-be2e41920378.nnue:horde-28173ddccabe.nnue:kingofthehill-978b86d0e6a4.nnue:racingkings-636b95f085e3.nnue" # NNUE for fairy-stockfish (need to be downloaded seperately). Only compatible with Fairy Stockfish 14.0.1 or newer. If on windows, replace : with ; to seperate the file names.
   opening_books:
     enabled: false                        # Activate opening books.
     books:
@@ -42,7 +43,7 @@ engine:                                   # Engine settings.
 #     chess960:                           # List of names of books to use for chess960.
 #       - "Chess960Book"
 #     Use the same pattern for 'antichess', 'atomic', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
-    selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
+    selection: "best_move"                # Move selection is one of "weighted_random", "uniform_random" or "best_move".
 #   max_depth: 16                         # Half move max depth. (Comment this line for max depth)
   online_moves:
     opening_explorer:
@@ -78,14 +79,14 @@ engine:                                   # Engine settings.
   offer_draw:
     enabled: true                         # Activate whether the bot should offer draw.
     score: 10                             # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
-    consecutive_moves: 10                 # How many moves in a row the absolute value of the score has to be below the draw value
-    min_game_length: 35                   # Earliest move in which draw is offered.
+    consecutive_moves: 15                 # How many moves in a row the absolute value of the score has to be below the draw value
+    min_game_length: 50                   # Earliest move in which draw is offered.
   resign:
     enabled: false                        # Activate whether the bot should resign games.
     score: -1000                          # If the score is less than or equal to this value, the bot resigns (in cp).
     consecutive_moves: 5                  # How many moves in a row the score has to be below the resign value.
 
-move_overhead_multiplier: 1.0             # Increase if your bot flags games too often. Default move overhead is 1 second per 1 minute initital time.
+move_overhead_multiplier: 1.1             # Increase if your bot flags games too often. Default move overhead is 1 second per 1 minute initital time.
 
 challenge:                                # Incoming challenges. (Commenting allowed)
   concurrency: 1                          # Number of games to play simultaneously.
@@ -98,13 +99,13 @@ challenge:                                # Incoming challenges. (Commenting all
     - standard
     - chess960
 #   - fromPosition
-#   - antichess
-#   - atomic
-#   - crazyhouse
-#   - horde
-#   - kingOfTheHill
-#   - racingKings
-#   - threeCheck
+    - antichess
+    - atomic
+    - crazyhouse
+    - horde
+    - kingOfTheHill
+    - racingKings
+    - threeCheck
   time_controls:                          # Time controls to accept.
     - bullet
     - blitz
@@ -114,7 +115,7 @@ challenge:                                # Incoming challenges. (Commenting all
 #   - casual                              # Unrated games.
     - rated                               # Rated games
   human_modes:                            # Game modes to accept against humans.
-    - casual                              # Unrated games.
+#   - casual                              # Unrated games.
     - rated                               # Rated games
 
 matchmaking:
@@ -135,7 +136,7 @@ matchmaking:
 # min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
 # max_rating_diff: 300                    # Maximum rating distance to opponent. (Commenting allowed)
   delay: 10                               # Time in seconds the bot must be idle before a new challenge is started.
-  multiplier: 15                          # Multiplier for calculating timeouts in matchmaking. Higher values lead to a wider range of opponents.
+  multiplier: 7                           # Multiplier for calculating timeouts in matchmaking. Higher values lead to a wider range of opponents.
 
 messages:
   # Optional substitution keywords (include curly braces):
@@ -145,10 +146,10 @@ messages:
   #   {cpu} to insert CPU information
   #   {ram} to insert RAM size
   # Any other words in curly braces will be removed.
-  greeting: "Hey, I'm running {engine}. Good luck! Type !help for a list of commands." # Message sent to the opponent at the beginning of a game.
-  goodbye: "Good game, see you next time."                                             # Message sent to the opponent after the end of a game.
-  greeting_spectators: "Hey, I'm running {engine}. Type !help for a list of commands." # Message sent to the spectators at the beginning of a game.
-  goodbye_spectators: "Thanks for watching."                                           # Message sent to the spectators after the end of a game.
+  greeting: "Hey, I'm running {engine} on {cpu} and {ram} of RAM. Good luck! Type !help for a list of commands." # Message sent to the opponent at the beginning of a game.
+  goodbye: "Good game, well played. See you next time!"                                             # Message sent to the opponent after the end of a game.
+  greeting_spectators: "Hey, I'm running {engine} on {cpu} and {ram} of RAM. Type !help for a list of commands." # Message sent to the spectators at the beginning of a game.
+  goodbye_spectators: "Thanks for watching!"                                           # Message sent to the spectators after the end of a game.
 
 # blacklist:                              # List of users who are not challenged and whose challenges are declined.
 #   - Username1
