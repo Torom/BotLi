@@ -4,7 +4,7 @@ from threading import Event, Thread
 
 from aliases import Challenge_ID, Game_ID
 from api import API
-from botli_dataclasses import Challenge_Request, Challenge_Response
+from botli_dataclasses import Challenge_Request
 from challenger import Challenger
 from game import Game
 from matchmaking import Matchmaking
@@ -19,7 +19,7 @@ class Game_Manager(Thread):
         self.is_running = True
         self.games: dict[Game_ID, Game] = {}
         self.open_challenge_ids: deque[Challenge_ID] = deque()
-        self.reserved_game_ids: list[Game_ID] = []
+        self.reserved_game_spots = 0
         self.started_game_ids: deque[Game_ID] = deque()
         self.challenge_requests: deque[Challenge_Request] = deque()
         self.changed_event = Event()
@@ -120,9 +120,9 @@ class Game_Manager(Thread):
         if game_id in self.games:
             return
 
-        if game_id in self.reserved_game_ids:
+        if self.reserved_game_spots > 0:
             # Remove reserved spot, if it exists:
-            self.reserved_game_ids.remove(game_id)
+            self.reserved_game_spots -= 1
 
         if len(self.games) >= self.concurrency:
             print(f'Max number of concurrent games exceeded. Aborting already started game {game_id}.')
@@ -140,7 +140,7 @@ class Game_Manager(Thread):
         if not self.open_challenge_ids:
             return
 
-        if len(self.games) + len(self.reserved_game_ids) >= self.concurrency:
+        if len(self.games) + self.reserved_game_spots >= self.concurrency:
             return
 
         return self.open_challenge_ids.popleft()
@@ -148,7 +148,7 @@ class Game_Manager(Thread):
     def _accept_challenge(self, challenge_id: Challenge_ID) -> None:
         if self.api.accept_challenge(challenge_id):
             # Reserve a spot for this game
-            self.reserved_game_ids.append(challenge_id)
+            self.reserved_game_spots += 1
         else:
             print(f'Challenge "{challenge_id}" could not be accepted!')
 
@@ -156,7 +156,7 @@ class Game_Manager(Thread):
         if self.next_matchmaking > datetime.now():
             return
 
-        if len(self.games) + len(self.reserved_game_ids) >= self.concurrency:
+        if len(self.games) + self.reserved_game_spots >= self.concurrency:
             return
 
         if self.current_matchmaking_game_id:
@@ -173,10 +173,8 @@ class Game_Manager(Thread):
         self.is_rate_limited = False
 
         if success:
-            assert challenge_id
-
             # Reserve a spot for this game
-            self.reserved_game_ids.append(challenge_id)
+            self.reserved_game_spots += 1
         else:
             self.current_matchmaking_game_id = None
             if has_reached_rate_limit:
@@ -191,27 +189,18 @@ class Game_Manager(Thread):
         if not self.challenge_requests:
             return
 
-        if len(self.games) + len(self.reserved_game_ids) >= self.concurrency:
+        if len(self.games) + self.reserved_game_spots >= self.concurrency:
             return
 
         return self.challenge_requests.popleft()
 
     def _create_challenge(self, challenge_request: Challenge_Request) -> None:
         print(f'Challenging {challenge_request.opponent_username} ...')
+        *_, last_response = self.challenger.create(challenge_request)
 
-        last_response: Challenge_Response | None = None
-        challenge_id: Challenge_ID | None = None
-        for response in self.challenger.create(challenge_request):
-            last_response = response
-            if response.challenge_id:
-                challenge_id = response.challenge_id
-
-        assert last_response
         if last_response.success:
-            assert challenge_id
-
             # Reserve a spot for this game
-            self.reserved_game_ids.append(challenge_id)
+            self.reserved_game_spots += 1
         elif last_response.has_reached_rate_limit and self.challenge_requests:
             print('Challenge queue cleared due to rate limiting.')
             self.challenge_requests.clear()
