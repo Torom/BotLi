@@ -12,11 +12,29 @@ class Challenge_Validator:
         self.max_initial = config['challenge'].get('max_initial', 315360000)
         self.bot_modes = config['challenge']['bot_modes']
         self.human_modes = config['challenge']['human_modes']
+        self.whitelist = config.get('whitelist', [])
         self.blacklist = config.get('blacklist', [])
 
     def get_decline_reason(self, challenge_event: dict) -> Decline_Reason | None:
+        speed = challenge_event['challenge']['speed']
+        if speed == 'correspondence':
+            print('Time control "Correspondence" is not supported by BotLi.')
+            return Decline_Reason.TIME_CONTROL
+
+        variant = challenge_event['challenge']['variant']['key']
+        if variant not in self.variants:
+            print(f'Variant "{variant}" is not allowed according to config.')
+            return Decline_Reason.VARIANT
+
+        if challenge_event['challenge']['challenger']['id'] in self.whitelist:
+            return
+
         if challenge_event['challenge']['challenger']['id'] in self.blacklist:
             print('Challenger is blacklisted.')
+            return Decline_Reason.GENERIC
+
+        if not (self.bot_modes or self.human_modes):
+            print('Neither bots nor humans are allowed according to config.')
             return Decline_Reason.GENERIC
 
         is_bot = challenge_event['challenge']['challenger']['title'] == 'BOT'
@@ -29,17 +47,11 @@ class Challenge_Validator:
                 print('Only bots are allowed according to config.')
                 return Decline_Reason.ONLY_BOT
 
-        variant = challenge_event['challenge']['variant']['key']
-        if variant not in self.variants:
-            print(f'Variant "{variant}" is not allowed according to config.')
-            return Decline_Reason.VARIANT
-
-        speed = challenge_event['challenge']['speed']
-        increment = challenge_event['challenge']['timeControl'].get('increment')
-        initial = challenge_event['challenge']['timeControl'].get('limit')
-        if speed == 'correspondence':
-            print('Time control "Correspondence" is not supported by BotLi.')
-            return Decline_Reason.TIME_CONTROL
+        increment = challenge_event['challenge']['timeControl']['increment']
+        initial = challenge_event['challenge']['timeControl']['limit']
+        if not self.time_controls:
+            print('No time control is allowed according to config.')
+            return Decline_Reason.GENERIC
         elif speed not in self.time_controls:
             print(f'Time control "{speed}" is not allowed according to config.')
             return Decline_Reason.TIME_CONTROL

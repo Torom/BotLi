@@ -27,7 +27,8 @@ COMMANDS = {
     'quit': 'Exits the bot.',
     'rechallenge': 'Challenges the opponent to the last received challenge.',
     'reset': 'Resets matchmaking. Usage: reset [PERF_TYPE]',
-    'stop': 'Stops matchmaking mode.'
+    'stop': 'Stops matchmaking mode.',
+    'whitelist': 'Temporarily whitelists a user. Use config for permanent whitelisting. Usage: whitelist USERNAME'
 }
 
 EnumT = TypeVar('EnumT', bound=Enum)
@@ -87,6 +88,8 @@ class UserInterface:
                 self._reset(command)
             elif command[0] == 'stop':
                 self._stop()
+            elif command[0] == 'whitelist':
+                self._whitelist(command)
             else:
                 self._help()
 
@@ -238,6 +241,15 @@ class UserInterface:
             print('Stopping matchmaking ...')
         else:
             print('Matchmaking isn\'t currently running ...')
+
+    def _whitelist(self, command: list[str]) -> None:
+        if len(command) != 2:
+            print(COMMANDS['whitelist'])
+            return
+
+        username = command[1].lower()
+        self.event_handler.challenge_validator.whitelist.append(username)
+        print(f'Added {command[1]} to the whitelist.')
 
     def _help(self) -> None:
         print('These commands are supported by BotLi:\n')
