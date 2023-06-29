@@ -20,8 +20,8 @@ except ImportError:
 
 COMMANDS = {
     'blacklist': 'Temporarily blacklists a user. Use config for permanent blacklisting. Usage: blacklist USERNAME',
-    'challenge': 'Challenges a player. Usage: challenge USERNAME [INITIAL_TIME] [INCREMENT] [COLOR] [RATED] [VARIANT]',
-    'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [INITIAL_TIME] [INCREMENT] [RATED] [VARIANT]',
+    'challenge': 'Challenges a player. Usage: challenge USERNAME [TIMECONTROL] [COLOR] [RATED] [VARIANT]',
+    'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]',
     'help': 'Prints this message.',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
@@ -136,17 +136,19 @@ class UserInterface:
 
     def _challenge(self, command: list[str]) -> None:
         command_length = len(command)
-        if command_length < 2 or command_length > 7:
+        if command_length < 2 or command_length > 6:
             print(COMMANDS['challenge'])
             return
 
         try:
             opponent_username = command[1]
-            initial_time = int(command[2]) if command_length > 2 else 60
-            increment = int(command[3]) if command_length > 3 else 1
-            color = Challenge_Color(command[4].lower()) if command_length > 4 else Challenge_Color.RANDOM
-            rated = command[5].lower() == 'true' if command_length > 5 else True
-            variant = self._find_enum(command[6], Variant) if command_length > 6 else Variant.STANDARD
+            time_control = command[2] if command_length > 2 else '1+1'
+            initial_time_str, increment_str = time_control.split('+')
+            initial_time = int(float(initial_time_str) * 60)
+            increment = int(increment_str)
+            color = Challenge_Color(command[3].lower()) if command_length > 3 else Challenge_Color.RANDOM
+            rated = command[4].lower() in ['true', 'yes', 'rated'] if command_length > 4 else True
+            variant = self._find_enum(command[5], Variant) if command_length > 5 else Variant.STANDARD
         except ValueError as e:
             print(e)
             return
@@ -157,17 +159,19 @@ class UserInterface:
 
     def _create(self, command: list[str]) -> None:
         command_length = len(command)
-        if command_length < 3 or command_length > 7:
+        if command_length < 3 or command_length > 6:
             print(COMMANDS['create'])
             return
 
         try:
             count = int(command[1])
             opponent_username = command[2]
-            initial_time = int(command[3]) if command_length > 3 else 60
-            increment = int(command[4]) if command_length > 4 else 1
-            rated = command[5].lower() == 'true' if command_length > 5 else True
-            variant = self._find_enum(command[6], Variant) if command_length > 6 else Variant.STANDARD
+            time_control = command[3] if command_length > 3 else '1+1'
+            initial_time_str, increment_str = time_control.split('+')
+            initial_time = int(float(initial_time_str) * 60)
+            increment = int(increment_str)
+            rated = command[4].lower() in ['true', 'yes', 'rated'] if command_length > 4 else True
+            variant = self._find_enum(command[5], Variant) if command_length > 5 else Variant.STANDARD
         except ValueError as e:
             print(e)
             return
