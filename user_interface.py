@@ -21,6 +21,7 @@ except ImportError:
 COMMANDS = {
     'blacklist': 'Temporarily blacklists a user. Use config for permanent blacklisting. Usage: blacklist USERNAME',
     'challenge': 'Challenges a player. Usage: challenge USERNAME [TIMECONTROL] [COLOR] [RATED] [VARIANT]',
+    'clear': 'Clears the challenge queue.',
     'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]',
     'help': 'Prints this message.',
     'matchmaking': 'Starts matchmaking mode.',
@@ -76,6 +77,8 @@ class UserInterface:
                 self._challenge(command)
             elif command[0] == 'create':
                 self._create(command)
+            elif command[0] == 'clear':
+                self._clear()
             elif command[0] == 'exit':
                 self._quit()
             elif command[0] == 'matchmaking':
@@ -185,6 +188,10 @@ class UserInterface:
 
         self.game_manager.request_challenge(*challenges)
         print(f'Challenges for {count} game pairs against {opponent_username} added to the queue.')
+
+    def _clear(self) -> None:
+        self.game_manager.challenge_requests.clear()
+        print('Challenge queue cleared.')
 
     def _matchmaking(self) -> None:
         print('Starting matchmaking ...')
