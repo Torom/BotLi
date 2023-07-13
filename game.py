@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from queue import Queue
 from threading import Event, Thread
 
@@ -15,8 +16,6 @@ class Game(Thread):
         self.api = api
         self.game_id = game_id
         self.game_finished_event = game_finished_event
-        self.ping_counter = 0
-        self.abortion_counter = 0
         self.lichess_game: Lichess_Game | None = None
         self.chatter: Chatter | None = None
         self.game_info: Game_Information | None = None
@@ -29,14 +28,15 @@ class Game(Thread):
         game_queue_thread = Thread(target=self.api.get_game_stream, args=(self.game_id, game_queue), daemon=True)
         game_queue_thread.start()
 
-        gameFull_event = game_queue.get()
-        self.game_info = Game_Information.from_gameFull_event(gameFull_event, self.api.username)
+        self.game_info = Game_Information.from_gameFull_event(game_queue.get(), self.api.username)
         self._print_game_information()
+
         self.lichess_game = Lichess_Game(self.api, self.game_info, self.config)
         self.chatter = Chatter(self.api, self.config, self.game_info, self.lichess_game)
+
         self.chatter.send_greetings()
 
-        if self._finish_game(gameFull_event['state'].get('winner')):
+        if self._finish_game(self.game_info.state.get('winner')):
             self.lichess_game.end_game()
             return
 
@@ -45,8 +45,17 @@ class Game(Thread):
         else:
             self.lichess_game.start_pondering()
 
+        abortion_seconds = 30.0 if self.game_info.opponent_is_bot else 60.0
+        abortion_time = datetime.now() + timedelta(seconds=abortion_seconds)
+
         while True:
             event = game_queue.get()
+
+            if event['type'] not in ['gameFull', 'gameState']:
+                if self.lichess_game.is_abortable and datetime.now() >= abortion_time:
+                    print('Aborting game ...')
+                    self.api.abort_game(self.game_id)
+                    self.chatter.send_abortion_message()
 
             if event['type'] == 'gameFull':
                 self.lichess_game.update(event['state'])
@@ -59,7 +68,6 @@ class Game(Thread):
                 else:
                     self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
-                self.ping_counter = 0
                 updated = self.lichess_game.update(event)
 
                 if self._finish_game(event.get('winner')):
@@ -75,17 +83,7 @@ class Game(Thread):
             elif event['type'] == 'opponentGone':
                 continue
             elif event['type'] == 'ping':
-                self.ping_counter += 1
-
-                max_pings = 5 if self.game_info.opponent_is_bot else 10
-                if self.ping_counter >= max_pings and self.lichess_game.is_abortable:
-                    print('Aborting game ...')
-                    self.chatter.send_abortion_message()
-                    self.api.abort_game(self.game_id)
-                    self.abortion_counter += 1
-
-                    if self.abortion_counter >= 3:
-                        break
+                continue
             else:
                 print(event)
 
