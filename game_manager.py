@@ -40,7 +40,7 @@ class Game_Manager(Thread):
 
     def run(self) -> None:
         while self.is_running:
-            event_received = self.changed_event.wait(5.0)
+            event_received = self.changed_event.wait(1.0)
             if not event_received:
                 self._check_matchmaking()
                 continue
