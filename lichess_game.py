@@ -405,11 +405,11 @@ class Lichess_Game:
                     return
 
             if wdl == 0:
-                if board_copy.halfmove_clock == 0:
-                    dtm = -1
-
                 if board_copy.is_check():
-                    dtm = -2
+                    dtm -= 1
+
+                if board_copy.halfmove_clock == 0:
+                    dtm -= 2
 
             if best_moves:
                 if wdl > best_wdl:
@@ -470,11 +470,11 @@ class Lichess_Game:
                     dtz -= 10_000
 
             if wdl == 0:
-                if board_copy.halfmove_clock == 0:
-                    dtz = -1
-
                 if board_copy.is_check():
-                    dtz = -2
+                    dtz -= 1
+
+                if board_copy.halfmove_clock == 0:
+                    dtz -= 2
 
             if best_moves:
                 if wdl > best_wdl:
