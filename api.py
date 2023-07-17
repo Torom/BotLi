@@ -142,7 +142,7 @@ class API:
         response = self.session.get('https://lichess.org/api/bot/online', stream=True, timeout=9.0)
         return [json.loads(line) for line in response.iter_lines() if line]
 
-    def get_opening_explorer(self, username: str, fen: str, variant: Variant, color: str, timeout: int) -> dict | None:
+    def get_opening_explorer(self, username: str, fen: str, variant: Variant, color: str, timeout: int) -> dict[str, Any] | None:
         try:
             response = self.session.get('https://explorer.lichess.ovh/player',
                                         params={'player': username, 'variant': variant.value, 'fen': fen,
@@ -151,8 +151,8 @@ class API:
                                         headers={'Authorization': None},
                                         stream=True, timeout=timeout)
             response.raise_for_status()
-            *_, last_line = filter(None, response.iter_lines())
-            return json.loads(last_line)
+            first_line = next(filter(None, response.iter_lines()))
+            return json.loads(first_line)
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
