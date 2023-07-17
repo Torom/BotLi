@@ -296,7 +296,7 @@ class Lichess_Game:
                 move['wins'] = move['white'] if self.board.turn else move['black']
                 move['losses'] = move['black'] if self.board.turn else move['white']
 
-            return max(moves, key=lambda move: move['wins'] / (move['white'] + move['draws'] + move['black']))
+            return max(moves, key=lambda move: (move['wins'] - move['losses']) / (move['white'] + move['draws'] + move['black']))
         else:
             min_or_max = min if anti else max
             top_move = min_or_max(moves, key=lambda move: move['performance'])
