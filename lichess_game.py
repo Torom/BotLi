@@ -246,7 +246,7 @@ class Lichess_Game:
         if not enabled:
             return
 
-        out_of_book = self.out_of_opening_explorer_counter >= 10
+        out_of_book = self.out_of_opening_explorer_counter >= 5
         max_depth = self.config['engine']['online_moves']['opening_explorer'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
         max_moves = self.config['engine']['online_moves']['opening_explorer'].get('max_moves', float('inf'))
@@ -310,7 +310,7 @@ class Lichess_Game:
         if not enabled:
             return
 
-        out_of_book = self.out_of_cloud_counter >= 10
+        out_of_book = self.out_of_cloud_counter >= 5
         max_depth = self.config['engine']['online_moves']['lichess_cloud'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
         max_moves = self.config['engine']['online_moves']['lichess_cloud'].get('max_moves', float('inf'))
@@ -346,7 +346,7 @@ class Lichess_Game:
         if not enabled:
             return
 
-        out_of_book = self.out_of_chessdb_counter >= 10
+        out_of_book = self.out_of_chessdb_counter >= 5
         max_depth = self.config['engine']['online_moves']['chessdb'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
         max_moves = self.config['engine']['online_moves']['chessdb'].get('max_moves', float('inf'))
