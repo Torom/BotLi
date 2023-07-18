@@ -1,5 +1,5 @@
 chess == 1.9.4
 psutil == 5.9.5
-PyYAML == 6.0
+PyYAML == 6.0.1
 requests == 2.31.0
 tenacity == 8.2.2
