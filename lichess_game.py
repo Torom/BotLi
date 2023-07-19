@@ -748,7 +748,6 @@ class Lichess_Game:
         if self.config['engine']['online_moves']['online_egtb']['enabled']:
             move_sources.append(self._make_egtb_move)
 
-        print(move_sources)
         return move_sources
 
     def _get_move_overhead(self) -> int:
