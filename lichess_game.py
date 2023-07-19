@@ -2,6 +2,7 @@ import os
 import random
 import subprocess
 from collections import deque
+from typing import Callable
 
 import chess
 import chess.engine
@@ -10,7 +11,7 @@ import chess.polyglot
 import chess.syzygy
 from chess.variant import find_variant
 
-from aliases import DTM, DTZ, CP_Score, Depth, Learn, Offer_Draw, Outcome, Performance, Resign, UCI_Move, Weight
+from aliases import DTM, DTZ, Message, Offer_Draw, Outcome, Performance, Resign, UCI_Move
 from api import API
 from botli_dataclasses import Game_Information
 from enums import Game_Status, Variant
@@ -28,6 +29,7 @@ class Lichess_Game:
         self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
         self.resign_enabled: bool = config['engine']['resign']['enabled']
         self.ponder_enabled: bool = True
+        self.move_sources = self._get_move_sources()
         self.move_overhead_ms = self._get_move_overhead()
         self.book_readers = self._get_book_readers()
         self.syzygy_tablebase = self._get_syzygy_tablebase()
@@ -47,36 +49,11 @@ class Lichess_Game:
         self.last_message = 'No eval available yet.'
 
     def make_move(self) -> tuple[UCI_Move, Offer_Draw, Resign]:
-        offer_draw = False
-        resign = False
-        engine_move = False
-
-        if response := self._make_book_move():
-            move, weight, learn = response
-            message = f'Book:    {self._format_move(move):14} {self._format_book_info(weight, learn)}'
-        elif response := self._make_opening_explorer_move():
-            move, perfomance, wdl = response
-            message = f'Explore: {self._format_move(move):14} Performance: {perfomance}      WDL: {wdl[0]}/{wdl[1]}/{wdl[2]}'
-        elif response := self._make_cloud_move():
-            move, cp_score, depth = response
-            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), chess.WHITE)
-            message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     Depth: {depth}'
-        elif response := self._make_chessdb_move():
-            move, cp_score, depth = response
-            pov_score = chess.engine.PovScore(chess.engine.Cp(cp_score), self.board.turn)
-            message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     Depth: {depth}'
-        elif response := self._make_gaviota_move():
-            move, outcome, dtm, offer_draw, resign = response
-            message = f'Gaviota: {self._format_move(move):14} {self._format_egtb_info(outcome, dtm=dtm)}'
-            self.stop_pondering()
-        elif response := self._make_syzygy_move():
-            move, outcome, dtz, offer_draw, resign = response
-            message = f'Syzygy:  {self._format_move(move):14} {self._format_egtb_info(outcome, dtz=dtz)}'
-            self.stop_pondering()
-        elif response := self._make_egtb_move():
-            uci_move, outcome, dtz, dtm, offer_draw, resign = response
-            move = chess.Move.from_uci(uci_move)
-            message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
+        for move_source in self.move_sources:
+            if response := move_source():
+                move, message, offer_draw, resign = response
+                engine_move = False
+                break
         else:
             move, info = self._make_engine_move()
             message = f'Engine:  {self._format_move(move):14} {self._format_engine_info(info)}'
@@ -183,12 +160,7 @@ class Lichess_Game:
 
         return True
 
-    def _make_book_move(self) -> tuple[chess.Move, Weight, Learn] | None:
-        enabled = self.config['engine']['opening_books']['enabled']
-
-        if not enabled:
-            return
-
+    def _make_book_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_book_counter >= 10
         max_depth = self.config['engine']['opening_books'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
@@ -212,7 +184,8 @@ class Lichess_Game:
                     self.out_of_book_counter = 0
                     weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
                     learn = entry.learn if read_learn else 0
-                    return entry.move, weight, learn
+                    message = f'Book:    {self._format_move(entry.move):14} {self._format_book_info(weight, learn)}'
+                    return entry.move, message, False, False
 
         self.out_of_book_counter += 1
 
@@ -240,12 +213,7 @@ class Lichess_Game:
 
             return []
 
-    def _make_opening_explorer_move(self) -> tuple[chess.Move, Performance, tuple[int, int, int]] | None:
-        enabled = self.config['engine']['online_moves']['opening_explorer']['enabled']
-
-        if not enabled:
-            return
-
+    def _make_opening_explorer_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_opening_explorer_counter >= 5
         max_depth = self.config['engine']['online_moves']['opening_explorer'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
@@ -281,7 +249,9 @@ class Lichess_Game:
                     move = chess.Move.from_uci(top_move['uci'])
                     if not self._is_repetition(move):
                         self.opening_explorer_counter += 1
-                        return move, top_move['performance'], (top_move['wins'], top_move['draws'], top_move['losses'])
+                        message = f'Explore: {self._format_move(move):14} Performance: {top_move["performance"]}' \
+                                  f'      WDL: {top_move["wins"]}/{top_move["draws"]}/{top_move["losses"]}'
+                        return move, message, False, False
 
             self.out_of_opening_explorer_counter += 1
         else:
@@ -304,12 +274,7 @@ class Lichess_Game:
             top_move['losses'] = top_move['black'] if self.board.turn else top_move['white']
             return top_move
 
-    def _make_cloud_move(self) -> tuple[chess.Move, CP_Score, Depth] | None:
-        enabled = self.config['engine']['online_moves']['lichess_cloud']['enabled']
-
-        if not enabled:
-            return
-
+    def _make_cloud_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_cloud_counter >= 5
         max_depth = self.config['engine']['online_moves']['lichess_cloud'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
@@ -334,18 +299,15 @@ class Lichess_Game:
                     move = chess.Move.from_uci(response['pvs'][0]['moves'].split()[0])
                     if not self._is_repetition(move):
                         self.cloud_counter += 1
-                        return move, response['pvs'][0]['cp'], response['depth']
+                        pov_score = chess.engine.PovScore(chess.engine.Cp(response['pvs'][0]['cp']), chess.WHITE)
+                        message = f'Cloud:   {self._format_move(move):14} {self._format_score(pov_score)}     Depth: {response["depth"]}'
+                        return move, message, False, False
 
             self.out_of_cloud_counter += 1
         else:
             self._reduce_own_time(timeout * 1000)
 
-    def _make_chessdb_move(self) -> tuple[chess.Move, CP_Score, Depth] | None:
-        enabled = self.config['engine']['online_moves']['chessdb']['enabled']
-
-        if not enabled:
-            return
-
+    def _make_chessdb_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_chessdb_counter >= 5
         max_depth = self.config['engine']['online_moves']['chessdb'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
@@ -368,18 +330,15 @@ class Lichess_Game:
                     move = chess.Move.from_uci(response['pv'][0])
                     if not self._is_repetition(move):
                         self.chessdb_counter += 1
-                        return move, response['score'], response['depth']
+                        pov_score = chess.engine.PovScore(chess.engine.Cp(response['score']), self.board.turn)
+                        message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     Depth: {response["depth"]}'
+                        return move, message, False, False
 
             self.out_of_chessdb_counter += 1
         else:
             self._reduce_own_time(timeout * 1000)
 
-    def _make_gaviota_move(self) -> tuple[chess.Move, Outcome, DTM, Offer_Draw, Resign] | None:
-        enabled = self.config['engine']['gaviota']['enabled']
-
-        if not enabled:
-            return
-
+    def _make_gaviota_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         assert self.gaviota_tablebase
         is_endgame = chess.popcount(self.board.occupied) <= self.config['engine']['gaviota']['max_pieces']
         incompatible_variant = self.board.uci_variant != 'chess'
@@ -428,18 +387,27 @@ class Lichess_Game:
                 best_dtm = dtm
 
         if best_wdl == 2:
-            return random.choice(best_moves), 'win', best_dtm, False, False
+            move = random.choice(best_moves)
+            egtb_info = self._format_egtb_info('win', dtm=best_dtm)
+            offer_draw = False
+            resign = False
         elif best_wdl == 0:
-            return best_moves[0], 'draw', 0, True, False
+            move = best_moves[0]
+            egtb_info = self._format_egtb_info('draw', dtm=0)
+            offer_draw = True
+            resign = False
         elif best_wdl == -2:
-            return random.choice(best_moves), 'loss', best_dtm, False, True
-
-    def _make_syzygy_move(self) -> tuple[chess.Move, Outcome, DTZ, Offer_Draw, Resign] | None:
-        enabled = self.config['engine']['syzygy']['enabled'] and self.config['engine']['syzygy']['instant_play']
-
-        if not enabled:
+            move = random.choice(best_moves)
+            egtb_info = self._format_egtb_info('loss', dtm=best_dtm)
+            offer_draw = False
+            resign = True
+        else:
             return
 
+        self.stop_pondering()
+        return move, f'Gaviota: {self._format_move(move):14} {egtb_info}', offer_draw, resign
+
+    def _make_syzygy_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         assert self.syzygy_tablebase
         is_endgame = chess.popcount(self.board.occupied) <= self.config['engine']['syzygy']['max_pieces']
         incompatible_variant = self.board.uci_variant not in ['chess', 'antichess', 'atomic']
@@ -496,15 +464,33 @@ class Lichess_Game:
                 best_real_dtz = real_dtz
 
         if best_wdl == 2:
-            return random.choice(best_moves), 'win', best_real_dtz, False, False
+            move = random.choice(best_moves)
+            egtb_info = self._format_egtb_info('win', dtz=best_real_dtz)
+            offer_draw = False
+            resign = False
         elif best_wdl == 1:
-            return random.choice(best_moves), 'cursed win', best_real_dtz, False, False
+            move = random.choice(best_moves)
+            egtb_info = self._format_egtb_info('cursed win', dtz=best_real_dtz)
+            offer_draw = False
+            resign = False
         elif best_wdl == 0:
-            return best_moves[0], 'draw', best_real_dtz, True, False
+            move = best_moves[0]
+            egtb_info = self._format_egtb_info('draw', dtz=best_real_dtz)
+            offer_draw = True
+            resign = False
         elif best_wdl == -1:
-            return best_moves[0], 'blessed loss', best_real_dtz, True, False
+            move = best_moves[0]
+            egtb_info = self._format_egtb_info('blessed loss', dtz=best_real_dtz)
+            offer_draw = True
+            resign = False
         else:
-            return random.choice(best_moves), 'loss', best_real_dtz, False, True
+            move = random.choice(best_moves)
+            egtb_info = self._format_egtb_info('loss', dtz=best_real_dtz)
+            offer_draw = False
+            resign = True
+
+        self.stop_pondering()
+        return move, f'Syzygy:  {self._format_move(move):14} {egtb_info}', offer_draw, resign
 
     def _value_to_wdl(self, value: int, halfmove_clock: int) -> int:
         if value > 0:
@@ -548,12 +534,7 @@ class Lichess_Game:
 
         return tablebase
 
-    def _make_egtb_move(self) -> tuple[UCI_Move, Outcome, DTZ, DTM | None, Offer_Draw, Resign] | None:
-        enabled = self.config['engine']['online_moves']['online_egtb']['enabled']
-
-        if not enabled:
-            return
-
+    def _make_egtb_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         max_pieces = 7 if self.board.uci_variant == 'chess' else 6
         is_endgame = chess.popcount(self.board.occupied) <= max_pieces
         has_time = self._has_time(self.config['engine']['online_moves']['online_egtb']['min_time'])
@@ -573,7 +554,9 @@ class Lichess_Game:
             dtm: int | None = response['dtm']
             offer_draw = outcome in ['draw', 'blessed loss']
             resign = outcome == 'loss'
-            return uci_move, outcome, dtz, dtm, offer_draw, resign
+            move = chess.Move.from_uci(uci_move)
+            message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
+            return move, message, offer_draw, resign
         else:
             self._reduce_own_time(timeout * 1000)
 
@@ -672,7 +655,7 @@ class Lichess_Game:
 
         return delimiter.join(filter(None, [outcome_str, dtz_str, dtm_str]))
 
-    def _format_book_info(self, weight: Weight, learn: Learn) -> str:
+    def _format_book_info(self, weight: float, learn: int) -> str:
         weight_str = f'{weight:>5.0f} %'
         performance, wdl = self._deserialize_learn(learn)
         performance_str = f'Performance: {performance}' if learn else ''
@@ -734,6 +717,39 @@ class Lichess_Game:
             board.push_uci(uci_move)
 
         return board
+
+    def _get_move_sources(self) -> list[Callable[[], tuple[chess.Move, Message, Offer_Draw, Resign] | None]]:
+        opening_sources: dict[Callable[[], tuple[chess.Move, Message, Offer_Draw, Resign] | None], int] = {}
+
+        if self.config['engine']['opening_books']['enabled']:
+            opening_sources[self._make_book_move] = self.config['engine']['opening_books'].get('priority', 400)
+
+        if self.config['engine']['online_moves']['opening_explorer']['enabled']:
+            opening_sources[self._make_opening_explorer_move] = self.config['engine']['online_moves']['opening_explorer'].get(
+                'priority', 300)
+
+        if self.config['engine']['online_moves']['lichess_cloud']['enabled']:
+            opening_sources[self._make_cloud_move] = self.config['engine']['online_moves']['lichess_cloud'].get(
+                'priority', 200)
+
+        if self.config['engine']['online_moves']['chessdb']['enabled']:
+            opening_sources[self._make_chessdb_move] = self.config['engine']['online_moves']['chessdb'].get(
+                'priority', 100)
+
+        move_sources = [opening_source for opening_source, _ in sorted(
+            opening_sources.items(), key=lambda item: item[1], reverse=True)]
+
+        if self.config['engine']['gaviota']['enabled']:
+            move_sources.append(self._make_gaviota_move)
+
+        if self.config['engine']['syzygy']['enabled'] and self.config['engine']['syzygy']['instant_play']:
+            move_sources.append(self._make_syzygy_move)
+
+        if self.config['engine']['online_moves']['online_egtb']['enabled']:
+            move_sources.append(self._make_egtb_move)
+
+        print(move_sources)
+        return move_sources
 
     def _get_move_overhead(self) -> int:
         multiplier = self.config.get('move_overhead_multiplier', 1.0)
