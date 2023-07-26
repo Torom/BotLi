@@ -418,9 +418,6 @@ disable=missing-module-docstring,
         missing-class-docstring,
         missing-function-docstring,
         inconsistent-return-statements,
-        no-else-continue,
-        no-else-return,
-        no-else-raise,
         invalid-name
 
 # Enable the message, report, category or checker with the given id(s). You can
