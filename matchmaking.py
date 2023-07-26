@@ -118,18 +118,20 @@ class Matchmaking:
         estimated_game_duration = self.initial_time + self.increment * 40
         if estimated_game_duration < 179:
             return Perf_Type.BULLET
-        elif estimated_game_duration < 479:
+
+        if estimated_game_duration < 479:
             return Perf_Type.BLITZ
-        elif estimated_game_duration < 1499:
+
+        if estimated_game_duration < 1499:
             return Perf_Type.RAPID
-        else:
-            return Perf_Type.CLASSICAL
+
+        return Perf_Type.CLASSICAL
 
     def _perf_type_to_variant(self, perf_type: Perf_Type) -> Variant:
         if perf_type in [Perf_Type.BULLET, Perf_Type.BLITZ, Perf_Type.RAPID, Perf_Type.CLASSICAL]:
             return Variant.STANDARD
-        else:
-            return Variant(perf_type.value)
+
+        return Variant(perf_type.value)
 
     def _is_bot_busy(self, bot: Bot) -> bool:
         bot_status = self.api.get_user_status(bot.username)

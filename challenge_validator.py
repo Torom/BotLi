@@ -43,31 +43,37 @@ class Challenge_Validator:
             if is_bot:
                 print('Bots are not allowed according to config.')
                 return Decline_Reason.NO_BOT
-            else:
-                print('Only bots are allowed according to config.')
-                return Decline_Reason.ONLY_BOT
+
+            print('Only bots are allowed according to config.')
+            return Decline_Reason.ONLY_BOT
 
         increment = challenge_event['challenge']['timeControl']['increment']
         initial = challenge_event['challenge']['timeControl']['limit']
         if not self.time_controls:
             print('No time control is allowed according to config.')
             return Decline_Reason.GENERIC
-        elif speed not in self.time_controls:
+
+        if speed not in self.time_controls:
             print(f'Time control "{speed}" is not allowed according to config.')
             return Decline_Reason.TIME_CONTROL
-        elif increment < self.min_increment:
+
+        if increment < self.min_increment:
             print(f'Increment {increment} is too short according to config.')
             return Decline_Reason.TOO_FAST
-        elif increment > self.max_increment:
+
+        if increment > self.max_increment:
             print(f'Increment {increment} is too long according to config.')
             return Decline_Reason.TOO_SLOW
-        elif initial < self.min_initial:
+
+        if initial < self.min_initial:
             print(f'Initial time {initial} is too short according to config.')
             return Decline_Reason.TOO_FAST
-        elif initial > self.max_initial:
+
+        if initial > self.max_initial:
             print(f'Initial time {initial} is too long according to config.')
             return Decline_Reason.TOO_SLOW
-        elif is_bot and speed == 'bullet' and increment == 0 and self.bullet_with_increment_only:
+
+        if is_bot and speed == 'bullet' and increment == 0 and self.bullet_with_increment_only:
             print('Bullet against bots is only allowed with increment according to config.')
             return Decline_Reason.TOO_FAST
 
@@ -76,6 +82,7 @@ class Challenge_Validator:
         if is_rated and 'rated' not in modes:
             print('Rated is not allowed according to config.')
             return Decline_Reason.CASUAL
-        elif is_casual and 'casual' not in modes:
+
+        if is_casual and 'casual' not in modes:
             print('Casual is not allowed according to config.')
             return Decline_Reason.RATED

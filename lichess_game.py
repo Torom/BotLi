@@ -199,19 +199,21 @@ class Lichess_Game:
 
         if self.board.chess960 and 'chess960' in books:
             return [chess.polyglot.open_reader(book) for book in books['chess960']]
-        elif self.board.uci_variant == 'chess':
+
+        if self.board.uci_variant == 'chess':
             if self.game_info.is_white and 'white' in books:
                 return [chess.polyglot.open_reader(book) for book in books['white']]
-            elif not self.game_info.is_white and 'black' in books:
+
+            if not self.game_info.is_white and 'black' in books:
                 return [chess.polyglot.open_reader(book) for book in books['black']]
 
             return [chess.polyglot.open_reader(book) for book in books['standard']] if 'standard' in books else []
-        else:
-            for key in books:
-                if key.lower() in [alias.lower() for alias in self.board.aliases]:
-                    return [chess.polyglot.open_reader(book) for book in books[key]]
 
-            return []
+        for key in books:
+            if key.lower() in [alias.lower() for alias in self.board.aliases]:
+                return [chess.polyglot.open_reader(book) for book in books[key]]
+
+        return []
 
     def _make_opening_explorer_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_opening_explorer_counter >= 5
@@ -267,12 +269,12 @@ class Lichess_Game:
                 move['losses'] = move['black'] if self.board.turn else move['white']
 
             return max(moves, key=lambda move: (move['wins'] - move['losses']) / (move['white'] + move['draws'] + move['black']))
-        else:
-            min_or_max = min if anti else max
-            top_move = min_or_max(moves, key=lambda move: move['performance'])
-            top_move['wins'] = top_move['white'] if self.board.turn else top_move['black']
-            top_move['losses'] = top_move['black'] if self.board.turn else top_move['white']
-            return top_move
+
+        min_or_max = min if anti else max
+        top_move = min_or_max(moves, key=lambda move: move['performance'])
+        top_move['wins'] = top_move['white'] if self.board.turn else top_move['black']
+        top_move['losses'] = top_move['black'] if self.board.turn else top_move['white']
+        return top_move
 
     def _make_cloud_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_cloud_counter >= 5
@@ -496,15 +498,16 @@ class Lichess_Game:
         if value > 0:
             if value + halfmove_clock <= 100:
                 return 2
-            else:
-                return 1
-        elif value < 0:
+
+            return 1
+
+        if value < 0:
             if value - halfmove_clock >= -100:
                 return -2
-            else:
-                return -1
-        else:
-            return 0
+
+            return -1
+
+        return 0
 
     def _get_syzygy_tablebase(self) -> chess.syzygy.Tablebase | None:
         enabled = self.config['engine']['syzygy']['enabled'] and self.config['engine']['syzygy']['instant_play']
@@ -557,8 +560,8 @@ class Lichess_Game:
             move = chess.Move.from_uci(uci_move)
             message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
             return move, message, offer_draw, resign
-        else:
-            self._reduce_own_time(timeout * 1000)
+
+        self._reduce_own_time(timeout * 1000)
 
     def _make_engine_move(self) -> tuple[chess.Move, chess.engine.InfoDict]:
         if len(self.board.move_stack) < 2:
@@ -591,9 +594,9 @@ class Lichess_Game:
         if self.board.turn:
             move_number = str(self.board.fullmove_number) + '.'
             return f'{move_number:4} {self.board.san(move)}'
-        else:
-            move_number = str(self.board.fullmove_number) + '...'
-            return f'{move_number:6} {self.board.san(move)}'
+
+        move_number = str(self.board.fullmove_number) + '...'
+        return f'{move_number:6} {self.board.san(move)}'
 
     def _format_engine_info(self, info: chess.engine.InfoDict) -> str:
         info_score = info.get('score')
@@ -628,24 +631,27 @@ class Lichess_Game:
     def _format_number(self, number: int) -> str:
         if number >= 1_000_000_000_000:
             return f'{number/1_000_000_000_000:5.1f} T'
-        elif number >= 1_000_000_000:
+
+        if number >= 1_000_000_000:
             return f'{number/1_000_000_000:5.1f} G'
-        elif number >= 1_000_000:
+
+        if number >= 1_000_000:
             return f'{number/1_000_000:5.1f} M'
-        elif number >= 1_000:
+
+        if number >= 1_000:
             return f'{number/1_000:5.1f} k'
-        else:
-            return f'{number:5}  '
+
+        return f'{number:5}  '
 
     def _format_score(self, score: chess.engine.PovScore) -> str:
         if not score.is_mate():
             if cp_score := score.pov(self.board.turn).score():
                 cp_score /= 100
                 return format(cp_score, '+7.2f')
-            else:
-                return '   0.00'
-        else:
-            return str(score.pov(self.board.turn))
+
+            return '   0.00'
+
+        return str(score.pov(self.board.turn))
 
     def _format_egtb_info(self, outcome: Outcome, dtz: DTZ | None = None, dtm: DTM | None = None) -> str:
         outcome_str = f'{outcome:>7}'

@@ -24,7 +24,8 @@ class Challenger:
 
                     # More api challenge responses expected
                     continue
-                elif response.was_accepted:
+
+                if response.was_accepted:
                     yield Challenge_Response(success=True)
                 elif response.error:
                     print(response.error)

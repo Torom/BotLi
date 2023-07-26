@@ -28,7 +28,8 @@ def load_config(config_path: str) -> dict:
     for section in sections:
         if section[0] not in CONFIG:
             raise RuntimeError(f'Your {config_path} does not have required section `{section[0]}`.')
-        elif not isinstance(CONFIG[section[0]], section[1]):
+
+        if not isinstance(CONFIG[section[0]], section[1]):
             raise TypeError(section[2])
 
     engine_sections = [
@@ -46,6 +47,7 @@ def load_config(config_path: str) -> dict:
     for subsection in engine_sections:
         if subsection[0] not in CONFIG['engine']:
             raise RuntimeError(f'Your {config_path} does not have required `engine` subsection `{subsection[0]}`.')
+
         if not isinstance(CONFIG['engine'][subsection[0]], subsection[1]):
             raise TypeError(f'`engine` subsection {subsection[2]}')
 
@@ -58,6 +60,7 @@ def load_config(config_path: str) -> dict:
         if subsection[0] not in CONFIG['engine']['syzygy']:
             raise RuntimeError(f'Your {config_path} does not have required '
                                f'`engine` `syzygy` subsection `{subsection[0]}`.')
+
         if not isinstance(CONFIG['engine']['syzygy'][subsection[0]], subsection[1]):
             raise TypeError(f'`engine` `syzygy` subsection {subsection[2]}')
 
@@ -69,6 +72,7 @@ def load_config(config_path: str) -> dict:
         if subsection[0] not in CONFIG['engine']['gaviota']:
             raise RuntimeError(f'Your {config_path} does not have required '
                                f'`engine` `gaviota` subsection `{subsection[0]}`.')
+
         if not isinstance(CONFIG['engine']['gaviota'][subsection[0]], subsection[1]):
             raise TypeError(f'`engine` `gaviota` subsection {subsection[2]}')
 
@@ -82,6 +86,7 @@ def load_config(config_path: str) -> dict:
         if subsection[0] not in CONFIG['engine']['variants']:
             raise RuntimeError(f'Your {config_path} does not have required '
                                f'`engine` `variants` subsection `{subsection[0]}`.')
+
         if not isinstance(CONFIG['engine']['variants'][subsection[0]], subsection[1]):
             raise TypeError(f'`engine` `variants` subsection {subsection[2]}')
 
@@ -94,6 +99,7 @@ def load_config(config_path: str) -> dict:
         if subsection[0] not in CONFIG['engine']['online_moves']:
             raise RuntimeError(f'Your {config_path} does not have required '
                                f'`engine` `online_moves` subsection `{subsection[0]}`.')
+
         if not isinstance(CONFIG['engine']['online_moves'][subsection[0]], subsection[1]):
             raise TypeError(f'`engine` `online_moves` subsection {subsection[2]}')
 

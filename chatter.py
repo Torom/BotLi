@@ -43,7 +43,8 @@ class Chatter:
             if chat_message.room == 'player':
                 print(f'{chat_message.username}: {chat_message.text}')
             return
-        elif chat_message.username != self.api.username:
+
+        if chat_message.username != self.api.username:
             print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
 
         if chat_message.text.startswith('!'):
@@ -73,24 +74,33 @@ class Chatter:
         command = chat_message.text[1:].lower()
         if command == 'cpu':
             return self.cpu_message
-        elif command == 'draw':
+
+        if command == 'draw':
             return self.draw_message
-        elif command == 'eval':
+
+        if command == 'eval':
             return self.last_message
-        elif command == 'motor':
+
+        if command == 'motor':
             return self.lichess_game.engine.id['name']
-        elif command == 'name':
+
+        if command == 'name':
             return f'{self.api.username} running {self.lichess_game.engine.id["name"]} (BotLi {self.version})'
-        elif command == 'printeval':
+
+        if command == 'printeval':
             if not self.game_info.increment_ms and self.game_info.initial_time_ms < 180_000:
                 return 'Time control is too fast for this function.'
+
             self.print_eval_rooms.add(chat_message.room)
             return self.last_message
-        elif command == 'stopeval':
+
+        if command == 'stopeval':
             self.print_eval_rooms.discard(chat_message.room)
-        elif command == 'ram':
+
+        if command == 'ram':
             return self.ram_message
-        elif command in ['help', 'commands']:
+
+        if command in ['help', 'commands']:
             return 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval / !stopeval, !ram'
 
     def _get_cpu(self) -> str:

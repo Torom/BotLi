@@ -68,10 +68,10 @@ class UserInterface:
 
         while self.is_running:
             command = input().split()
-
             if len(command) == 0:
                 continue
-            elif command[0] == 'blacklist':
+
+            if command[0] == 'blacklist':
                 self._blacklist(command)
             elif command[0] == 'challenge':
                 self._challenge(command)
