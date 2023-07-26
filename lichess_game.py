@@ -2,7 +2,7 @@ import os
 import random
 import subprocess
 from collections import deque
-from typing import Callable
+from collections.abc import Callable
 
 import chess
 import chess.engine
