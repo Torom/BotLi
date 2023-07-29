@@ -4,7 +4,7 @@
 
 It has a customizable support of Polyglot opening books, a variety of supported online opening books and an online endgame tablebase. It can query local Syzygy and Gaviota endgame tablebases.
 
-In addition, BotLi can autonomously challenge other bots in any variants. It optionally supports two separate engines, one for standard chess and chess960 and one for Lichess chess variants.
+In addition, BotLi can autonomously challenge other bots in any variants with Bullet, Blitz, Rapid and Classical timing controls and does not support Correspondence. It optionally supports two separate engines, one for standard chess and chess960 and one for Lichess chess variants.
 
 # How to install
 
