@@ -369,7 +369,7 @@ class Lichess_Game:
                 if board_copy.is_check():
                     dtm -= 1
 
-                if board_copy.halfmove_clock == 0:
+                if self.board.is_capture(move):
                     dtm -= 2
 
             if best_moves:
@@ -443,7 +443,7 @@ class Lichess_Game:
                 if board_copy.is_check():
                     dtz -= 1
 
-                if board_copy.halfmove_clock == 0:
+                if self.board.is_capture(move):
                     dtz -= 2
 
             if best_moves:
