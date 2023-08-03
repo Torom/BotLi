@@ -114,7 +114,7 @@ class Lichess_Game:
         try:
             self.engine.quit()
         except TimeoutError:
-            print('Enginge could not be terminated cleanly.')
+            print('Engine could not be terminated cleanly.')
 
         self.engine.close()
 
