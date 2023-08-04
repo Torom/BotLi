@@ -63,3 +63,8 @@ class Perf_Type(Enum):
     KING_OF_THE_HILL = 'kingOfTheHill'
     RACING_KINGS = 'racingKings'
     THREE_CHECK = 'threeCheck'
+
+
+class Busy_Reason(Enum):
+    OFFLINE = 'offline'
+    PLAYING = 'playing'

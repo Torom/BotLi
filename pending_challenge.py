@@ -33,3 +33,7 @@ class Pending_Challenge:
         self._is_misconfigured = challenge_response.is_misconfigured
         self._finished_event.set()
         self._challenge_id_event.set()
+
+    def return_early(self) -> None:
+        self._finished_event.set()
+        self._challenge_id_event.set()
