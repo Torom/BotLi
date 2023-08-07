@@ -118,7 +118,7 @@ class Lichess_Game:
 
         self.engine.close()
 
-        for book_reader in self.book_readers:
+        for book_reader in self.book_readers.values():
             book_reader.close()
 
         if self.syzygy_tablebase:
@@ -170,7 +170,7 @@ class Lichess_Game:
 
         read_learn = self.config['engine']['opening_books'].get('read_learn')
         selection = self.config['engine']['opening_books']['selection']
-        for book_reader in self.book_readers:
+        for name, book_reader in self.book_readers.items():
             entries = list(book_reader.find_all(self.board))
             if entries:
                 if selection == 'weighted_random':
@@ -184,36 +184,35 @@ class Lichess_Game:
                     self.out_of_book_counter = 0
                     weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
                     learn = entry.learn if read_learn else 0
-                    message = f'Book:    {self._format_move(entry.move):14} {self._format_book_info(weight, learn)}'
+                    name = name if len(self.book_readers) > 1 else ''
+                    message = f'Book:    {self._format_move(entry.move):14} {self._format_book_info(weight, learn)}     {name}'
                     return entry.move, message, False, False
 
         self.out_of_book_counter += 1
 
-    def _get_book_readers(self) -> list[chess.polyglot.MemoryMappedReader]:
+    def _get_book_readers(self) -> dict[str, chess.polyglot.MemoryMappedReader]:
         enabled = self.config['engine']['opening_books']['enabled']
 
         if not enabled:
-            return []
+            return {}
 
-        books: dict[str, list[str]] = self.config['engine']['opening_books']['books']
+        books: dict[str, dict[str, str]] = self.config['engine']['opening_books']['books']
 
         if self.board.chess960 and 'chess960' in books:
-            return [chess.polyglot.open_reader(book) for book in books['chess960']]
+            return {name: chess.polyglot.open_reader(path) for name, path in books['chess960'].items()}
 
         if self.board.uci_variant == 'chess':
             if self.game_info.is_white and 'white' in books:
-                return [chess.polyglot.open_reader(book) for book in books['white']]
+                return {name: chess.polyglot.open_reader(path) for name, path in books['white'].items()}
 
             if not self.game_info.is_white and 'black' in books:
-                return [chess.polyglot.open_reader(book) for book in books['black']]
-
-            return [chess.polyglot.open_reader(book) for book in books['standard']] if 'standard' in books else []
+                return {name: chess.polyglot.open_reader(path) for name, path in books['black'].items()}
 
         for key in books:
             if key.lower() in [alias.lower() for alias in self.board.aliases]:
-                return [chess.polyglot.open_reader(book) for book in books[key]]
+                return {name: chess.polyglot.open_reader(path) for name, path in books[key].items()}
 
-        return []
+        return {}
 
     def _make_opening_explorer_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_opening_explorer_counter >= 5
@@ -662,13 +661,14 @@ class Lichess_Game:
         return delimiter.join(filter(None, [outcome_str, dtz_str, dtm_str]))
 
     def _format_book_info(self, weight: float, learn: int) -> str:
-        weight_str = f'{weight:>5.0f} %'
-        performance, wdl = self._deserialize_learn(learn)
-        performance_str = f'Performance: {performance}' if learn else ''
-        wdl_str = f'WDL: {wdl[0]:5.1f} % {wdl[1]:5.1f} % {wdl[2]:5.1f} %' if learn else ''
+        output = [f'{weight:>5.0f} %']
+        if learn:
+            performance, wdl = self._deserialize_learn(learn)
+            output.append(f'Performance: {performance}')
+            output.append(f'WDL: {wdl[0]:5.1f} % {wdl[1]:5.1f} % {wdl[2]:5.1f} %')
         delimiter = 5 * ' '
 
-        return delimiter.join([weight_str, performance_str, wdl_str])
+        return delimiter.join(output)
 
     def _deserialize_learn(self, learn: int) -> tuple[Performance, tuple[float, float, float]]:
         performance = (learn >> 20) & 0b111111111111

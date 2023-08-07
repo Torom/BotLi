@@ -165,7 +165,7 @@ def load_config(config_path: str) -> dict:
                 if not os.path.isfile(CONFIG['books'][book]):
                     raise RuntimeError(f'The book "{book}" at "{CONFIG["books"][book]}" does not exist.')
 
-            CONFIG['engine']['opening_books']['books'][key] = [CONFIG['books'][book] for book in book_list]
+            CONFIG['engine']['opening_books']['books'][key] = {book: CONFIG['books'][book] for book in book_list}
 
     try:
         output = subprocess.check_output(['git', 'show', '-s', '--date=format:%Y%m%d',
