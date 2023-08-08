@@ -25,10 +25,10 @@ class Chatter:
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
         self.ram_message = self._get_ram()
-        self.player_greeting = self._format_message(config['messages'].get('greeting', ''))
-        self.player_goodbye = self._format_message(config['messages'].get('goodbye', ''))
-        self.spectator_greeting = self._format_message(config['messages'].get('greeting_spectators', ''))
-        self.spectator_goodbye = self._format_message(config['messages'].get('goodbye_spectators', ''))
+        self.player_greeting = self._format_message(config['messages'].get('greeting'))
+        self.player_goodbye = self._format_message(config['messages'].get('goodbye'))
+        self.spectator_greeting = self._format_message(config['messages'].get('greeting_spectators'))
+        self.spectator_goodbye = self._format_message(config['messages'].get('goodbye_spectators'))
         self.print_eval_rooms: set[str] = set()
 
     @property
@@ -56,15 +56,21 @@ class Chatter:
             self.api.send_chat_message(self.game_info.id_, room, self.last_message)
 
     def send_greetings(self) -> None:
-        self.api.send_chat_message(self.game_info.id_, 'player', self.player_greeting)
-        self.api.send_chat_message(self.game_info.id_, 'spectator', self.spectator_greeting)
+        if self.player_greeting:
+            self.api.send_chat_message(self.game_info.id_, 'player', self.player_greeting)
+
+        if self.spectator_greeting:
+            self.api.send_chat_message(self.game_info.id_, 'spectator', self.spectator_greeting)
 
     def send_goodbyes(self) -> None:
         if self.lichess_game.is_abortable:
             return
 
-        self.api.send_chat_message(self.game_info.id_, 'player', self.player_goodbye)
-        self.api.send_chat_message(self.game_info.id_, 'spectator', self.spectator_goodbye)
+        if self.player_goodbye:
+            self.api.send_chat_message(self.game_info.id_, 'player', self.player_goodbye)
+
+        if self.spectator_goodbye:
+            self.api.send_chat_message(self.game_info.id_, 'spectator', self.spectator_goodbye)
 
     def send_abortion_message(self) -> None:
         message = 'Too bad you weren\'t there. Feel free to challenge me again, I will accept the challenge when I have time.'
@@ -149,7 +155,10 @@ class Chatter:
         return f'The bot offers draw at move {min_game_length} or later ' \
             f'if the eval is within +{max_score:.2f} to -{max_score:.2f} for the last {consecutive_moves} moves.'
 
-    def _format_message(self, message: str) -> str:
+    def _format_message(self, message: str | None) -> str | None:
+        if not message:
+            return
+
         opponent_username = self.game_info.black_name if self.game_info.is_white else self.game_info.white_name
         mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.api.username,
                                     'engine': self.lichess_game.engine.id['name'], 'cpu': self.cpu_message,
