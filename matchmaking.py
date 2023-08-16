@@ -90,13 +90,24 @@ class Matchmaking:
         user_ratings = self._get_user_ratings()
 
         online_bots: defaultdict[Perf_Type, list[Bot]] = defaultdict(list)
+        bot_counts: defaultdict[str, int] = defaultdict(int)
         for bot in self.api.get_online_bots_stream():
-            is_ourselves = bot['username'] == self.api.username
-            is_blacklisted = bot['id'] in self.blacklist
-            is_disabled = 'disabled' in bot
-            has_tosViolation = self.is_rated and 'tosViolation' in bot
+            if bot['username'] == self.api.username:
+                continue
 
-            if is_ourselves or is_blacklisted or is_disabled or has_tosViolation:
+            bot_counts['online'] += 1
+
+            if 'disabled' in bot:
+                bot_counts['disabled'] += 1
+                continue
+
+            if 'tosViolation' in bot:
+                bot_counts['with tosViolation'] += 1
+                if self.is_rated:
+                    continue
+
+            if bot['id'] in self.blacklist:
+                bot_counts['blacklisted'] += 1
                 continue
 
             for perf_type in self.perf_types:
@@ -105,11 +116,19 @@ class Matchmaking:
                 if abs(rating_diff) >= self.min_rating_diff and abs(rating_diff) <= self.max_rating_diff:
                     online_bots[perf_type].append(Bot(bot['username'], rating_diff))
 
+        bot_counts['available'] = bot_counts['online'] - bot_counts['disabled'] - bot_counts['blacklisted']
+        if self.is_rated:
+            bot_counts['available'] -= bot_counts['with tosViolation']
+
+        for category, count in bot_counts.items():
+            if count:
+                print(f'{count:3} bots {category}')
+
         for perf_type, bots in online_bots.items():
             if not bots:
                 raise RuntimeError(f'No bots for {perf_type} in configured rating range online!')
 
-        self.next_update = datetime.now() + timedelta(minutes=30)
+        self.next_update = datetime.now() + timedelta(minutes=30.0)
         return online_bots
 
     def _get_user_ratings(self) -> dict[Perf_Type, int]:
