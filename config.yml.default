@@ -34,15 +34,17 @@ engine:                                   # Engine settings.
     enabled: false                        # Activate opening books.
     priority: 400                         # Priority with which this move source is used. Higher priority is used first.
     books:
+#     bullet:                             # List of names of books to use in bullet.
+#       - "BulletBook"
 #     white:                              # List of names of books to use as white.
 #       - "WhiteBook"
 #     black:                              # List of names of books to use as black.
 #       - "BlackBook"
-      standard:                           # List of names of books to use if there is no specific book for white, black or chess960.
+      standard:                           # List of names of books to use if there is no specific book for the time control, white, black or chess960.
         - "DefaultBook"
 #     chess960:                           # List of names of books to use for chess960.
 #       - "Chess960Book"
-#     Use the same pattern for 'antichess', 'atomic', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
+#     Use the same pattern for 'blitz', 'rapid', 'classical', 'antichess', 'atomic', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
     selection: "weighted_random"          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
 #   max_depth: 16                         # Half move max depth. (Comment this line for max depth)
   online_moves:

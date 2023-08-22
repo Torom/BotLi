@@ -67,6 +67,7 @@ class Game_Information:
     black_provisional: bool
     initial_time_ms: int
     increment_ms: int
+    speed: str
     rated: bool
     variant: Variant
     variant_name: str
@@ -91,6 +92,7 @@ class Game_Information:
         black_provisional = gameFull_event['black'].get('provisional', False)
         initial_time_ms = gameFull_event['clock']['initial']
         increment_ms = gameFull_event['clock']['increment']
+        speed = gameFull_event['speed']
         rated = gameFull_event['rated']
         variant = Variant(gameFull_event['variant']['key'])
         variant_name = gameFull_event['variant']['name']
@@ -100,7 +102,7 @@ class Game_Information:
 
         return Game_Information(id_, white_title, white_name, white_rating, white_ai_level, white_provisional,
                                 black_title, black_name, black_rating, black_ai_level, black_provisional,
-                                initial_time_ms, increment_ms, rated, variant, variant_name, initial_fen,
+                                initial_time_ms, increment_ms, speed, rated, variant, variant_name, initial_fen,
                                 is_white, state)
 
     @property

@@ -36,7 +36,7 @@ Within the file `config.yml`:
 ## Setup opening book
 To use an opening book, you have to enter a name of your choice and the path to the book at the end of the config in the `books` section.
 
-In the upper `engine: opening_books: books` section you only have to enter the name you just chose. In addition, different books can be used for white, black and chess960. If no specific book is defined, the `standard` books are used.
+In the upper `engine: opening_books: books` section you only have to enter the name you just chose. In addition, different books can be used depending on the time control, white, black and for all variants. If no specific book is defined, the `standard` books are used for standard chess.
 
 For example, the `books` section could look like this:
 ```yaml
@@ -50,6 +50,8 @@ A corresponding `engine: opening_books:` section could look like this:
   opening_books:
     enabled: true
     books:
+      bullet:
+        - "Goi"
       white:
         - "Perfect"
         - "Goi"

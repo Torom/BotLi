@@ -202,6 +202,9 @@ class Lichess_Game:
             return {name: chess.polyglot.open_reader(path) for name, path in books['chess960'].items()}
 
         if self.board.uci_variant == 'chess':
+            if self.game_info.speed in books:
+                return {name: chess.polyglot.open_reader(path) for name, path in books[self.game_info.speed].items()}
+
             if self.game_info.is_white and 'white' in books:
                 return {name: chess.polyglot.open_reader(path) for name, path in books['white'].items()}
 
