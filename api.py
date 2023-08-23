@@ -73,8 +73,8 @@ class API:
             was_accepted = data.get('done') == 'accepted'
             error = data.get('error')
             was_declined = data.get('done') == 'declined'
-            invalid_initial = 'Invalid value' in data.get('clock.limit', [])
-            invalid_increment = 'Invalid value' in data.get('clock.increment', [])
+            invalid_initial = 'clock.limit' in data
+            invalid_increment = 'clock.increment' in data
             response_queue.put(API_Challenge_Reponse(challenge_id, was_accepted, error,
                                was_declined, invalid_initial, invalid_increment))
 

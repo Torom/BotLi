@@ -27,9 +27,6 @@ class Challenger:
 
                 if response.was_accepted:
                     yield Challenge_Response(success=True)
-                elif response.error:
-                    print(response.error)
-                    yield Challenge_Response(success=False)
                 elif response.was_declined:
                     yield Challenge_Response(success=False)
                 elif response.has_reached_rate_limit:
@@ -41,6 +38,9 @@ class Challenger:
                 elif response.invalid_increment:
                     print('Challenge failed due to invalid increment time.')
                     yield Challenge_Response(success=False, is_misconfigured=True)
+                elif response.error:
+                    print(response.error)
+                    yield Challenge_Response(success=False)
 
                 # End of api challenge response
                 return
