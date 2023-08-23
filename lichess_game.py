@@ -23,8 +23,8 @@ class Lichess_Game:
         self.api = api
         self.game_info = game_information
         self.board = self._setup_board()
-        self.white_time_ms = game_information.state['wtime']
-        self.black_time_ms = game_information.state['btime']
+        self.white_time_ms: int = game_information.state['wtime']
+        self.black_time_ms: int = game_information.state['btime']
         self.status = Game_Status(game_information.state['status'])
         self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
         self.resign_enabled: bool = config['engine']['resign']['enabled']
@@ -101,6 +101,10 @@ class Lichess_Game:
     def is_finished(self) -> bool:
         return self.status != Game_Status.STARTED
 
+    @property
+    def own_time_ms(self) -> int:
+        return self.white_time_ms if self.game_info.is_white else self.black_time_ms
+
     def start_pondering(self) -> None:
         if self.ponder_enabled:
             self.engine.analysis(self.board)
@@ -174,7 +178,7 @@ class Lichess_Game:
             entries = list(book_reader.find_all(self.board))
             if entries:
                 if selection == 'weighted_random':
-                    entry, = random.choices(entries, [entry.weight for entry in entries], k=1)
+                    entry, = random.choices(entries, [entry.weight for entry in entries])
                 elif selection == 'uniform_random':
                     entry = random.choice(entries)
                 else:
