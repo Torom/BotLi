@@ -124,24 +124,22 @@ challenge:                                # Incoming challenges. (Commenting all
     - rated                               # Rated games
 
 matchmaking:
-  initial_time: 60                        # Initial time for matchmaking mode.
-  increment: 1                            # Increment time for matchmaking mode.
-  rated: true                             # Activate rated games in matchmaking mode.
-  timeout: 30                             # Time until a challenge is canceled.
-  variants:                               # Chess variants (https://lichess.org/variant) to challenge.
-    - standard
-#   - chess960
-#   - antichess
-#   - atomic
-#   - crazyhouse
-#   - horde
-#   - kingOfTheHill
-#   - racingKings
-#   - threeCheck
-# min_rating_diff: 0                      # Minimum rating distance to opponent. (Commenting allowed)
-# max_rating_diff: 300                    # Maximum rating distance to opponent. (Commenting allowed)
   delay: 10                               # Time in seconds the bot must be idle before a new challenge is started.
-  multiplier: 15                          # Multiplier for calculating timeouts in matchmaking. Higher values lead to a wider range of opponents.
+  timeout: 30                             # Time until a challenge is canceled.
+  types:                                  # Matchmaking types of which one is randomly selected before each game.
+    bullet:                               # Arbitrary name of the matchmaking type. Names must be unique.
+      tc: 1+1                             # Time control in initial_minutes+increment_seconds format.
+      rated: true                         # Whether matchmaking should play rated games.
+      variant: standard                   # Chess variant (https://lichess.org/variant) to challenge.
+      weight: 100                         # Weight with which this type is selected. (Default: 100)
+      multiplier: 15                      # Multiplier for calculating timeouts in matchmaking. Higher values lead to a wider range of opponents.
+#     min_rating_diff: 0                  # Minimum rating distance to opponent.
+#     max_rating_diff: 300                # Maximum rating distance to opponent.
+#   casual_chess960:
+#     tc: 0.5+1
+#     rated: false
+#     variant: chess960
+#     weight: 50
 
 messages:
   # Optional substitution keywords (include curly braces):

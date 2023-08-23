@@ -1,9 +1,8 @@
 import json
 import os
-import random
 from datetime import datetime, timedelta
 
-from botli_dataclasses import Bot
+from botli_dataclasses import Bot, Matchmaking_Type
 from enums import Challenge_Color, Perf_Type
 
 
@@ -13,7 +12,7 @@ class Matchmaking_Data:
         self.multiplier = multiplier
         self.color = color
 
-    def __dict__(self) -> dict:
+    def to_dict(self) -> dict:
         return {'release_time': self.release_time.isoformat(timespec='seconds'),
                 'multiplier': self.multiplier}
 
@@ -34,9 +33,9 @@ class Opponent:
 
         return Opponent(username, data)
 
-    def __dict__(self) -> dict:
+    def to_dict(self) -> dict:
         dict_: dict[str, str | dict] = {'username': self.username}
-        dict_.update({perf_type.value: data.__dict__() for perf_type, data in self.data.items()})
+        dict_.update({perf_type.value: data.to_dict() for perf_type, data in self.data.items()})
 
         return dict_
 
@@ -48,45 +47,40 @@ class Opponent:
 
 
 class Opponents:
-    def __init__(
-            self,
-            perf_types: list[Perf_Type],
-            estimated_game_duration: timedelta,
-            delay: int,
-            matchmaking_multiplier: int,
-            username: str
-    ) -> None:
-        self.perf_types = perf_types
-        self.estimated_game_duration = estimated_game_duration
+    def __init__(self, delay: int, username: str) -> None:
         self.delay = timedelta(seconds=delay)
-        self.matchmaking_multiplier = matchmaking_multiplier
         self.matchmaking_file = f'{username}_matchmaking.json'
-        self.opponent_list = self._load()
+        self.opponent_list = self._load(self.matchmaking_file)
         self.busy_bots: list[Bot] = []
-        self.last_opponent: tuple[Bot, Perf_Type, Challenge_Color] | None = None
+        self.last_opponent: tuple[Bot, Challenge_Color] | None = None
 
-    def get_next_opponent(self, online_bots: dict[Perf_Type, list[Bot]]) -> tuple[Bot, Perf_Type, Challenge_Color]:
-        perf_type = random.choice(self.perf_types)
-
+    def get_next_opponent(self, online_bots: dict[Perf_Type, list[Bot]], matchmaking_type: Matchmaking_Type) -> tuple[Bot, Challenge_Color]:
         while True:
-            for bot in sorted(online_bots[perf_type], key=lambda bot: abs(bot.rating_diff)):
-                opponent = self._find(perf_type, bot.username)
-                opponent_data = opponent.data[perf_type]
+            for bot in sorted(online_bots[matchmaking_type.perf_type], key=lambda bot: abs(bot.rating_diff)):
+                if matchmaking_type.rated and bot.tos_violation:
+                    continue
+
+                if not matchmaking_type.min_rating_diff <= abs(bot.rating_diff) <= matchmaking_type.max_rating_diff:
+                    continue
+
                 if bot in self.busy_bots:
                     continue
+
+                opponent = self._find(matchmaking_type.perf_type, bot.username)
+                opponent_data = opponent.data[matchmaking_type.perf_type]
                 if opponent_data.color == Challenge_Color.BLACK or opponent_data.release_time <= datetime.now():
-                    self.last_opponent = (bot, perf_type, opponent_data.color)
-                    return bot, perf_type, opponent_data.color
+                    self.last_opponent = (bot, opponent_data.color)
+                    return bot, opponent_data.color
 
             print('Resetting matchmaking ...')
-            self.reset_release_time(perf_type)
+            self.reset_release_time(matchmaking_type.perf_type)
 
-    def add_timeout(self, success: bool, game_duration: timedelta) -> None:
+    def add_timeout(self, success: bool, game_duration: timedelta, matchmaking_type: Matchmaking_Type) -> None:
         assert self.last_opponent
 
-        bot, perf_type, color = self.last_opponent
-        opponent = self._find(perf_type, bot.username)
-        opponent_data = opponent.data[perf_type]
+        bot, color = self.last_opponent
+        opponent = self._find(matchmaking_type.perf_type, bot.username)
+        opponent_data = opponent.data[matchmaking_type.perf_type]
 
         if success and opponent_data.multiplier > 1:
             opponent_data.multiplier //= 2
@@ -94,9 +88,9 @@ class Opponents:
             opponent_data.multiplier += 1
 
         opponent_multiplier = opponent_data.multiplier if opponent_data.multiplier >= 5 else 1
-        duration_ratio = game_duration / self.estimated_game_duration
-        timeout = duration_ratio ** 2 * self.estimated_game_duration + self.delay
-        timeout *= self.matchmaking_multiplier * opponent_multiplier
+        duration_ratio = game_duration / matchmaking_type.estimated_game_duration
+        timeout = duration_ratio ** 2 * matchmaking_type.estimated_game_duration + self.delay
+        timeout *= matchmaking_type.multiplier * opponent_multiplier
 
         if opponent_data.release_time > datetime.now():
             timeout += opponent_data.release_time - datetime.now()
@@ -114,7 +108,7 @@ class Opponents:
             self.opponent_list.append(opponent)
 
         self.busy_bots.clear()
-        self._save()
+        self._save(self.matchmaking_file)
 
     def skip_bot(self) -> None:
         assert self.last_opponent
@@ -139,13 +133,13 @@ class Opponents:
 
         return opponent
 
-    def _load(self) -> list[Opponent]:
-        if os.path.isfile(self.matchmaking_file):
-            with open(self.matchmaking_file, encoding='utf-8') as json_input:
+    def _load(self, matchmaking_file: str) -> list[Opponent]:
+        if os.path.isfile(matchmaking_file):
+            with open(matchmaking_file, encoding='utf-8') as json_input:
                 return [Opponent.from_dict(opponent) for opponent in json.load(json_input)]
         else:
             return []
 
-    def _save(self) -> None:
-        with open(self.matchmaking_file, 'w', encoding='utf-8') as json_output:
-            json.dump([opponent.__dict__() for opponent in self.opponent_list], json_output, indent=4)
+    def _save(self, matchmaking_file: str) -> None:
+        with open(matchmaking_file, 'w', encoding='utf-8') as json_output:
+            json.dump([opponent.to_dict() for opponent in self.opponent_list], json_output, indent=4)

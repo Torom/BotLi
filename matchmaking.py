@@ -1,8 +1,9 @@
+import random
 from collections import defaultdict
 from datetime import datetime, timedelta
 
 from api import API
-from botli_dataclasses import Bot, Challenge_Request, Challenge_Response
+from botli_dataclasses import Bot, Challenge_Request, Challenge_Response, Matchmaking_Type
 from challenger import Challenger
 from enums import Busy_Reason, Perf_Type, Variant
 from game import Game
@@ -14,34 +15,32 @@ class Matchmaking:
     def __init__(self, config: dict, api: API) -> None:
         self.api = api
         self.next_update = datetime.now()
-        self.initial_time: int = config['matchmaking']['initial_time']
-        self.increment: int = config['matchmaking']['increment']
-        self.is_rated: bool = config['matchmaking']['rated']
         self.timeout = max(config['matchmaking']['timeout'], 1)
-        self.min_rating_diff: int = config['matchmaking'].get('min_rating_diff', 0)
-        self.max_rating_diff: int = config['matchmaking'].get('max_rating_diff', float('inf'))
-        self.estimated_game_duration = timedelta(seconds=(self.initial_time + self.increment * 80) * 2)
-        self.perf_types = [self._variant_to_perf_type(variant) for variant in config['matchmaking']['variants']]
-        matchmaking_delay = config['matchmaking'].get('delay', 10)
-        matchmaking_multiplier = max(config['matchmaking'].get('multiplier', 15), 1)
-        self.opponents = Opponents(self.perf_types, self.estimated_game_duration,
-                                   matchmaking_delay, matchmaking_multiplier, self.api.username)
+        self.types = self._get_types(config)
+        self.opponents = Opponents(config['matchmaking'].get('delay', 10), self.api.username)
         self.challenger = Challenger(config, self.api)
         self.blacklist: list[str] = config.get('blacklist', [])
 
         self.game_start_time: datetime = datetime.now()
         self.online_bots: dict[Perf_Type, list[Bot]] = {}
+        self.current_type: Matchmaking_Type | None = None
 
     def create_challenge(self, pending_challenge: Pending_Challenge) -> None:
         if self._call_update():
             pending_challenge.return_early()
             return
 
-        opponent, perf_type, color = self.opponents.get_next_opponent(self.online_bots)
+        if not self.current_type:
+            self.current_type, = random.choices(self.types, [type.weight for type in self.types])
+            if len(self.types) > 1:
+                print(f'Picked matchmaking type {self.current_type.to_str}')
+
+        opponent, color = self.opponents.get_next_opponent(self.online_bots, self.current_type)
 
         if busy_reason := self._get_busy_reason(opponent):
             if busy_reason == Busy_Reason.PLAYING:
-                print(f'Skipping {opponent.username} ({opponent.rating_diff:+}) as {color.value} because it is playing ...')
+                print(f'Skipping {opponent.username} ({opponent.rating_diff:+}) '
+                      f'as {color.value} because it is playing ...')
                 self.opponents.skip_bot()
             elif busy_reason == Busy_Reason.OFFLINE:
                 print(f'Removing {opponent.username} from online bots because it is offline ...')
@@ -50,9 +49,11 @@ class Matchmaking:
             pending_challenge.return_early()
             return
 
-        print(f'Challenging {opponent.username} ({opponent.rating_diff:+}) as {color.value} to {perf_type.value} ...')
-        challenge_request = Challenge_Request(opponent.username, self.initial_time, self.increment,
-                                              self.is_rated, color, self._perf_type_to_variant(perf_type), self.timeout)
+        print(f'Challenging {opponent.username} ({opponent.rating_diff:+}) '
+              f'as {color.value} to {self.current_type.name} ...')
+        challenge_request = Challenge_Request(opponent.username, self.current_type.initial_time,
+                                              self.current_type.increment, self.current_type.rated, color,
+                                              self.current_type.variant, self.timeout)
 
         last_response: Challenge_Response | None = None
         for response in self.challenger.create(challenge_request):
@@ -62,7 +63,7 @@ class Matchmaking:
 
         assert last_response
         if not last_response.success and not (last_response.has_reached_rate_limit or last_response.is_misconfigured):
-            self.opponents.add_timeout(False, self.estimated_game_duration)
+            self.opponents.add_timeout(False, self.current_type.estimated_game_duration, self.current_type)
 
         pending_challenge.set_final_state(last_response)
 
@@ -70,13 +71,35 @@ class Matchmaking:
         self.game_start_time = datetime.now()
 
     def on_game_finished(self, game: Game) -> None:
+        assert self.current_type
+
         game_duration = datetime.now() - self.game_start_time
         was_aborted = game.lichess_game.is_abortable if game.lichess_game else True
 
         if was_aborted:
-            game_duration += self.estimated_game_duration
+            game_duration += self.current_type.estimated_game_duration
 
-        self.opponents.add_timeout(not was_aborted, game_duration)
+        self.opponents.add_timeout(not was_aborted, game_duration, self.current_type)
+        self.current_type = None
+
+    def _get_types(self, config: dict) -> list[Matchmaking_Type]:
+        types: list[Matchmaking_Type] = []
+        for name, options in config['matchmaking']['types'].items():
+            initial_time, increment = options['tc'].split('+')
+            initial_time = int(float(initial_time) * 60) if initial_time else 0
+            increment = int(increment) if increment else 0
+            rated = options.get('rated', True)
+            variant = Variant(options.get('variant', 'standard'))
+            perf_type = self._variant_to_perf_type(variant, initial_time, increment)
+            multiplier = options.get('multiplier', 15)
+            weight = options.get('weight', 100)
+            min_rating_diff = options.get('min_rating_diff', 0)
+            max_rating_diff = options.get('max_rating_diff', 10_000)
+
+            types.append(Matchmaking_Type(name, initial_time, increment, rated, variant,
+                         perf_type, multiplier, weight, min_rating_diff, max_rating_diff))
+
+        return types
 
     def _call_update(self) -> bool:
         if self.next_update <= datetime.now():
@@ -101,24 +124,19 @@ class Matchmaking:
                 bot_counts['disabled'] += 1
                 continue
 
-            if 'tosViolation' in bot:
-                bot_counts['with tosViolation'] += 1
-                if self.is_rated:
-                    continue
-
             if bot['id'] in self.blacklist:
                 bot_counts['blacklisted'] += 1
                 continue
 
-            for perf_type in self.perf_types:
+            tos_violation = False
+            if 'tosViolation' in bot:
+                tos_violation = True
+                bot_counts['with tosViolation'] += 1
+
+            for perf_type in Perf_Type:
                 bot_rating = bot['perfs'][perf_type.value]['rating'] if perf_type.value in bot['perfs'] else 1500
                 rating_diff = bot_rating - user_ratings[perf_type]
-                if abs(rating_diff) >= self.min_rating_diff and abs(rating_diff) <= self.max_rating_diff:
-                    online_bots[perf_type].append(Bot(bot['username'], rating_diff))
-
-        bot_counts['available'] = bot_counts['online'] - bot_counts['disabled'] - bot_counts['blacklisted']
-        if self.is_rated:
-            bot_counts['available'] -= bot_counts['with tosViolation']
+                online_bots[perf_type].append(Bot(bot['username'], tos_violation, rating_diff))
 
         for category, count in bot_counts.items():
             if count:
@@ -135,24 +153,22 @@ class Matchmaking:
         user = self.api.get_account()
 
         performances: dict[Perf_Type, int] = {}
-        for perf_type in self.perf_types:
+        for perf_type in Perf_Type:
             performances[perf_type] = user['perfs'][perf_type.value]['rating'] if perf_type.value in user['perfs'] else 2500
 
         return performances
 
     def _remove_offline_bot(self, username: str) -> None:
-        offline_bot = Bot(username, 0)
+        offline_bot = Bot(username, False, 0)
         for online_bots in self.online_bots.values():
             if offline_bot in online_bots:
                 online_bots.remove(offline_bot)
 
-    def _variant_to_perf_type(self, matchmaking_variant: str) -> Perf_Type:
-        variant = Variant(matchmaking_variant)
-
+    def _variant_to_perf_type(self, variant: Variant, initial_time: int, increment: int) -> Perf_Type:
         if variant != Variant.STANDARD:
             return Perf_Type(variant.value)
 
-        estimated_game_duration = self.initial_time + self.increment * 40
+        estimated_game_duration = initial_time + increment * 40
         if estimated_game_duration < 179:
             return Perf_Type.BULLET
 

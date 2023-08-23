@@ -1,7 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import timedelta
 
 from aliases import Challenge_ID
-from enums import Challenge_Color, Variant
+from enums import Challenge_Color, Perf_Type, Variant
 
 
 @dataclass
@@ -18,6 +19,7 @@ class API_Challenge_Reponse:
 @dataclass
 class Bot:
     username: str
+    tos_violation: bool
     rating_diff: int
 
     def __eq__(self, __o: object) -> bool:
@@ -162,3 +164,42 @@ class Game_Information:
     @property
     def opponent_rating(self) -> int | None:
         return self.black_rating if self.is_white else self.white_rating
+
+
+@dataclass
+class Matchmaking_Type:
+    name: str
+    initial_time: int
+    increment: int
+    estimated_game_duration: timedelta = field(init=False)
+    rated: bool
+    variant: Variant
+    perf_type: Perf_Type
+    multiplier: int
+    weight: int
+    min_rating_diff: int
+    max_rating_diff: int
+
+    def __post_init__(self) -> None:
+        self.estimated_game_duration = timedelta(seconds=(self.initial_time + self.increment * 80) * 2)
+
+    @property
+    def to_str(self) -> str:
+        name_str = f'{self.name}:'
+        initial_time_min = self.initial_time / 60
+        if initial_time_min.is_integer():
+            initial_time_str = str(int(initial_time_min))
+        elif initial_time_min == 0.25:
+            initial_time_str = '¼'
+        elif initial_time_min == 0.5:
+            initial_time_str = '½'
+        elif initial_time_min == 0.75:
+            initial_time_str = '¾'
+        else:
+            initial_time_str = str(initial_time_min)
+        tc_str = f'TC: {initial_time_str}+{self.increment}'
+        rated_str = 'Rated' if self.rated else 'Casual'
+        variant_str = f'Variant: {self.variant.value}'
+        delimiter = 5 * ' '
+
+        return delimiter.join([name_str, tc_str, rated_str, variant_str])

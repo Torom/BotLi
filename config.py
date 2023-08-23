@@ -54,7 +54,7 @@ def load_config(config_path: str) -> dict:
     syzygy_sections = [
         ['enabled', bool, '"enabled" must be a bool.'],
         ['paths', list, '"paths" must be a list.'],
-        ['max_pieces', int, '"max_pieces" must be a integer.'],
+        ['max_pieces', int, '"max_pieces" must be an integer.'],
         ['instant_play', bool, '"instant_play" must be a bool.']]
     for subsection in syzygy_sections:
         if subsection[0] not in CONFIG['engine']['syzygy']:
@@ -67,7 +67,7 @@ def load_config(config_path: str) -> dict:
     gaviota_sections = [
         ['enabled', bool, '"enabled" must be a bool.'],
         ['paths', list, '"paths" must be a list.'],
-        ['max_pieces', int, '"max_pieces" must be a integer.']]
+        ['max_pieces', int, '"max_pieces" must be an integer.']]
     for subsection in gaviota_sections:
         if subsection[0] not in CONFIG['engine']['gaviota']:
             raise RuntimeError(f'Your {config_path} does not have required '
@@ -102,6 +102,32 @@ def load_config(config_path: str) -> dict:
 
         if not isinstance(CONFIG['engine']['online_moves'][subsection[0]], subsection[1]):
             raise TypeError(f'`engine` `online_moves` subsection {subsection[2]}')
+
+    matchmaking_types_sections = [
+        ['tc', str, '"tc" must be a string in initial_minutes+increment_seconds format.'],
+        ['rated', bool, '"rated" must be a bool.'],
+        ['variant', str, '"variant" must be a variant name from "https://lichess.org/variant".'],
+        ['multiplier', int, '"multiplier" must be an integer.'],
+        ['weight', int, '"weight" must be an integer.'],
+        ['min_rating_diff', int, '"min_rating_diff" must be an integer.'],
+        ['max_rating_diff', int, '"max_rating_diff" must be an integer.']]
+    for matchmaking_type, matchmaking_options in CONFIG['matchmaking']['types'].items():
+        if not isinstance(matchmaking_options, dict):
+            raise TypeError(f'`matchmaking` `types` subsection "{matchmaking_type}" must be a dictionary with '
+                            'indented keys followed by colons.')
+
+        if 'tc' not in matchmaking_options:
+            raise RuntimeError(f'Your matchmaking type "{matchmaking_type}" does not have required `tc` field.')
+
+        for key, value in matchmaking_options.items():
+            for subsection in matchmaking_types_sections:
+                if key == subsection[0]:
+                    if not isinstance(value, subsection[1]):
+                        raise TypeError(f'`matchmaking` `types` `{matchmaking_type}` field {subsection[2]}')
+
+                    break
+            else:
+                raise RuntimeError(f'Unknown field "{key}" in matchmaking type "{matchmaking_type}".')
 
     if 'whitelist' in CONFIG:
         if not isinstance(CONFIG['whitelist'], list):
