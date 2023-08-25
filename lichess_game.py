@@ -26,8 +26,8 @@ class Lichess_Game:
         self.white_time_ms: int = game_information.state['wtime']
         self.black_time_ms: int = game_information.state['btime']
         self.status = Game_Status(game_information.state['status'])
-        self.draw_enabled: bool = config['engine']['offer_draw']['enabled']
-        self.resign_enabled: bool = config['engine']['resign']['enabled']
+        self.draw_enabled: bool = config['offer_draw']['enabled']
+        self.resign_enabled: bool = config['resign']['enabled']
         self.ponder_enabled: bool = True
         self.move_sources = self._get_move_sources()
         self.move_overhead_ms = self._get_move_overhead()
@@ -42,9 +42,9 @@ class Lichess_Game:
         self.chessdb_counter = 0
         self.out_of_chessdb_counter = 0
         self.engine = self._get_engine()
-        consecutive_draw_moves = config['engine']['offer_draw']['consecutive_moves']
+        consecutive_draw_moves = config['offer_draw']['consecutive_moves']
         self.draw_scores: deque[chess.engine.PovScore] = deque(maxlen=consecutive_draw_moves)
-        consecutive_resign_moves = config['engine']['resign']['consecutive_moves']
+        consecutive_resign_moves = config['resign']['consecutive_moves']
         self.resign_scores: deque[chess.engine.PovScore] = deque(maxlen=consecutive_resign_moves)
         self.last_message = 'No eval available yet.'
 
@@ -135,13 +135,13 @@ class Lichess_Game:
         if not self.draw_enabled:
             return False
 
-        too_shallow = self.board.fullmove_number < self.config['engine']['offer_draw']['min_game_length']
-        too_few_scores = len(self.draw_scores) < self.config['engine']['offer_draw']['consecutive_moves']
+        too_shallow = self.board.fullmove_number < self.config['offer_draw']['min_game_length']
+        too_few_scores = len(self.draw_scores) < self.config['offer_draw']['consecutive_moves']
 
         if too_shallow or too_few_scores:
             return False
 
-        max_score = self.config['engine']['offer_draw']['score']
+        max_score = self.config['offer_draw']['score']
 
         for score in self.draw_scores:
             if abs(score.relative.score(mate_score=40000)) > max_score:
@@ -153,10 +153,10 @@ class Lichess_Game:
         if not self.resign_enabled:
             return False
 
-        if len(self.resign_scores) < self.config['engine']['resign']['consecutive_moves']:
+        if len(self.resign_scores) < self.config['resign']['consecutive_moves']:
             return False
 
-        max_score = self.config['engine']['resign']['score']
+        max_score = self.config['resign']['score']
 
         for score in self.resign_scores:
             if score.relative.score(mate_score=40000) > max_score:
@@ -166,14 +166,14 @@ class Lichess_Game:
 
     def _make_book_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_book_counter >= 10
-        max_depth = self.config['engine']['opening_books'].get('max_depth', float('inf'))
+        max_depth = self.config['opening_books'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
 
         if out_of_book or too_deep:
             return
 
-        read_learn = self.config['engine']['opening_books'].get('read_learn')
-        selection = self.config['engine']['opening_books']['selection']
+        read_learn = self.config['opening_books'].get('read_learn')
+        selection = self.config['opening_books']['selection']
         for name, book_reader in self.book_readers.items():
             entries = list(book_reader.find_all(self.board))
             if entries:
@@ -195,12 +195,12 @@ class Lichess_Game:
         self.out_of_book_counter += 1
 
     def _get_book_readers(self) -> dict[str, chess.polyglot.MemoryMappedReader]:
-        enabled = self.config['engine']['opening_books']['enabled']
+        enabled = self.config['opening_books']['enabled']
 
         if not enabled:
             return {}
 
-        books: dict[str, dict[str, str]] = self.config['engine']['opening_books']['books']
+        books: dict[str, dict[str, str]] = self.config['opening_books']['books']
 
         if self.board.chess960 and 'chess960' in books:
             return {name: chess.polyglot.open_reader(path) for name, path in books['chess960'].items()}
@@ -223,22 +223,22 @@ class Lichess_Game:
 
     def _make_opening_explorer_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_opening_explorer_counter >= 5
-        max_depth = self.config['engine']['online_moves']['opening_explorer'].get('max_depth', float('inf'))
+        max_depth = self.config['online_moves']['opening_explorer'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
-        max_moves = self.config['engine']['online_moves']['opening_explorer'].get('max_moves', float('inf'))
+        max_moves = self.config['online_moves']['opening_explorer'].get('max_moves', float('inf'))
         too_many_moves = self.opening_explorer_counter >= max_moves
-        has_time = self._has_time(self.config['engine']['online_moves']['opening_explorer']['min_time'])
+        has_time = self._has_time(self.config['online_moves']['opening_explorer']['min_time'])
         is_variant = self.board.uci_variant != 'chess'
-        use_for_variants = self.config['engine']['online_moves']['opening_explorer']['use_for_variants']
+        use_for_variants = self.config['online_moves']['opening_explorer']['use_for_variants']
         forbidden_variant = is_variant and not use_for_variants
 
         if out_of_book or too_deep or too_many_moves or not has_time or forbidden_variant:
             return
 
-        timeout = self.config['engine']['online_moves']['opening_explorer']['timeout']
-        min_games = max(self.config['engine']['online_moves']['opening_explorer']['min_games'], 1)
-        only_with_wins = self.config['engine']['online_moves']['opening_explorer']['only_with_wins']
-        anti = self.config['engine']['online_moves']['opening_explorer']['anti']
+        timeout = self.config['online_moves']['opening_explorer']['timeout']
+        min_games = max(self.config['online_moves']['opening_explorer']['min_games'], 1)
+        only_with_wins = self.config['online_moves']['opening_explorer']['only_with_wins']
+        anti = self.config['online_moves']['opening_explorer']['anti']
 
         if anti:
             color = 'black' if self.board.turn else 'white'
@@ -266,8 +266,8 @@ class Lichess_Game:
             self._reduce_own_time(timeout * 1000)
 
     def _get_opening_explorer_top_move(self, moves: list[dict]) -> dict:
-        selection = self.config['engine']['online_moves']['opening_explorer']['selection']
-        anti = self.config['engine']['online_moves']['opening_explorer']['anti']
+        selection = self.config['online_moves']['opening_explorer']['selection']
+        anti = self.config['online_moves']['opening_explorer']['anti']
 
         if selection == 'win_rate':
             for move in moves:
@@ -284,19 +284,19 @@ class Lichess_Game:
 
     def _make_cloud_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_cloud_counter >= 5
-        max_depth = self.config['engine']['online_moves']['lichess_cloud'].get('max_depth', float('inf'))
+        max_depth = self.config['online_moves']['lichess_cloud'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
-        max_moves = self.config['engine']['online_moves']['lichess_cloud'].get('max_moves', float('inf'))
+        max_moves = self.config['online_moves']['lichess_cloud'].get('max_moves', float('inf'))
         too_many_moves = self.cloud_counter >= max_moves
-        has_time = self._has_time(self.config['engine']['online_moves']['lichess_cloud']['min_time'])
-        only_without_book = self.config['engine']['online_moves']['lichess_cloud'].get('only_without_book', False)
+        has_time = self._has_time(self.config['online_moves']['lichess_cloud']['min_time'])
+        only_without_book = self.config['online_moves']['lichess_cloud'].get('only_without_book', False)
         blocking_book = only_without_book and bool(self.book_readers)
 
         if out_of_book or too_deep or too_many_moves or not has_time or blocking_book:
             return
 
-        timeout = self.config['engine']['online_moves']['lichess_cloud']['timeout']
-        min_eval_depth = self.config['engine']['online_moves']['lichess_cloud']['min_eval_depth']
+        timeout = self.config['online_moves']['lichess_cloud']['timeout']
+        min_eval_depth = self.config['online_moves']['lichess_cloud']['min_eval_depth']
 
         if response := self.api.get_cloud_eval(
                 self.board.fen().replace('[', '/').replace(']', ''),
@@ -317,19 +317,19 @@ class Lichess_Game:
 
     def _make_chessdb_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_chessdb_counter >= 5
-        max_depth = self.config['engine']['online_moves']['chessdb'].get('max_depth', float('inf'))
+        max_depth = self.config['online_moves']['chessdb'].get('max_depth', float('inf'))
         too_deep = self.board.ply() >= max_depth
-        max_moves = self.config['engine']['online_moves']['chessdb'].get('max_moves', float('inf'))
+        max_moves = self.config['online_moves']['chessdb'].get('max_moves', float('inf'))
         too_many_moves = self.chessdb_counter >= max_moves
-        has_time = self._has_time(self.config['engine']['online_moves']['chessdb']['min_time'])
+        has_time = self._has_time(self.config['online_moves']['chessdb']['min_time'])
         incompatible_variant = self.board.uci_variant != 'chess'
         is_endgame = chess.popcount(self.board.occupied) <= 7
 
         if out_of_book or too_deep or too_many_moves or not has_time or incompatible_variant or is_endgame:
             return
 
-        timeout = self.config['engine']['online_moves']['chessdb']['timeout']
-        min_eval_depth = self.config['engine']['online_moves']['chessdb']['min_eval_depth']
+        timeout = self.config['online_moves']['chessdb']['timeout']
+        min_eval_depth = self.config['online_moves']['chessdb']['min_eval_depth']
 
         if response := self.api.get_chessdb_eval(self.board.fen(), timeout):
             if response['status'] == 'ok':
@@ -348,7 +348,7 @@ class Lichess_Game:
 
     def _make_gaviota_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         assert self.gaviota_tablebase
-        is_endgame = chess.popcount(self.board.occupied) <= self.config['engine']['gaviota']['max_pieces']
+        is_endgame = chess.popcount(self.board.occupied) <= self.config['gaviota']['max_pieces']
         incompatible_variant = self.board.uci_variant != 'chess'
 
         if not is_endgame or incompatible_variant:
@@ -417,7 +417,7 @@ class Lichess_Game:
 
     def _make_syzygy_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         assert self.syzygy_tablebase
-        is_endgame = chess.popcount(self.board.occupied) <= self.config['engine']['syzygy']['max_pieces']
+        is_endgame = chess.popcount(self.board.occupied) <= self.config['syzygy']['max_pieces']
         incompatible_variant = self.board.uci_variant not in ['chess', 'antichess', 'atomic']
 
         if not is_endgame or incompatible_variant:
@@ -516,12 +516,12 @@ class Lichess_Game:
         return 0
 
     def _get_syzygy_tablebase(self) -> chess.syzygy.Tablebase | None:
-        enabled = self.config['engine']['syzygy']['enabled'] and self.config['engine']['syzygy']['instant_play']
+        enabled = self.config['syzygy']['enabled'] and self.config['syzygy']['instant_play']
 
         if not enabled:
             return
 
-        paths = self.config['engine']['syzygy']['paths']
+        paths = self.config['syzygy']['paths']
         tablebase = chess.syzygy.open_tablebase(paths[0], VariantBoard=type(self.board))
 
         for path in paths[1:]:
@@ -530,12 +530,12 @@ class Lichess_Game:
         return tablebase
 
     def _get_gaviota_tablebase(self) -> chess.gaviota.PythonTablebase | chess.gaviota.NativeTablebase | None:
-        enabled = self.config['engine']['gaviota']['enabled']
+        enabled = self.config['gaviota']['enabled']
 
         if not enabled:
             return
 
-        paths = self.config['engine']['gaviota']['paths']
+        paths = self.config['gaviota']['paths']
         tablebase = chess.gaviota.open_tablebase(paths[0])
 
         for path in paths[1:]:
@@ -546,13 +546,13 @@ class Lichess_Game:
     def _make_egtb_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         max_pieces = 7 if self.board.uci_variant == 'chess' else 6
         is_endgame = chess.popcount(self.board.occupied) <= max_pieces
-        has_time = self._has_time(self.config['engine']['online_moves']['online_egtb']['min_time'])
+        has_time = self._has_time(self.config['online_moves']['online_egtb']['min_time'])
         incompatible_variant = self.board.uci_variant not in ['chess', 'antichess', 'atomic']
 
         if not is_endgame or not has_time or incompatible_variant:
             return
 
-        timeout = self.config['engine']['online_moves']['online_egtb']['timeout']
+        timeout = self.config['online_moves']['online_egtb']['timeout']
         variant = 'standard' if self.board.uci_variant == 'chess' else self.board.uci_variant
         assert variant
 
@@ -697,11 +697,11 @@ class Lichess_Game:
             self.ponder_enabled = self.config['engine']['ponder']
             stderr = subprocess.DEVNULL if self.config['engine'].get('silence_stderr') else None
 
-            if self.config['engine']['syzygy']['enabled']:
+            if self.config['syzygy']['enabled']:
                 delimiter = ';' if os.name == 'nt' else ':'
-                syzygy_path = delimiter.join(self.config['engine']['syzygy']['paths'])
+                syzygy_path = delimiter.join(self.config['syzygy']['paths'])
                 engine_options['SyzygyPath'] = syzygy_path
-                engine_options['SyzygyProbeLimit'] = self.config['engine']['syzygy']['max_pieces']
+                engine_options['SyzygyProbeLimit'] = self.config['syzygy']['max_pieces']
 
         engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=stderr)
 
@@ -739,31 +739,29 @@ class Lichess_Game:
     def _get_move_sources(self) -> list[Callable[[], tuple[chess.Move, Message, Offer_Draw, Resign] | None]]:
         opening_sources: dict[Callable[[], tuple[chess.Move, Message, Offer_Draw, Resign] | None], int] = {}
 
-        if self.config['engine']['opening_books']['enabled']:
-            opening_sources[self._make_book_move] = self.config['engine']['opening_books'].get('priority', 400)
+        if self.config['opening_books']['enabled']:
+            opening_sources[self._make_book_move] = self.config['opening_books'].get('priority', 400)
 
-        if self.config['engine']['online_moves']['opening_explorer']['enabled']:
-            opening_sources[self._make_opening_explorer_move] = self.config['engine']['online_moves']['opening_explorer'].get(
+        if self.config['online_moves']['opening_explorer']['enabled']:
+            opening_sources[self._make_opening_explorer_move] = self.config['online_moves']['opening_explorer'].get(
                 'priority', 300)
 
-        if self.config['engine']['online_moves']['lichess_cloud']['enabled']:
-            opening_sources[self._make_cloud_move] = self.config['engine']['online_moves']['lichess_cloud'].get(
-                'priority', 200)
+        if self.config['online_moves']['lichess_cloud']['enabled']:
+            opening_sources[self._make_cloud_move] = self.config['online_moves']['lichess_cloud'].get('priority', 200)
 
-        if self.config['engine']['online_moves']['chessdb']['enabled']:
-            opening_sources[self._make_chessdb_move] = self.config['engine']['online_moves']['chessdb'].get(
-                'priority', 100)
+        if self.config['online_moves']['chessdb']['enabled']:
+            opening_sources[self._make_chessdb_move] = self.config['online_moves']['chessdb'].get('priority', 100)
 
         move_sources = [opening_source for opening_source, _ in sorted(
             opening_sources.items(), key=lambda item: item[1], reverse=True)]
 
-        if self.config['engine']['gaviota']['enabled']:
+        if self.config['gaviota']['enabled']:
             move_sources.append(self._make_gaviota_move)
 
-        if self.config['engine']['syzygy']['enabled'] and self.config['engine']['syzygy']['instant_play']:
+        if self.config['syzygy']['enabled'] and self.config['syzygy']['instant_play']:
             move_sources.append(self._make_syzygy_move)
 
-        if self.config['engine']['online_moves']['online_egtb']['enabled']:
+        if self.config['online_moves']['online_egtb']['enabled']:
             move_sources.append(self._make_egtb_move)
 
         return move_sources
