@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
 
+from chess.polyglot import MemoryMappedReader
+
 from aliases import Challenge_ID
 from enums import Challenge_Color, Perf_Type, Variant
 
@@ -203,3 +205,10 @@ class Matchmaking_Type:
         delimiter = 5 * ' '
 
         return delimiter.join([name_str, tc_str, rated_str, variant_str])
+
+
+@dataclass
+class Book_Settings:
+    selection: str = ''
+    max_depth: int = 600
+    readers: dict[str, MemoryMappedReader] = field(default_factory=dict)

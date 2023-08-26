@@ -129,8 +129,7 @@ def _check_opening_books_sections(opening_books_section: dict) -> None:
     opening_books_sections = [
         ['enabled', bool, '"enabled" must be a bool.'],
         ['priority', int, '"priority" must be an integer.'],
-        ['books', dict, '"books" must be a dictionary with indented keys followed by colons.'],
-        ['selection', str, '"selection" must be one of "weighted_random", "uniform_random" or "best_move".']]
+        ['books', dict, '"books" must be a dictionary with indented keys followed by colons.']]
     for subsection in opening_books_sections:
         if subsection[0] not in opening_books_section:
             raise RuntimeError(f'Your config does not have required `opening_books` subsection `{subsection[0]}`.')
@@ -268,18 +267,27 @@ def _init_opening_books(config: dict) -> None:
     if not config['opening_books']['enabled']:
         return
 
-    for key, book_list in config['opening_books']['books'].items():
-        if not isinstance(book_list, list):
-            raise TypeError(f'The `engine: opening_books: books: {key}` section must be a '
-                            'list of book names or commented.')
+    opening_book_types_sections = [
+        ['selection', str, '"selection" must be one of "weighted_random", "uniform_random" or "best_move".'],
+        ['names', list, '"names" must be a list.']]
+    for section, settings in config['opening_books']['books'].items():
+        for subsection in opening_book_types_sections:
+            if subsection[0] not in settings:
+                raise RuntimeError(f'Your `opening_books` `books` `{section}` section'
+                                   f'does not have required subsection `{subsection[0]}`.')
 
-        for book in book_list:
-            if book not in config['books']:
-                raise RuntimeError(f'The book "{book}" is not defined in the books section.')
-            if not os.path.isfile(config['books'][book]):
-                raise RuntimeError(f'The book "{book}" at "{config["books"][book]}" does not exist.')
+            if not isinstance(settings[subsection[0]], subsection[1]):
+                raise TypeError(f'`opening_books` `books` `{section}` subsection {subsection[2]}')
 
-        config['opening_books']['books'][key] = {book: config['books'][book] for book in book_list}
+    for settings in config['opening_books']['books'].values():
+        for book_name in settings['names']:
+            if book_name not in config['books']:
+                raise RuntimeError(f'The book "{book_name}" is not defined in the books section.')
+
+            if not os.path.isfile(config['books'][book_name]):
+                raise RuntimeError(f'The book "{book_name}" at "{config["books"][book_name]}" does not exist.')
+
+        settings['names'] = {book_name: config['books'][book_name] for book_name in settings['names']}
 
 
 def _get_version() -> str:

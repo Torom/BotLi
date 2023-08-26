@@ -13,7 +13,7 @@ from chess.variant import find_variant
 
 from aliases import DTM, DTZ, Message, Offer_Draw, Outcome, Performance, Resign, UCI_Move
 from api import API
-from botli_dataclasses import Game_Information
+from botli_dataclasses import Book_Settings, Game_Information
 from enums import Game_Status, Variant
 
 
@@ -31,7 +31,7 @@ class Lichess_Game:
         self.ponder_enabled: bool = True
         self.move_sources = self._get_move_sources()
         self.move_overhead_ms = self._get_move_overhead()
-        self.book_readers = self._get_book_readers()
+        self.book_settings = self._get_book_settings()
         self.syzygy_tablebase = self._get_syzygy_tablebase()
         self.gaviota_tablebase = self._get_gaviota_tablebase()
         self.out_of_book_counter = 0
@@ -122,7 +122,7 @@ class Lichess_Game:
 
         self.engine.close()
 
-        for book_reader in self.book_readers.values():
+        for book_reader in self.book_settings.readers.values():
             book_reader.close()
 
         if self.syzygy_tablebase:
@@ -166,20 +166,18 @@ class Lichess_Game:
 
     def _make_book_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_book_counter >= 10
-        max_depth = self.config['opening_books'].get('max_depth', float('inf'))
-        too_deep = self.board.ply() >= max_depth
+        too_deep = self.board.ply() >= self.book_settings.max_depth
 
         if out_of_book or too_deep:
             return
 
         read_learn = self.config['opening_books'].get('read_learn')
-        selection = self.config['opening_books']['selection']
-        for name, book_reader in self.book_readers.items():
+        for name, book_reader in self.book_settings.readers.items():
             entries = list(book_reader.find_all(self.board))
             if entries:
-                if selection == 'weighted_random':
+                if self.book_settings.selection == 'weighted_random':
                     entry, = random.choices(entries, [entry.weight for entry in entries])
-                elif selection == 'uniform_random':
+                elif self.book_settings.selection == 'uniform_random':
                     entry = random.choice(entries)
                 else:
                     entry = max(entries, key=lambda entry: entry.weight)
@@ -188,38 +186,61 @@ class Lichess_Game:
                     self.out_of_book_counter = 0
                     weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
                     learn = entry.learn if read_learn else 0
-                    name = name if len(self.book_readers) > 1 else ''
+                    name = name if len(self.book_settings.readers) > 1 else ''
                     message = f'Book:    {self._format_move(entry.move):14} {self._format_book_info(weight, learn)}     {name}'
                     return entry.move, message, False, False
 
         self.out_of_book_counter += 1
 
-    def _get_book_readers(self) -> dict[str, chess.polyglot.MemoryMappedReader]:
+    def _get_book_settings(self) -> Book_Settings:
         enabled = self.config['opening_books']['enabled']
 
         if not enabled:
-            return {}
+            return Book_Settings()
 
-        books: dict[str, dict[str, str]] = self.config['opening_books']['books']
+        books: dict[str, dict] = self.config['opening_books']['books']
 
         if self.board.chess960 and 'chess960' in books:
-            return {name: chess.polyglot.open_reader(path) for name, path in books['chess960'].items()}
+            return Book_Settings(books['chess960']['selection'],
+                                 books['chess960'].get('max_depth', 600),
+                                 {name: chess.polyglot.open_reader(path)
+                                  for name, path in books['chess960']['names'].items()})
 
         if self.board.uci_variant == 'chess':
             if self.game_info.speed in books:
-                return {name: chess.polyglot.open_reader(path) for name, path in books[self.game_info.speed].items()}
+                return Book_Settings(books[self.game_info.speed]['selection'],
+                                     books[self.game_info.speed].get('max_depth', 600),
+                                     {name: chess.polyglot.open_reader(path)
+                                      for name, path in books[self.game_info.speed]['names'].items()})
 
             if self.game_info.is_white and 'white' in books:
-                return {name: chess.polyglot.open_reader(path) for name, path in books['white'].items()}
+                return Book_Settings(books['white']['selection'],
+                                     books['white'].get('max_depth', 600),
+                                     {name: chess.polyglot.open_reader(path)
+                                      for name, path in books['white']['names'].items()})
 
             if not self.game_info.is_white and 'black' in books:
-                return {name: chess.polyglot.open_reader(path) for name, path in books['black'].items()}
+                return Book_Settings(books['black']['selection'],
+                                     books['black'].get('max_depth', 600),
+                                     {name: chess.polyglot.open_reader(path)
+                                      for name, path in books['black']['names'].items()})
+
+            if 'standard' in books:
+                return Book_Settings(books['standard']['selection'],
+                                     books['standard'].get('max_depth', 600),
+                                     {name: chess.polyglot.open_reader(path)
+                                      for name, path in books['standard']['names'].items()})
+
+            return Book_Settings()
 
         for key in books:
             if key.lower() in [alias.lower() for alias in self.board.aliases]:
-                return {name: chess.polyglot.open_reader(path) for name, path in books[key].items()}
+                return Book_Settings(books[key]['selection'],
+                                     books[key].get('max_depth', 600),
+                                     {name: chess.polyglot.open_reader(path)
+                                      for name, path in books[key]['names'].items()})
 
-        return {}
+        return Book_Settings()
 
     def _make_opening_explorer_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_opening_explorer_counter >= 5
@@ -290,7 +311,7 @@ class Lichess_Game:
         too_many_moves = self.cloud_counter >= max_moves
         has_time = self._has_time(self.config['online_moves']['lichess_cloud']['min_time'])
         only_without_book = self.config['online_moves']['lichess_cloud'].get('only_without_book', False)
-        blocking_book = only_without_book and bool(self.book_readers)
+        blocking_book = only_without_book and bool(self.book_settings.readers)
 
         if out_of_book or too_deep or too_many_moves or not has_time or blocking_book:
             return

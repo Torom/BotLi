@@ -49,19 +49,26 @@ A corresponding `opening_books` section could look like this:
 ```yaml
 opening_books:
   enabled: true
+  priority: 400
   books:
     bullet:
-      - "Goi"
+      selection: weighted_random
+      names:
+        - Goi
     white:
-      - "Perfect"
-      - "Goi"
+      selection: weighted_random
+      names:
+        - Perfect
+        - Goi
 #   black:
-#     - "BlackBook"
+#     selection: best_move
+#     names:
+#       - BlackBook
     standard:
-      - "Cerebellum" 
-#   chess960:
-#     - "Chess960Book"
-  selection: "weighted_random"
+      selection: weighted_random
+      max_depth: 8
+      names:
+        - Cerebellum
 ```
 
 # How to control
