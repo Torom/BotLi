@@ -1,24 +1,29 @@
 token: "XXXXXXXXXXXXXXXXXXXXXXXX"         # Lichess OAuth2 Token.
 
-engine:                                   # Engine settings.
-  dir: "./engines"                        # Directory containing the engine.
-  name: "stockfish"                       # Binary name of the engine to use.
-  ponder: true                            # Think on opponent's time.
-  silence_stderr: false                   # Suppresses stderr output.
-  uci_options:                            # Arbitrary UCI options passed to the engine. (Commenting allowed)
-    Move Overhead: 100                    # Increase if your bot flags games too often.
-    Threads: 4                            # Max CPU threads the engine can use.
-    Hash: 256                             # Max memory (in megabytes) the engine can allocate.
-  variants:
-    enabled: false                        # Activate seperate engine for other chess variants than standard and chess960.
+engines:
+  standard:                               # Engine used for standard chess and when no suitable special engine is configured.
     dir: "./engines"                      # Directory containing the engine.
-    name: "fairy-stockfish"               # Binary name of the engine to use.
+    name: "stockfish"                     # Binary name of the engine to use.
     ponder: true                          # Think on opponent's time.
+    use_syzygy: true                      # Whether the engine should be configured to use syzygy.
     silence_stderr: false                 # Suppresses stderr output.
     uci_options:                          # Arbitrary UCI options passed to the engine. (Commenting allowed)
-      Move Overhead: 100                  # Increase if your bot flags games too often.
       Threads: 4                          # Max CPU threads the engine can use.
       Hash: 256                           # Max memory (in megabytes) the engine can allocate.
+      Move Overhead: 100                  # Increase if your bot flags games too often.
+# variants:                               # Engine used for variants when no suitable special engine is configured.
+#   dir: "./engines"                      # Directory containing the engine.
+#   name: "fairy-stockfish"               # Binary name of the engine to use.
+#   ponder: true                          # Think on opponent's time.
+#   use_syzygy: false                     # Whether the engine should be configured to use syzygy.
+#   silence_stderr: false                 # Suppresses stderr output.
+#   uci_options:                          # Arbitrary UCI options passed to the engine. (Commenting allowed)
+#     Threads: 4                          # Max CPU threads the engine can use.
+#     Hash: 256                           # Max memory (in megabytes) the engine can allocate.
+#     Move Overhead: 100                  # Increase if your bot flags games too often.
+# Use the same pattern for 'white', 'black',
+# 'bullet', 'blitz', 'rapid', 'classical',
+# 'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
 
 syzygy:
   enabled: false                          # Activate local syzygy endgame tablebases.

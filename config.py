@@ -18,8 +18,7 @@ def load_config(config_path: str) -> dict:
         config['token'] = os.environ['LICHESS_BOT_TOKEN']
 
     _check_sections(config)
-    _check_engine_sections(config['engine'])
-    _check_variants_sections(config['engine']['variants'])
+    _check_engines_sections(config['engines'])
     _check_syzygy_sections(config['syzygy'])
     _check_gaviota_sections(config['gaviota'])
     _check_opening_books_sections(config['opening_books'])
@@ -28,7 +27,7 @@ def load_config(config_path: str) -> dict:
     _check_resign_sections(config['resign'])
     _check_matchmaking_sections(config['matchmaking'])
     _init_lists(config)
-    _init_engines(config['engine'])
+    _init_engines(config['engines'])
     _init_opening_books(config)
     config['version'] = _get_version()
 
@@ -39,7 +38,7 @@ def _check_sections(config: dict) -> None:
     # [section, type, error message]
     sections = [
         ['token', str, 'Section `token` must be a string wrapped in quotes.'],
-        ['engine', dict, 'Section `engine` must be a dictionary with indented keys followed by colons.'],
+        ['engines', dict, 'Section `engines` must be a dictionary with indented keys followed by colons.'],
         ['syzygy', dict, 'Section `syzygy` must be a dictionary with indented keys followed by colons.'],
         ['gaviota', dict, 'Section `gaviota` must be a dictionary with indented keys followed by colons.'],
         ['opening_books', dict, 'Section `opening_books` must be a dictionary with indented keys followed by colons.'],
@@ -58,34 +57,21 @@ def _check_sections(config: dict) -> None:
             raise TypeError(section[2])
 
 
-def _check_engine_sections(engine_section: dict) -> None:
-    engine_sections = [
+def _check_engines_sections(engines_section: dict) -> None:
+    engines_sections = [
         ['dir', str, '"dir" must be a string wrapped in quotes.'],
         ['name', str, '"name" must be a string wrapped in quotes.'],
         ['ponder', bool, '"ponder" must be a bool.'],
-        ['uci_options', dict, '"uci_options" must be a dictionary with indented keys followed by colons.'],
-        ['variants', dict, '"variants" must be a dictionary with indented keys followed by colons.']]
-    for subsection in engine_sections:
-        if subsection[0] not in engine_section:
-            raise RuntimeError(f'Your config does not have required `engine` subsection `{subsection[0]}`.')
-
-        if not isinstance(engine_section[subsection[0]], subsection[1]):
-            raise TypeError(f'`engine` subsection {subsection[2]}')
-
-
-def _check_variants_sections(variants_section: dict) -> None:
-    variants_sections = [
-        ['enabled', bool, '"enabled" must be a bool.'],
-        ['dir', str, '"dir" must be a string wrapped in quotes.'],
-        ['name', str, '"name" must be a string wrapped in quotes.'],
-        ['ponder', bool, '"ponder" must be a bool.'],
+        ['use_syzygy', bool, '"use_syzygy" must be a bool.'],
+        ['silence_stderr', bool, '"silence_stderr" must be a bool.'],
         ['uci_options', dict, '"uci_options" must be a dictionary with indented keys followed by colons.']]
-    for subsection in variants_sections:
-        if subsection[0] not in variants_section:
-            raise RuntimeError(f'Your config does not have required `engine` `variants` subsection `{subsection[0]}`.')
+    for key, settings in engines_section.items():
+        for subsection in engines_sections:
+            if subsection[0] not in settings:
+                raise RuntimeError(f'Your "{key}" engine does not have required field `{subsection[0]}`.')
 
-        if not isinstance(variants_section[subsection[0]], subsection[1]):
-            raise TypeError(f'`engine` `variants` subsection {subsection[2]}')
+            if not isinstance(settings[subsection[0]], subsection[1]):
+                raise TypeError(f'`engines` `{key}` subsection {subsection[2]}')
 
 
 def _check_syzygy_sections(syzygy_section: dict) -> None:
@@ -233,34 +219,19 @@ def _init_lists(config: dict) -> None:
         config['blacklist'] = [username.lower() for username in config['blacklist']]
 
 
-def _init_engines(engine_section: dict) -> None:
-    if not os.path.isdir(engine_section['dir']):
-        raise RuntimeError(f'Your engine directory "{engine_section["dir"]}" is not a directory.')
+def _init_engines(engines_section: dict) -> None:
+    for settings in engines_section.values():
+        if not os.path.isdir(settings['dir']):
+            raise RuntimeError(f'Your engine directory "{settings["dir"]}" is not a directory.')
 
-    engine_section['path'] = os.path.join(engine_section['dir'], engine_section['name'])
+        settings['path'] = os.path.join(settings['dir'], settings['name'])
 
-    if not os.path.isfile(engine_section['path']):
-        raise RuntimeError(f'The engine "{engine_section["path"]}" file does not exist.')
+        if not os.path.isfile(settings['path']):
+            raise RuntimeError(f'The engine "{settings["path"]}" file does not exist.')
 
-    if not os.access(engine_section['path'], os.X_OK):
-        raise RuntimeError(f'The engine "{engine_section["path"]}" doesnt have execute (x) permission. '
-                           f'Try: chmod +x {engine_section["path"]}')
-
-    if engine_section['variants']['enabled']:
-        if not os.path.isdir(engine_section['variants']['dir']):
-            raise RuntimeError(f'Your variants engine directory "{engine_section["variants"]["dir"]}" '
-                               'is not a directory.')
-
-        engine_section['variants']['path'] = os.path.join(
-            engine_section['variants']['dir'],
-            engine_section['variants']['name'])
-
-        if not os.path.isfile(engine_section['variants']['path']):
-            raise RuntimeError(f'The variants engine "{engine_section["variants"]["path"]}" file does not exist.')
-
-        if not os.access(engine_section['variants']['path'], os.X_OK):
-            raise RuntimeError(f'The variants engine "{engine_section["variants"]["path"]}" doesnt have execute '
-                               f'(x) permission. Try: chmod +x {engine_section["variants"]["path"]}')
+        if not os.access(settings['path'], os.X_OK):
+            raise RuntimeError(f'The engine "{settings["path"]}" doesnt have execute (x) permission. '
+                               f'Try: chmod +x {settings["path"]}')
 
 
 def _init_opening_books(config: dict) -> None:

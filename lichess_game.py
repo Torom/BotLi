@@ -707,26 +707,18 @@ class Lichess_Game:
         return performance, (win, draw, loss)
 
     def _get_engine(self) -> chess.engine.SimpleEngine:
-        if self.board.uci_variant != 'chess' and self.config['engine']['variants']['enabled']:
-            engine_path = self.config['engine']['variants']['path']
-            engine_options = self.config['engine']['variants']['uci_options']
-            self.ponder_enabled = self.config['engine']['variants']['ponder']
-            stderr = subprocess.DEVNULL if self.config['engine']['variants'].get('silence_stderr') else None
-        else:
-            engine_path = self.config['engine']['path']
-            engine_options = self.config['engine']['uci_options']
-            self.ponder_enabled = self.config['engine']['ponder']
-            stderr = subprocess.DEVNULL if self.config['engine'].get('silence_stderr') else None
+        engine_key = self._get_engine_key()
+        engine_path, self.ponder_enabled, use_syzygy, stderr, uci_options = self._get_engine_options(engine_key)
 
-            if self.config['syzygy']['enabled']:
-                delimiter = ';' if os.name == 'nt' else ':'
-                syzygy_path = delimiter.join(self.config['syzygy']['paths'])
-                engine_options['SyzygyPath'] = syzygy_path
-                engine_options['SyzygyProbeLimit'] = self.config['syzygy']['max_pieces']
+        if self.config['syzygy']['enabled'] and use_syzygy:
+            delimiter = ';' if os.name == 'nt' else ':'
+            syzygy_path = delimiter.join(self.config['syzygy']['paths'])
+            uci_options['SyzygyPath'] = syzygy_path
+            uci_options['SyzygyProbeLimit'] = self.config['syzygy']['max_pieces']
 
         engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=stderr)
 
-        for name, value in engine_options.items():
+        for name, value in uci_options.items():
             if chess.engine.Option(name, '', None, None, None, None).is_managed():
                 print(f'UCI option "{name}" ignored as it is managed by the bot.')
             elif name in engine.options:
@@ -741,7 +733,45 @@ class Lichess_Game:
                                                                         self.game_info.opponent_rating,
                                                                         self.game_info.opponent_is_bot))
 
+        if len(self.config['engines']) > 1:
+            print(f'Using "{engine_key}" engine {engine.id["name"]}')
+
         return engine
+
+    def _get_engine_key(self) -> str:
+        if self.board.uci_variant == 'chess':
+            if self.board.chess960 and 'chess960' in self.config['engines']:
+                return 'chess960'
+
+            if self.game_info.speed in self.config['engines']:
+                return self.game_info.speed
+
+            if self.game_info.is_white and 'white' in self.config['engines']:
+                return 'white'
+
+            if not self.game_info.is_white and 'black' in self.config['engines']:
+                return 'black'
+
+        else:
+            for key in self.config['engines']:
+                if key.lower() in [alias.lower() for alias in self.board.aliases]:
+                    return key
+
+            if 'variants' in self.config['engines']:
+                return 'variants'
+
+        if 'standard' in self.config['engines']:
+            return 'standard'
+
+        raise RuntimeError(f'No suitable engine for "{self.board.uci_variant}" configured.')
+
+    def _get_engine_options(self, key: str) -> tuple[str, bool, bool, int | None, dict]:
+        engine_path = self.config['engines'][key]['path']
+        ponder_enabled = self.config['engines'][key]['ponder']
+        use_syzygy = self.config['engines'][key]['use_syzygy']
+        stderr = subprocess.DEVNULL if self.config['engines'][key]['silence_stderr'] else None
+        engine_options = self.config['engines'][key]['uci_options']
+        return engine_path, ponder_enabled, use_syzygy, stderr, engine_options
 
     def _setup_board(self) -> chess.Board:
         if self.game_info.variant == Variant.CHESS960:
