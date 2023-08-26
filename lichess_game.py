@@ -198,49 +198,51 @@ class Lichess_Game:
         if not enabled:
             return Book_Settings()
 
-        books: dict[str, dict] = self.config['opening_books']['books']
-
-        if self.board.chess960 and 'chess960' in books:
-            return Book_Settings(books['chess960']['selection'],
-                                 books['chess960'].get('max_depth', 600),
-                                 {name: chess.polyglot.open_reader(path)
-                                  for name, path in books['chess960']['names'].items()})
-
-        if self.board.uci_variant == 'chess':
-            if self.game_info.speed in books:
-                return Book_Settings(books[self.game_info.speed]['selection'],
-                                     books[self.game_info.speed].get('max_depth', 600),
-                                     {name: chess.polyglot.open_reader(path)
-                                      for name, path in books[self.game_info.speed]['names'].items()})
-
-            if self.game_info.is_white and 'white' in books:
-                return Book_Settings(books['white']['selection'],
-                                     books['white'].get('max_depth', 600),
-                                     {name: chess.polyglot.open_reader(path)
-                                      for name, path in books['white']['names'].items()})
-
-            if not self.game_info.is_white and 'black' in books:
-                return Book_Settings(books['black']['selection'],
-                                     books['black'].get('max_depth', 600),
-                                     {name: chess.polyglot.open_reader(path)
-                                      for name, path in books['black']['names'].items()})
-
-            if 'standard' in books:
-                return Book_Settings(books['standard']['selection'],
-                                     books['standard'].get('max_depth', 600),
-                                     {name: chess.polyglot.open_reader(path)
-                                      for name, path in books['standard']['names'].items()})
-
+        key = self._get_book_key()
+        if not key:
             return Book_Settings()
 
-        for key in books:
-            if key.lower() in [alias.lower() for alias in self.board.aliases]:
-                return Book_Settings(books[key]['selection'],
-                                     books[key].get('max_depth', 600),
-                                     {name: chess.polyglot.open_reader(path)
-                                      for name, path in books[key]['names'].items()})
+        return Book_Settings(self.config['opening_books']['books'][key]['selection'],
+                             self.config['opening_books']['books'][key].get('max_depth', 600),
+                             {name: chess.polyglot.open_reader(path)
+                              for name, path in self.config['opening_books']['books'][key]['names'].items()})
 
-        return Book_Settings()
+    def _get_book_key(self) -> str | None:
+        books: dict[str, dict] = self.config['opening_books']['books']
+        color = 'white' if self.game_info.is_white else 'black'
+
+        if self.board.uci_variant != 'chess':
+            for alias in [alias.lower() for alias in self.board.aliases]:
+                if f'{alias}_{color}' in books:
+                    return f'{alias}_{color}'
+
+                if alias in books:
+                    return alias
+
+            else:
+                return
+
+        if self.board.chess960:
+            if f'chess960_{color}' in books:
+                return f'chess960_{color}'
+
+            if 'chess960' in books:
+                return 'chess960'
+
+        else:
+            if f'{self.game_info.speed}_{color}' in books:
+                return f'{self.game_info.speed}_{color}'
+
+            if self.game_info.speed in books:
+                return self.game_info.speed
+
+        if f'standard_{color}' in books:
+            return f'standard_{color}'
+
+        if 'standard' in books:
+            return 'standard'
+
+        return
 
     def _make_opening_explorer_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
         out_of_book = self.out_of_opening_explorer_counter >= 5
@@ -739,26 +741,39 @@ class Lichess_Game:
         return engine
 
     def _get_engine_key(self) -> str:
+        color = 'white' if self.game_info.is_white else 'black'
+
         if self.board.uci_variant == 'chess':
-            if self.board.chess960 and 'chess960' in self.config['engines']:
-                return 'chess960'
+            if self.board.chess960:
+                if f'chess960_{color}' in self.config['engines']:
+                    return f'chess960_{color}'
 
-            if self.game_info.speed in self.config['engines']:
-                return self.game_info.speed
+                if 'chess960' in self.config['engines']:
+                    return 'chess960'
 
-            if self.game_info.is_white and 'white' in self.config['engines']:
-                return 'white'
+            else:
+                if f'{self.game_info.speed}_{color}' in self.config['engines']:
+                    return f'{self.game_info.speed}_{color}'
 
-            if not self.game_info.is_white and 'black' in self.config['engines']:
-                return 'black'
+                if self.game_info.speed in self.config['engines']:
+                    return self.game_info.speed
 
         else:
-            for key in self.config['engines']:
-                if key.lower() in [alias.lower() for alias in self.board.aliases]:
-                    return key
+            for alias in [alias.lower() for alias in self.board.aliases]:
+                if f'{alias}_{color}' in self.config['engines']:
+                    return f'{alias}_{color}'
+
+                if alias in self.config['engines']:
+                    return alias
+
+            if f'variants_{color}' in self.config['engines']:
+                return f'variants_{color}'
 
             if 'variants' in self.config['engines']:
                 return 'variants'
+
+        if f'standard_{color}' in self.config['engines']:
+            return f'standard_{color}'
 
         if 'standard' in self.config['engines']:
             return 'standard'

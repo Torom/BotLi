@@ -4,7 +4,7 @@
 
 It has a customizable support of Polyglot opening books, a variety of supported online opening books and an online endgame tablebase. It can query local Syzygy and Gaviota endgame tablebases.
 
-In addition, BotLi can autonomously challenge other bots in any variant. It supports separate engines per color, time control and Lichess chess variant.
+In addition, BotLi can autonomously challenge other bots in any variant. It supports custom opening books and engines depending on color, time control and Lichess chess variant.
 
 # How to install
 
@@ -28,7 +28,7 @@ python -m pip install -r requirements.txt
 - **NOTE: You won't see this token again on Lichess, so do save it.**
 
 ## Setup Engine
-A separate engine can be configured for each color, time control and variant. The `white` and `black` engines are only used for standard chess if no special engine is configured for the time control played.
+A separate engine can be configured for each time control and variant. By appending `_white` or `_black` to the time control, variant, `standard` or `variants`, the engine can be configured for that color only.
 
 Within the file `config.yml`:
 - Enter the directory containing the engine executable in the `engine: dir` field.
@@ -53,19 +53,15 @@ opening_books:
   enabled: true
   priority: 400
   books:
-    bullet:
-      selection: weighted_random
+    bullet_white:
+      selection: uniform_random
       names:
         - Goi
-    white:
-      selection: weighted_random
+    bullet_black:
+      selection: best_move
       names:
-        - Perfect
         - Goi
-#   black:
-#     selection: best_move
-#     names:
-#       - BlackBook
+        - Cerebellum
     standard:
       selection: weighted_random
       max_depth: 8

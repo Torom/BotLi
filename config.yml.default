@@ -21,9 +21,9 @@ engines:
 #     Threads: 4                          # Max CPU threads the engine can use.
 #     Hash: 256                           # Max memory (in megabytes) the engine can allocate.
 #     Move Overhead: 100                  # Increase if your bot flags games too often.
-# Use the same pattern for 'white', 'black',
-# 'bullet', 'blitz', 'rapid', 'classical',
+# Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
 # 'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
+# Append '_white' or '_black' to use the engine only as the specific color.
 
 syzygy:
   enabled: false                          # Activate local syzygy endgame tablebases.
@@ -47,12 +47,7 @@ opening_books:
 #     names:                              # List of names of books to use in bullet.
 #       - BulletBook
 #       - DefaultBook
-#   white:
-#     selection: uniform_random           # Move selection is one of "weighted_random", "uniform_random" or "best_move".
-#     max_depth: 8                        # Half move max depth. (Comment this line for max depth)
-#     names:                              # List of names of books to use as white.
-#       - WhiteBook
-#   black:
+#   standard_black:
 #     selection: best_move                # Move selection is one of "weighted_random", "uniform_random" or "best_move".
 #     names:                              # List of names of books to use as black.
 #       - BlackBook
@@ -61,8 +56,9 @@ opening_books:
 #     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
       names:                              # List of names of books to use if there is no specific book for the time control, white, black or chess960.
         - DefaultBook
-#   Use the same pattern for 'blitz', 'rapid', 'classical',
+#   Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
 #   'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
+#   Append '_white' or '_black' to use the books only as the specific color.
 
 online_moves:
   opening_explorer:
