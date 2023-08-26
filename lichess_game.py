@@ -219,8 +219,7 @@ class Lichess_Game:
                 if alias in books:
                     return alias
 
-            else:
-                return
+            return
 
         if self.board.chess960:
             if f'chess960_{color}' in books:
