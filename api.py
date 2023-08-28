@@ -19,6 +19,9 @@ class API:
         self.session.headers.update({'User-Agent': f'BotLi/{config["version"]}'})
 
         account = self.get_account()
+        if 'error' in account:
+            raise RuntimeError(account['error'])
+
         self.username: str = account['username']
         self.user_title: str | None = account.get('title')
         self.session.headers.update({'User-Agent': f'BotLi/{config["version"]} user:{self.username}'})
