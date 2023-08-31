@@ -4,7 +4,8 @@ from enums import Decline_Reason
 class Challenge_Validator:
     def __init__(self, config: dict) -> None:
         self.variants = config['challenge']['variants']
-        self.time_controls = config['challenge']['time_controls']
+        self.speeds = config['challenge']['time_controls']
+        self.time_controls = self._get_time_controls(self.speeds)
         self.bullet_with_increment_only = config['challenge'].get('bullet_with_increment_only', False)
         self.min_increment = config['challenge'].get('min_increment', 0)
         self.max_increment = config['challenge'].get('max_increment', 180)
@@ -49,11 +50,11 @@ class Challenge_Validator:
 
         increment = challenge_event['challenge']['timeControl']['increment']
         initial = challenge_event['challenge']['timeControl']['limit']
-        if not self.time_controls:
+        if not self.speeds:
             print('No time control is allowed according to config.')
             return Decline_Reason.GENERIC
 
-        if speed not in self.time_controls:
+        if speed not in self.speeds and (initial, increment) not in self.time_controls:
             print(f'Time control "{speed}" is not allowed according to config.')
             return Decline_Reason.TIME_CONTROL
 
@@ -86,3 +87,12 @@ class Challenge_Validator:
         if is_casual and 'casual' not in modes:
             print('Casual is not allowed according to config.')
             return Decline_Reason.RATED
+
+    def _get_time_controls(self, speeds: list[str]) -> list[tuple[int, int]]:
+        time_controls: list[tuple[int, int]] = []
+        for speed in speeds:
+            if '+' in speed:
+                initial_str, increment_str = speed.split('+')
+                time_controls.append((int(initial_str) * 60, int(increment_str)))
+
+        return time_controls

@@ -126,11 +126,12 @@ challenge:                                # Incoming challenges. (Commenting all
 #   - kingOfTheHill
 #   - racingKings
 #   - threeCheck
-  time_controls:                          # Time controls to accept.
+  time_controls:                          # Speeds or time controls in initial_minutes+increment_seconds format to accept.
     - bullet
     - blitz
     - rapid
 #   - classical
+#   - 25+0
   bot_modes:                              # Game modes to accept against BOTs.
 #   - casual                              # Unrated games.
     - rated                               # Rated games
