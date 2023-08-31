@@ -1,6 +1,4 @@
-import os
 import random
-import subprocess
 from collections import deque
 from collections.abc import Callable
 
@@ -14,6 +12,7 @@ from chess.variant import find_variant
 from aliases import DTM, DTZ, Message, Offer_Draw, Outcome, Performance, Resign, UCI_Move
 from api import API
 from botli_dataclasses import Book_Settings, Game_Information
+from engine import Engine
 from enums import Game_Status, Variant
 
 
@@ -28,7 +27,6 @@ class Lichess_Game:
         self.status = Game_Status(game_information.state['status'])
         self.draw_enabled: bool = config['offer_draw']['enabled']
         self.resign_enabled: bool = config['resign']['enabled']
-        self.ponder_enabled: bool = True
         self.move_sources = self._get_move_sources()
         self.move_overhead_ms = self._get_move_overhead()
         self.book_settings = self._get_book_settings()
@@ -41,11 +39,11 @@ class Lichess_Game:
         self.out_of_cloud_counter = 0
         self.chessdb_counter = 0
         self.out_of_chessdb_counter = 0
-        self.engine = self._get_engine()
+        self.engine = Engine.from_config(config['engines'][self._get_engine_key()], config['syzygy'], self.game_info)
         consecutive_draw_moves = config['offer_draw']['consecutive_moves']
-        self.draw_scores: deque[chess.engine.PovScore] = deque(maxlen=consecutive_draw_moves)
+        self.draw_scores: deque[chess.engine.PovScore | None] = deque(maxlen=consecutive_draw_moves)
         consecutive_resign_moves = config['resign']['consecutive_moves']
-        self.resign_scores: deque[chess.engine.PovScore] = deque(maxlen=consecutive_resign_moves)
+        self.resign_scores: deque[chess.engine.PovScore | None] = deque(maxlen=consecutive_resign_moves)
         self.last_message = 'No eval available yet.'
 
     def make_move(self) -> tuple[UCI_Move, Offer_Draw, Resign]:
@@ -55,7 +53,12 @@ class Lichess_Game:
                 engine_move = False
                 break
         else:
-            move, info = self._make_engine_move()
+            move, info = self.engine.make_move(self.board, *self.engine_times)
+
+            score = info.get('score')
+            self.draw_scores.append(score)
+            self.resign_scores.append(score)
+
             message = f'Engine:  {self._format_move(move):14} {self._format_engine_info(info)}'
             offer_draw = self._is_drawish()
             resign = self._is_resignable()
@@ -65,7 +68,7 @@ class Lichess_Game:
         self.last_message = message
         self.board.push(move)
         if not engine_move:
-            self.start_pondering()
+            self.engine.start_pondering(self.board)
         return move.uci(), offer_draw and self.draw_enabled, resign and self.resign_enabled
 
     def update(self, gameState_event: dict) -> bool:
@@ -105,21 +108,23 @@ class Lichess_Game:
     def own_time_ms(self) -> int:
         return self.white_time_ms if self.game_info.is_white else self.black_time_ms
 
-    def start_pondering(self) -> None:
-        if self.ponder_enabled:
-            self.engine.analysis(self.board)
+    @property
+    def engine_times(self) -> tuple[float, float, float]:
+        if self.game_info.is_white:
+            white_time = self.white_time_ms - self.move_overhead_ms if self.white_time_ms > self.move_overhead_ms else self.white_time_ms / 2
+            white_time /= 1000
+            black_time = self.black_time_ms / 1000
+        else:
+            white_time = self.white_time_ms / 1000
+            black_time = self.black_time_ms - self.move_overhead_ms if self.black_time_ms > self.move_overhead_ms else self.black_time_ms / 2
+            black_time /= 1000
 
-    def stop_pondering(self) -> None:
-        if self.ponder_enabled:
-            self.ponder_enabled = False
-            self.engine.analysis(self.board, chess.engine.Limit(time=0.001))
+        return white_time, black_time, self.game_info.increment_ms / 1000
+
+    def start_pondering(self) -> None:
+        self.engine.start_pondering(self.board)
 
     def end_game(self) -> None:
-        try:
-            self.engine.quit()
-        except TimeoutError:
-            print('Engine could not be terminated cleanly.')
-
         self.engine.close()
 
         for book_reader in self.book_settings.readers.values():
@@ -144,6 +149,9 @@ class Lichess_Game:
         max_score = self.config['offer_draw']['score']
 
         for score in self.draw_scores:
+            if score is None:
+                return False
+
             if abs(score.relative.score(mate_score=40000)) > max_score:
                 return False
 
@@ -159,6 +167,9 @@ class Lichess_Game:
         max_score = self.config['resign']['score']
 
         for score in self.resign_scores:
+            if score is None:
+                return False
+
             if score.relative.score(mate_score=40000) > max_score:
                 return False
 
@@ -434,7 +445,7 @@ class Lichess_Game:
         else:
             return
 
-        self.stop_pondering()
+        self.engine.stop_pondering()
         return move, f'Gaviota: {self._format_move(move):14} {egtb_info}', offer_draw, resign
 
     def _make_syzygy_move(self) -> tuple[chess.Move, Message, Offer_Draw, Resign] | None:
@@ -519,7 +530,7 @@ class Lichess_Game:
             offer_draw = False
             resign = True
 
-        self.stop_pondering()
+        self.engine.stop_pondering()
         return move, f'Syzygy:  {self._format_move(move):14} {egtb_info}', offer_draw, resign
 
     def _value_to_wdl(self, value: int, halfmove_clock: int) -> int:
@@ -590,33 +601,6 @@ class Lichess_Game:
             return move, message, offer_draw, resign
 
         self._reduce_own_time(timeout * 1000)
-
-    def _make_engine_move(self) -> tuple[chess.Move, chess.engine.InfoDict]:
-        if len(self.board.move_stack) < 2:
-            limit = chess.engine.Limit(time=15)
-            ponder = False
-        else:
-            if self.game_info.is_white:
-                white_time = self.white_time_ms - self.move_overhead_ms if self.white_time_ms > self.move_overhead_ms else self.white_time_ms / 2
-                white_time /= 1000
-                black_time = self.black_time_ms / 1000
-            else:
-                black_time = self.black_time_ms - self.move_overhead_ms if self.black_time_ms > self.move_overhead_ms else self.black_time_ms / 2
-                black_time /= 1000
-                white_time = self.white_time_ms / 1000
-            increment = self.game_info.increment_ms / 1000
-
-            limit = chess.engine.Limit(white_clock=white_time, white_inc=increment,
-                                       black_clock=black_time, black_inc=increment)
-            ponder = self.ponder_enabled
-
-        result = self.engine.play(self.board, limit, info=chess.engine.INFO_ALL, ponder=ponder)
-        if result.move:
-            score = result.info.get('score', chess.engine.PovScore(chess.engine.Mate(1), self.board.turn))
-            self.draw_scores.append(score)
-            self.resign_scores.append(score)
-            return result.move, result.info
-        raise RuntimeError('Engine could not make a move!')
 
     def _format_move(self, move: chess.Move) -> str:
         if self.board.turn:
@@ -707,38 +691,6 @@ class Lichess_Game:
 
         return performance, (win, draw, loss)
 
-    def _get_engine(self) -> chess.engine.SimpleEngine:
-        engine_key = self._get_engine_key()
-        engine_path, self.ponder_enabled, use_syzygy, stderr, uci_options = self._get_engine_options(engine_key)
-
-        if self.config['syzygy']['enabled'] and use_syzygy:
-            delimiter = ';' if os.name == 'nt' else ':'
-            syzygy_path = delimiter.join(self.config['syzygy']['paths'])
-            uci_options['SyzygyPath'] = syzygy_path
-            uci_options['SyzygyProbeLimit'] = self.config['syzygy']['max_pieces']
-
-        engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=stderr)
-
-        for name, value in uci_options.items():
-            if chess.engine.Option(name, '', None, None, None, None).is_managed():
-                print(f'UCI option "{name}" ignored as it is managed by the bot.')
-            elif name in engine.options:
-                engine.configure({name: value})
-            elif name == 'SyzygyProbeLimit':
-                continue
-            else:
-                print(f'UCI option "{name}" ignored as it is not supported by the engine.')
-
-        engine.send_opponent_information(opponent=chess.engine.Opponent(self.game_info.opponent_username,
-                                                                        self.game_info.opponent_title,
-                                                                        self.game_info.opponent_rating,
-                                                                        self.game_info.opponent_is_bot))
-
-        if len(self.config['engines']) > 1:
-            print(f'Using "{engine_key}" engine {engine.id["name"]}')
-
-        return engine
-
     def _get_engine_key(self) -> str:
         color = 'white' if self.game_info.is_white else 'black'
 
@@ -778,14 +730,6 @@ class Lichess_Game:
             return 'standard'
 
         raise RuntimeError(f'No suitable engine for "{self.board.uci_variant}" configured.')
-
-    def _get_engine_options(self, key: str) -> tuple[str, bool, bool, int | None, dict]:
-        engine_path = self.config['engines'][key]['path']
-        ponder_enabled = self.config['engines'][key]['ponder']
-        use_syzygy = self.config['engines'][key]['use_syzygy']
-        stderr = subprocess.DEVNULL if self.config['engines'][key]['silence_stderr'] else None
-        engine_options = self.config['engines'][key]['uci_options']
-        return engine_path, ponder_enabled, use_syzygy, stderr, engine_options
 
     def _setup_board(self) -> chess.Board:
         if self.game_info.variant == Variant.CHESS960:
