@@ -7,6 +7,7 @@ from typing import TypeVar
 from api import API
 from botli_dataclasses import Challenge_Request
 from config import load_config
+from engine import Engine
 from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
@@ -50,6 +51,7 @@ class UserInterface:
         print(self.config['version'], end='\n\n')
 
         self._handle_bot_status()
+        self._test_engines()
 
         print('Handling challenges ...')
         self.event_handler.start()
@@ -126,6 +128,12 @@ class UserInterface:
         else:
             print('Upgrade failed.')
             sys.exit(1)
+
+    def _test_engines(self) -> None:
+        for engine_name, engine_section in self.config['engines'].items():
+            print(f'Testing engine "{engine_name}" ... ', end='')
+            Engine.test(engine_section, self.config['syzygy'])
+            print('OK')
 
     def _blacklist(self, command: list[str]) -> None:
         if len(command) != 2:
