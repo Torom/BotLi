@@ -19,9 +19,6 @@ class API:
         self.session.headers.update({'User-Agent': f'BotLi/{config["version"]}'})
 
         account = self.get_account()
-        if 'error' in account:
-            raise RuntimeError(account['error'])
-
         self.username: str = account['username']
         self.user_title: str | None = account.get('title')
         self.session.headers.update({'User-Agent': f'BotLi/{config["version"]} user:{self.username}'})
@@ -95,7 +92,11 @@ class API:
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
     def get_account(self) -> dict[str, Any]:
         response = self.session.get('https://lichess.org/api/account', timeout=3.0)
-        return response.json()
+        json_response = response.json()
+        if 'error' in json_response:
+            raise RuntimeError(f'Account error: {json_response["error"]}')
+
+        return json_response
 
     def get_chessdb_eval(self, fen: str, timeout: int) -> dict[str, Any] | None:
         try:
