@@ -67,6 +67,10 @@ class Engine:
             else:
                 print(f'UCI option "{name}" ignored as it is not supported by the engine.')
 
+    @property
+    def name(self) -> str:
+        return self.engine.id['name']
+
     def make_move(self, board: chess.Board, white_time: float, black_time: float, increment: float) -> tuple[chess.Move, chess.engine.InfoDict]:
         if len(board.move_stack) < 2:
             limit = chess.engine.Limit(time=15.0)
