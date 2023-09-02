@@ -56,6 +56,21 @@ class Challenge_Response:
     is_misconfigured: bool = False
 
 
+@dataclass
+class Chat_Message:
+    username: str
+    text: str
+    room: str
+
+    @classmethod
+    def from_chatLine_event(cls, chatLine_event: dict) -> 'Chat_Message':
+        username = chatLine_event['username']
+        text = chatLine_event['text']
+        room = chatLine_event['room']
+
+        return cls(username, text, room)
+
+
 @dataclass(frozen=True)
 class Game_Information:
     id_: str
@@ -104,10 +119,9 @@ class Game_Information:
         is_white = white_name == username
         state = gameFull_event['state']
 
-        return Game_Information(id_, white_title, white_name, white_rating, white_ai_level, white_provisional,
-                                black_title, black_name, black_rating, black_ai_level, black_provisional,
-                                initial_time_ms, increment_ms, speed, rated, variant, variant_name, initial_fen,
-                                is_white, state)
+        return cls(id_, white_title, white_name, white_rating, white_ai_level, white_provisional, black_title,
+                   black_name, black_rating, black_ai_level, black_provisional, initial_time_ms,
+                   increment_ms, speed, rated, variant, variant_name, initial_fen, is_white, state)
 
     @property
     def id_str(self) -> str:

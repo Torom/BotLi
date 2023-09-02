@@ -1,3 +1,6 @@
+import chess
+
+
 Challenge_ID = str
 DTM = int
 DTZ = int
@@ -8,6 +11,7 @@ Message = str
 Offer_Draw = bool
 Outcome = str
 Performance = int
+PV = list[chess.Move]
 Resign = bool
 Success = bool
 UCI_Move = str
