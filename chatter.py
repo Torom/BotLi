@@ -182,7 +182,7 @@ class Chatter:
         return message.format_map(mapping)
 
     def _append_pv(self, initial_message: str = '') -> str:
-        if not self.lichess_game.last_pv:
+        if len(self.lichess_game.last_pv) < 2:
             return initial_message
 
         if initial_message:
