@@ -128,18 +128,26 @@ class Game_Information:
         return f'ID: {self.id_}'
 
     @property
-    def white_str(self) -> str:
+    def white_name_str(self) -> str:
         title_str = f'{self.white_title} ' if self.white_title else ''
+        return f'{title_str}{self.white_name}'
+
+    @property
+    def white_str(self) -> str:
         provisional_str = '?' if self.white_provisional else ''
         rating_str = f'{self.white_rating}{provisional_str}' if self.white_rating else f'Level {self.white_ai_level}'
-        return f'{title_str}{self.white_name} ({rating_str})'
+        return f'{self.white_name_str} ({rating_str})'
+
+    @property
+    def black_name_str(self) -> str:
+        title_str = f'{self.black_title} ' if self.black_title else ''
+        return f'{title_str}{self.black_name}'
 
     @property
     def black_str(self) -> str:
-        title_str = f'{self.black_title} ' if self.black_title else ''
         provisional_str = '?' if self.black_provisional else ''
         rating_str = f'{self.black_rating}{provisional_str}' if self.black_rating else f'Level {self.black_ai_level}'
-        return f'{title_str}{self.black_name} ({rating_str})'
+        return f'{self.black_name_str} ({rating_str})'
 
     @property
     def tc_str(self) -> str:

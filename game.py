@@ -127,27 +127,24 @@ class Game(Thread):
         assert self.lichess_game
         assert self.game_info
 
-        winning_name = self.game_info.white_name if winner == 'white' else self.game_info.black_name
-        winning_title = self.game_info.white_title if winner == 'white' else self.game_info.black_title
-        losing_name = self.game_info.white_name if winner == 'black' else self.game_info.black_name
-        losing_title = self.game_info.white_title if winner == 'black' else self.game_info.black_title
-
         if winner:
             if winner == 'white':
+                message = f'{self.game_info.white_name_str} won'
+                loser = self.game_info.black_name_str
                 white_result = '1'
                 black_result = '0'
             else:
+                message = f'{self.game_info.black_name_str} won'
+                loser = self.game_info.white_name_str
                 white_result = '0'
                 black_result = '1'
-
-            message = f'{winning_title}{" " if winning_title else ""}{winning_name} won'
 
             if self.lichess_game.status == Game_Status.MATE:
                 message += ' by checkmate!'
             elif self.lichess_game.status == Game_Status.OUT_OF_TIME:
-                message += f'! {losing_title}{" " if losing_title else ""}{losing_name} ran out of time.'
+                message += f'! {loser} ran out of time.'
             elif self.lichess_game.status == Game_Status.RESIGN:
-                message += f'! {losing_title}{" " if losing_title else ""}{losing_name} resigned.'
+                message += f'! {loser} resigned.'
             elif self.lichess_game.status == Game_Status.VARIANT_END:
                 message += ' by variant rules!'
         else:
