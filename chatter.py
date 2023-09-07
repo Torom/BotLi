@@ -29,11 +29,16 @@ class Chatter:
 
         if chat_message.username == 'lichess':
             if chat_message.room == 'player':
-                print(f'{chat_message.username}: {chat_message.text}')
+                print(chat_message.text)
             return
 
         if chat_message.username != self.api.username:
-            print(f'{chat_message.username} ({chat_message.room}): {chat_message.text}')
+            prefix = f'{chat_message.username} ({chat_message.room}): '
+            output = prefix + chat_message.text
+            if len(output) > 128:
+                output = f'{output[:128]}\n{len(prefix) * " "}{output[128:]}'
+
+            print(output)
 
         if chat_message.text.startswith('!'):
             if response := self._handle_command(chat_message):
