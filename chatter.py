@@ -24,11 +24,6 @@ class Chatter:
         self.spectator_goodbye = self._format_message(config['messages'].get('goodbye_spectators'))
         self.print_eval_rooms: set[str] = set()
 
-    @property
-    def last_message(self) -> str:
-        last_message = self.lichess_game.last_message.replace('Engine', 'Evaluation')
-        return ' '.join(last_message.split())
-
     def handle_chat_message(self, chatLine_Event: dict) -> None:
         chat_message = Chat_Message.from_chatLine_event(chatLine_Event)
 
@@ -48,11 +43,8 @@ class Chatter:
         if not self.game_info.increment_ms and self.lichess_game.own_time_ms < 30_000:
             return
 
-        if 'player' in self.print_eval_rooms:
-            self.api.send_chat_message(self.game_info.id_, 'player', self.last_message)
-
-        if 'spectator' in self.print_eval_rooms:
-            self.api.send_chat_message(self.game_info.id_, 'spectator', self._append_pv(self.last_message))
+        for room in self.print_eval_rooms:
+            self.api.send_chat_message(self.game_info.id_, room, self._get_last_message(room))
 
     def send_greetings(self) -> None:
         if self.player_greeting:
@@ -84,11 +76,7 @@ class Chatter:
             return self.draw_message
 
         if command == 'eval':
-            if chat_message.room == 'player':
-                return self.last_message
-
-            if chat_message.room == 'spectator':
-                return self._append_pv(self.last_message)
+            return self._get_last_message(chat_message.room)
 
         if command == 'motor':
             return self.lichess_game.engine.name
@@ -97,11 +85,10 @@ class Chatter:
             return f'{self.api.username} running {self.lichess_game.engine.name} (BotLi {self.version})'
 
         if command == 'printeval':
-            if not self.game_info.increment_ms and self.game_info.initial_time_ms < 180_000:
-                return 'Time control is too fast for this function.'
+            if self.game_info.increment_ms or self.game_info.initial_time_ms >= 180_000:
+                self.print_eval_rooms.add(chat_message.room)
 
-            self.print_eval_rooms.add(chat_message.room)
-            return self.last_message
+            return self._get_last_message(chat_message.room)
 
         if command == 'stopeval':
             self.print_eval_rooms.discard(chat_message.room)
@@ -124,6 +111,15 @@ class Chatter:
 
             if chat_message.room == 'spectator':
                 return 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval / !stopeval, !pv, !ram'
+
+    def _get_last_message(self, room: str) -> str:
+        last_message = self.lichess_game.last_message.replace('Engine', 'Evaluation')
+        last_message = ' '.join(last_message.split())
+
+        if room == 'spectator':
+            last_message = self._append_pv(last_message)
+
+        return last_message
 
     def _get_cpu(self) -> str:
         cpu = ''
