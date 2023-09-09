@@ -31,7 +31,7 @@ class Opponent:
             release_time = datetime.fromisoformat(value['release_time'])
             data[Perf_Type(key)] = Matchmaking_Data(release_time, value['multiplier'])
 
-        return Opponent(username, data)
+        return cls(username, data)
 
     def to_dict(self) -> dict:
         dict_: dict[str, str | dict] = {'username': self.username}
@@ -99,10 +99,8 @@ class Opponents:
         release_str = opponent_data.release_time.isoformat(sep=' ', timespec='seconds')
         print(f'{bot.username} will not be challenged to a new game pair before {release_str}.')
 
-        if success and color == Challenge_Color.WHITE:
-            opponent_data.color = Challenge_Color.BLACK
-        else:
-            opponent_data.color = Challenge_Color.WHITE
+        if success:
+            opponent_data.color = Challenge_Color.BLACK if color == Challenge_Color.WHITE else Challenge_Color.WHITE
 
         if opponent not in self.opponent_list:
             self.opponent_list.append(opponent)
