@@ -139,5 +139,8 @@ class Opponents:
             return []
 
     def _save(self, matchmaking_file: str) -> None:
-        with open(matchmaking_file, 'w', encoding='utf-8') as json_output:
-            json.dump([opponent.to_dict() for opponent in self.opponent_list], json_output, indent=4)
+        try:
+            with open(matchmaking_file, 'w', encoding='utf-8') as json_output:
+                json.dump([opponent.to_dict() for opponent in self.opponent_list], json_output, indent=4)
+        except PermissionError:
+            print('Saving the matchmaking file failed due to missing write permissions.')
