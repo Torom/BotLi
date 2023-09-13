@@ -6,6 +6,8 @@ It has a customizable support of Polyglot opening books, a variety of supported 
 
 In addition, BotLi can autonomously challenge other bots in any variant. It supports custom opening books and engines depending on color, time control and Lichess chess variant.
 
+If you have found a bug, please [create an issue](https://github.com/Torom/BotLi/issues/new?labels=bug&template=bug_report.md). For discussion, feature requests and help join the [BotLi Discord server](https://discord.gg/6aS945KMFD).
+
 # How to install
 
 - **NOTE: Only Python 3.10 or later is supported!**
