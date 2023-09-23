@@ -51,7 +51,7 @@ class Lichess_Game:
     def make_move(self) -> tuple[UCI_Move, Offer_Draw, Resign]:
         for move_source in self.move_sources:
             if response := move_source():
-                move, message, self.last_pv, offer_draw, resign = response
+                move, message, self.last_pv, is_drawish, is_resignable = response
                 engine_move = False
                 break
         else:
@@ -63,16 +63,18 @@ class Lichess_Game:
             self.last_pv = info.get('pv', [])
 
             message = f'Engine:  {self._format_move(move):14} {self._format_engine_info(info)}'
-            offer_draw = self._is_drawish()
-            resign = self._is_resignable()
+            is_drawish = self._is_draw_eval()
+            is_resignable = self._is_resign_eval()
             engine_move = len(self.board.move_stack) > 1
 
-        print(message)
-        self.last_message = message
         self.board.push(move)
         if not engine_move:
             self.engine.start_pondering(self.board)
-        return move.uci(), offer_draw and self.draw_enabled, resign and self.resign_enabled
+
+        print(message)
+        self.last_message = message
+
+        return move.uci(), self._offer_draw(is_drawish), self._resign(is_resignable)
 
     def update(self, gameState_event: dict) -> bool:
         self.status = Game_Status(gameState_event['status'])
@@ -112,6 +114,10 @@ class Lichess_Game:
         return self.white_time_ms if self.game_info.is_white else self.black_time_ms
 
     @property
+    def opponent_time_ms(self) -> int:
+        return self.black_time_ms if self.game_info.is_white else self.white_time_ms
+
+    @property
     def engine_times(self) -> tuple[float, float, float]:
         if self.game_info.is_white:
             white_time = self.white_time_ms - self.move_overhead_ms if self.white_time_ms > self.move_overhead_ms else self.white_time_ms / 2
@@ -139,7 +145,7 @@ class Lichess_Game:
         if self.gaviota_tablebase:
             self.gaviota_tablebase.close()
 
-    def _is_drawish(self) -> bool:
+    def _is_draw_eval(self) -> bool:
         if not self.draw_enabled:
             return False
 
@@ -160,7 +166,19 @@ class Lichess_Game:
 
         return True
 
-    def _is_resignable(self) -> bool:
+    def _offer_draw(self, is_drawish: bool) -> Offer_Draw:
+        if not is_drawish:
+            return False
+
+        if not self.draw_enabled:
+            return False
+
+        if not self.game_info.increment_ms and self.opponent_time_ms < 30_000:
+            return False
+
+        return True
+
+    def _is_resign_eval(self) -> bool:
         if not self.resign_enabled:
             return False
 
@@ -175,6 +193,18 @@ class Lichess_Game:
 
             if score.relative.score(mate_score=40000) > max_score:
                 return False
+
+        return True
+
+    def _resign(self, is_resignable: bool) -> Resign:
+        if not is_resignable:
+            return False
+
+        if not self.resign_enabled:
+            return False
+
+        if not self.game_info.increment_ms and self.opponent_time_ms < 30_000:
+            return False
 
         return True
 
