@@ -26,6 +26,7 @@ def load_config(config_path: str) -> dict:
     _check_offer_draw_sections(config['offer_draw'])
     _check_resign_sections(config['resign'])
     _check_matchmaking_sections(config['matchmaking'])
+    _check_messages(config['messages'])
     _init_lists(config)
     _init_engines(config['engines'])
     _init_opening_books(config)
@@ -203,6 +204,13 @@ def _check_matchmaking_sections(matchmaking_section: dict) -> None:
                     break
             else:
                 raise RuntimeError(f'Unknown field "{key}" in matchmaking type "{matchmaking_type}".')
+
+
+def _check_messages(messages_section: dict) -> None:
+    for message_name, message in messages_section.items():
+        if message == '!printeval':
+            print(f'Ignoring message "{message_name}": "!printeval" is not allowed in messages.')
+            messages_section[message_name] = None
 
 
 def _init_lists(config: dict) -> None:
