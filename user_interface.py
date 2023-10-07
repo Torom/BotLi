@@ -28,7 +28,7 @@ COMMANDS = {
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
     'rechallenge': 'Challenges the opponent to the last received challenge.',
-    'reset': 'Resets matchmaking. Usage: reset [PERF_TYPE]',
+    'reset': 'Resets matchmaking. Usage: reset PERF_TYPE',
     'stop': 'Stops matchmaking mode.',
     'whitelist': 'Temporarily whitelists a user. Use config for permanent whitelisting. Usage: whitelist USERNAME'
 }
