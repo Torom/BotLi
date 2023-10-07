@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
 
+import chess
 from chess.polyglot import MemoryMappedReader
 
 from aliases import Challenge_ID
@@ -16,6 +17,13 @@ class API_Challenge_Reponse:
     invalid_initial: bool = False
     invalid_increment: bool = False
     has_reached_rate_limit: bool = False
+
+
+@dataclass
+class Book_Settings:
+    selection: str = ''
+    max_depth: int = 600
+    readers: dict[str, MemoryMappedReader] = field(default_factory=dict)
 
 
 @dataclass
@@ -230,7 +238,11 @@ class Matchmaking_Type:
 
 
 @dataclass
-class Book_Settings:
-    selection: str = ''
-    max_depth: int = 600
-    readers: dict[str, MemoryMappedReader] = field(default_factory=dict)
+class Move_Response:
+    move: chess.Move
+    public_message: str
+    private_message: str = field(default='', kw_only=True)
+    pv: list[chess.Move] = field(default_factory=list, kw_only=True)
+    is_drawish: bool = field(default=False, kw_only=True)
+    is_resignable: bool = field(default=False, kw_only=True)
+    is_engine_move: bool = field(default=False, kw_only=True)
