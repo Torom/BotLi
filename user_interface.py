@@ -1,5 +1,6 @@
 import argparse
 import logging
+import signal
 import sys
 from enum import Enum
 from typing import TypeVar
@@ -61,6 +62,9 @@ class UserInterface:
             self._matchmaking()
 
         if not sys.stdin.isatty():
+            signal.signal(signal.SIGINT, self._quit)
+            self.event_handler.join()
+            self.game_manager.join()
             return
 
         if readline_available:
@@ -205,7 +209,7 @@ class UserInterface:
         print('Starting matchmaking ...')
         self.game_manager.start_matchmaking()
 
-    def _quit(self) -> None:
+    def _quit(self, *_) -> None:
         self.is_running = False
         self.game_manager.stop()
         print('Terminating program ...')
