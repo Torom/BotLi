@@ -1,7 +1,7 @@
-FROM python:3.12-slim
+FROM python:3.12
 COPY . .
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y wget unzip git
+RUN apt-get update && apt-get upgrade -y
 RUN mv config.yml.default config.yml
 RUN pip --no-cache-dir install -U pip && pip --no-cache-dir install -r requirements.txt
 
