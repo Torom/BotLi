@@ -139,7 +139,7 @@ The account **cannot have played any game** before becoming a Bot account. The u
 
 ## Running with Docker
 
-The project comes with a Dockerfile, this uses Ubuntu 22.04, installs all dependencies, downloads the latest version of Stockfish and starts the bot.
+The project comes with a Dockerfile, this uses python:3.12-slim, installs all dependencies, downloads the latest version of Stockfish and starts the bot.
 
 If Docker is used, all configurations must be done in `config.yml.default`. This is automatically renamed to `config.yml` in the build process.
 

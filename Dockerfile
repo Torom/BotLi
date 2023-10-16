@@ -1,9 +1,9 @@
-FROM ubuntu:jammy
+FROM python:3.12-slim
 COPY . .
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y wget unzip python3 python3-pip git
+RUN apt-get update && apt-get upgrade -y && apt-get install -y wget unzip git
 RUN mv config.yml.default config.yml
-RUN python3 -m pip install --no-cache-dir -r requirements.txt
+RUN pip --no-cache-dir install -U pip && pip --no-cache-dir install -r requirements.txt
 
 # Stockfish - Depending on your CPU it may be necessary to pick a binary other than bmi2
 RUN wget https://abrok.eu/stockfish/latest/linux/stockfish_x64_bmi2.zip -O stockfish.zip
@@ -23,4 +23,4 @@ RUN mv stockfish_* engines/stockfish && chmod +x engines/stockfish
 # RUN wget "https://drive.google.com/u/0/uc?id=1Tiq8FqSu7eiekE2iaWQzSdJPg-mhvLzJ&export=download" -O engines/racingkings-636b95f085e3.nnue
 
 # Add the "--matchmaking" flag to start the matchmaking mode.
-CMD python3 user_interface.py
+CMD python user_interface.py
