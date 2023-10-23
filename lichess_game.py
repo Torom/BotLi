@@ -74,7 +74,9 @@ class Lichess_Game:
         self.last_message = move_response.public_message
         self.last_pv = move_response.pv
 
-        return move_response.move.uci(), self._offer_draw(move_response.is_drawish), self._resign(move_response.is_resignable)
+        return (move_response.move.uci(),
+                self._offer_draw(move_response.is_drawish),
+                self._resign(move_response.is_resignable))
 
     def update(self, gameState_event: dict) -> bool:
         self.status = Game_Status(gameState_event['status'])
@@ -120,12 +122,18 @@ class Lichess_Game:
     @property
     def engine_times(self) -> tuple[float, float, float]:
         if self.game_info.is_white:
-            white_time = self.white_time_ms - self.move_overhead_ms if self.white_time_ms > self.move_overhead_ms else self.white_time_ms / 2
+            if self.white_time_ms > self.move_overhead_ms:
+                white_time = self.white_time_ms - self.move_overhead_ms
+            else:
+                white_time = self.white_time_ms / 2
             white_time /= 1000
             black_time = self.black_time_ms / 1000
         else:
             white_time = self.white_time_ms / 1000
-            black_time = self.black_time_ms - self.move_overhead_ms if self.black_time_ms > self.move_overhead_ms else self.black_time_ms / 2
+            if self.black_time_ms > self.move_overhead_ms:
+                black_time = self.black_time_ms - self.move_overhead_ms
+            else:
+                black_time = self.black_time_ms / 2
             black_time /= 1000
 
         return white_time, black_time, self.game_info.increment_ms / 1000
@@ -311,7 +319,11 @@ class Lichess_Game:
             color = 'white' if self.board.turn else 'black'
             username = self.game_info.white_name if self.board.turn else self.game_info.black_name
 
-        if response := self.api.get_opening_explorer(username, self.board.fen(), self.game_info.variant, color, timeout):
+        if response := self.api.get_opening_explorer(username,
+                                                     self.board.fen(),
+                                                     self.game_info.variant,
+                                                     color,
+                                                     timeout):
             game_count = response['white'] + response['draws'] + response['black']
             if game_count >= min_games:
                 top_move = self._get_opening_explorer_top_move(response['moves'])
@@ -338,7 +350,10 @@ class Lichess_Game:
                 move['wins'] = move['white'] if self.board.turn else move['black']
                 move['losses'] = move['black'] if self.board.turn else move['white']
 
-            return max(moves, key=lambda move: (move['wins'] - move['losses']) / (move['white'] + move['draws'] + move['black']))
+            def win_performance(move: dict):
+                return (move['wins'] - move['losses']) / (move['white'] + move['draws'] + move['black'])
+
+            return max(moves, key=win_performance)
 
         min_or_max = min if anti else max
         top_move = min_or_max(moves, key=lambda move: move['performance'])

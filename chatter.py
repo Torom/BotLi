@@ -69,7 +69,8 @@ class Chatter:
             self.api.send_chat_message(self.game_info.id_, 'spectator', self.spectator_goodbye)
 
     def send_abortion_message(self) -> None:
-        message = 'Too bad you weren\'t there. Feel free to challenge me again, I will accept the challenge when I have time.'
+        message = 'Too bad you weren\'t there. Feel free to challenge me again, ' \
+            'I will accept the challenge when I have time.'
         self.api.send_chat_message(self.game_info.id_, 'player', message)
 
     def _handle_command(self, chat_message: Chat_Message) -> str | None:

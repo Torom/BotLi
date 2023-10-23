@@ -25,7 +25,8 @@ class API:
         self.user_title: str | None = account.get('title')
         self.session.headers.update({'User-Agent': f'BotLi/{config["version"]} user:{self.username}'})
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+           after=after_log(logger, logging.DEBUG))
     def abort_game(self, game_id: str) -> bool:
         try:
             response = self.session.post(urljoin(self.url, f'/api/bot/game/{game_id}/abort'), timeout=3.0)
@@ -35,7 +36,8 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+           after=after_log(logger, logging.DEBUG))
     def accept_challenge(self, challenge_id: str) -> bool:
         try:
             response = self.session.post(urljoin(self.url, f'/api/challenge/{challenge_id}/accept'), timeout=3.0)
@@ -45,7 +47,8 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+           after=after_log(logger, logging.DEBUG))
     def cancel_challenge(self, challenge_id: str) -> bool:
         try:
             response = self.session.post(urljoin(self.url, f'/api/challenge/{challenge_id}/cancel'), timeout=3.0)
@@ -55,8 +58,12 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError), after=after_log(logger, logging.DEBUG))
-    def create_challenge(self, challenge_request: Challenge_Request, response_queue: Queue[API_Challenge_Reponse]) -> None:
+    @retry(retry=retry_if_exception_type(requests.ConnectionError),
+           after=after_log(logger, logging.DEBUG))
+    def create_challenge(self,
+                         challenge_request: Challenge_Request,
+                         response_queue: Queue[API_Challenge_Reponse]
+                         ) -> None:
         response = self.session.post(
             urljoin(self.url, f'/api/challenge/{challenge_request.opponent_username}'),
             data={'rated': str(challenge_request.rated).lower(),
@@ -80,7 +87,8 @@ class API:
             response_queue.put(API_Challenge_Reponse(challenge_id, was_accepted, error,
                                was_declined, invalid_initial, invalid_increment))
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+           after=after_log(logger, logging.DEBUG))
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:
             response = self.session.post(urljoin(self.url, f'/api/challenge/{challenge_id}/decline'),
@@ -91,7 +99,8 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+           after=after_log(logger, logging.DEBUG))
     def get_account(self) -> dict[str, Any]:
         response = self.session.get(urljoin(self.url, '/api/account'), timeout=3.0)
         json_response = response.json()
@@ -148,7 +157,13 @@ class API:
         response = self.session.get(urljoin(self.url, '/api/bot/online'), stream=True, timeout=9.0)
         return [json.loads(line) for line in response.iter_lines() if line]
 
-    def get_opening_explorer(self, username: str, fen: str, variant: Variant, color: str, timeout: int) -> dict[str, Any] | None:
+    def get_opening_explorer(self,
+                             username: str,
+                             fen: str,
+                             variant: Variant,
+                             color: str,
+                             timeout: int
+                             ) -> dict[str, Any] | None:
         try:
             response = self.session.get('https://explorer.lichess.ovh/player',
                                         params={'player': username, 'variant': variant.value, 'fen': fen,
@@ -162,17 +177,20 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+           after=after_log(logger, logging.DEBUG))
     def get_token_scopes(self, token: str) -> str:
         response = self.session.post(urljoin(self.url, '/api/token/test'), data=token, timeout=3.0)
         return response.json()[token]['scopes']
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+           after=after_log(logger, logging.DEBUG))
     def get_user_status(self, username: str) -> dict[str, Any]:
         response = self.session.get(urljoin(self.url, '/api/users/status'), params={'ids': username}, timeout=3.0)
         return response.json()[0]
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+           after=after_log(logger, logging.DEBUG))
     def resign_game(self, game_id: str) -> bool:
         try:
             response = self.session.post(urljoin(self.url, f'/api/bot/game/{game_id}/resign'), timeout=3.0)
@@ -192,7 +210,8 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+           after=after_log(logger, logging.DEBUG))
     def send_move(self, game_id: str, uci_move: str, offer_draw: bool) -> bool:
         try:
             response = self.session.post(urljoin(self.url, f'/api/bot/game/{game_id}/move/{uci_move}'),
@@ -203,7 +222,8 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(requests.ConnectionError), after=after_log(logger, logging.DEBUG))
+    @retry(retry=retry_if_exception_type(requests.ConnectionError),
+           after=after_log(logger, logging.DEBUG))
     def upgrade_account(self) -> bool:
         try:
             response = self.session.post(urljoin(self.url, '/api/bot/account/upgrade'))

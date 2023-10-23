@@ -13,7 +13,11 @@ class Engine:
         self.ponder = ponder
 
     @classmethod
-    def from_config(cls, engine_config: dict, syzygy_config: dict, game_info: Game_Information | None = None) -> 'Engine':
+    def from_config(cls,
+                    engine_config: dict,
+                    syzygy_config: dict,
+                    game_info: Game_Information | None = None
+                    ) -> 'Engine':
         engine_path, ponder, stderr, uci_options = cls._get_engine_settings(engine_config, syzygy_config)
 
         engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=stderr)
@@ -71,7 +75,12 @@ class Engine:
     def name(self) -> str:
         return self.engine.id['name']
 
-    def make_move(self, board: chess.Board, white_time: float, black_time: float, increment: float) -> tuple[chess.Move, chess.engine.InfoDict]:
+    def make_move(self,
+                  board: chess.Board,
+                  white_time: float,
+                  black_time: float,
+                  increment: float
+                  ) -> tuple[chess.Move, chess.engine.InfoDict]:
         if len(board.move_stack) < 2:
             limit = chess.engine.Limit(time=15.0)
             ponder = False

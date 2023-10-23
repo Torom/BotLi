@@ -160,7 +160,10 @@ class Matchmaking:
 
         performances: dict[Perf_Type, int] = {}
         for perf_type in Perf_Type:
-            performances[perf_type] = user['perfs'][perf_type.value]['rating'] if perf_type.value in user['perfs'] else 2500
+            if perf_type.value in user['perfs']:
+                performances[perf_type] = user['perfs'][perf_type.value]['rating']
+            else:
+                performances[perf_type] = 2500
 
         return performances
 

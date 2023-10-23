@@ -7,7 +7,11 @@ from enums import Challenge_Color, Perf_Type
 
 
 class Matchmaking_Data:
-    def __init__(self, release_time: datetime = datetime.now(), multiplier: int = 1, color: Challenge_Color = Challenge_Color.WHITE) -> None:
+    def __init__(self,
+                 release_time: datetime = datetime.now(),
+                 multiplier: int = 1,
+                 color: Challenge_Color = Challenge_Color.WHITE
+                 ) -> None:
         self.release_time = release_time
         self.multiplier = multiplier
         self.color = color
@@ -54,7 +58,10 @@ class Opponents:
         self.busy_bots: list[Bot] = []
         self.last_opponent: tuple[Bot, Challenge_Color] | None = None
 
-    def get_opponent(self, online_bots: dict[Perf_Type, list[Bot]], matchmaking_type: Matchmaking_Type) -> tuple[Bot, Challenge_Color] | None:
+    def get_opponent(self,
+                     online_bots: dict[Perf_Type, list[Bot]],
+                     matchmaking_type: Matchmaking_Type
+                     ) -> tuple[Bot, Challenge_Color] | None:
         for bot in sorted(online_bots[matchmaking_type.perf_type], key=lambda bot: abs(bot.rating_diff)):
             if matchmaking_type.rated and bot.tos_violation:
                 continue
