@@ -54,26 +54,24 @@ class Opponents:
         self.busy_bots: list[Bot] = []
         self.last_opponent: tuple[Bot, Challenge_Color] | None = None
 
-    def get_next_opponent(self, online_bots: dict[Perf_Type, list[Bot]], matchmaking_type: Matchmaking_Type) -> tuple[Bot, Challenge_Color]:
-        while True:
-            for bot in sorted(online_bots[matchmaking_type.perf_type], key=lambda bot: abs(bot.rating_diff)):
-                if matchmaking_type.rated and bot.tos_violation:
-                    continue
+    def get_opponent(self, online_bots: dict[Perf_Type, list[Bot]], matchmaking_type: Matchmaking_Type) -> tuple[Bot, Challenge_Color] | None:
+        for bot in sorted(online_bots[matchmaking_type.perf_type], key=lambda bot: abs(bot.rating_diff)):
+            if matchmaking_type.rated and bot.tos_violation:
+                continue
 
-                if not matchmaking_type.min_rating_diff <= abs(bot.rating_diff) <= matchmaking_type.max_rating_diff:
-                    continue
+            if not matchmaking_type.min_rating_diff <= abs(bot.rating_diff) <= matchmaking_type.max_rating_diff:
+                continue
 
-                if bot in self.busy_bots:
-                    continue
+            if bot in self.busy_bots:
+                continue
 
-                opponent = self._find(matchmaking_type.perf_type, bot.username)
-                opponent_data = opponent.data[matchmaking_type.perf_type]
-                if opponent_data.color == Challenge_Color.BLACK or opponent_data.release_time <= datetime.now():
-                    self.last_opponent = (bot, opponent_data.color)
-                    return bot, opponent_data.color
+            opponent = self._find(matchmaking_type.perf_type, bot.username)
+            opponent_data = opponent.data[matchmaking_type.perf_type]
+            if opponent_data.color == Challenge_Color.BLACK or opponent_data.release_time <= datetime.now():
+                self.last_opponent = (bot, opponent_data.color)
+                return bot, opponent_data.color
 
-            print('Resetting matchmaking ...')
-            self.reset_release_time(matchmaking_type.perf_type)
+        self.busy_bots.clear()
 
     def add_timeout(self, success: bool, game_duration: timedelta, matchmaking_type: Matchmaking_Type) -> None:
         assert self.last_opponent

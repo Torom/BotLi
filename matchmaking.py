@@ -33,9 +33,15 @@ class Matchmaking:
         if not self.current_type:
             self.current_type, = random.choices(self.types, [type.weight for type in self.types])
             if len(self.types) > 1:
-                print(f'Picked matchmaking type {self.current_type.to_str}')
+                print(f'Matchmaking type: {self.current_type.to_str}')
 
-        opponent, color = self.opponents.get_next_opponent(self.online_bots, self.current_type)
+        if next_opponent := self.opponents.get_opponent(self.online_bots, self.current_type):
+            opponent, color = next_opponent
+        else:
+            print(f'No opponent available for matchmaking type {self.current_type.name}.')
+            self.current_type = None
+            pending_challenge.return_early()
+            return
 
         if busy_reason := self._get_busy_reason(opponent):
             if busy_reason == Busy_Reason.PLAYING:
@@ -44,7 +50,7 @@ class Matchmaking:
                 self.opponents.skip_bot()
             elif busy_reason == Busy_Reason.OFFLINE:
                 print(f'Removing {opponent.username} from online bots because it is offline ...')
-                self._remove_offline_bot(opponent.username)
+                self._remove_offline_bot(opponent)
 
             pending_challenge.return_early()
             return
@@ -158,8 +164,7 @@ class Matchmaking:
 
         return performances
 
-    def _remove_offline_bot(self, username: str) -> None:
-        offline_bot = Bot(username, False, 0)
+    def _remove_offline_bot(self, offline_bot: Bot) -> None:
         for online_bots in self.online_bots.values():
             if offline_bot in online_bots:
                 online_bots.remove(offline_bot)
