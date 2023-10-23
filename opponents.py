@@ -62,13 +62,20 @@ class Opponents:
                      online_bots: dict[Perf_Type, list[Bot]],
                      matchmaking_type: Matchmaking_Type
                      ) -> tuple[Bot, Challenge_Color] | None:
-        for bot in sorted(online_bots[matchmaking_type.perf_type], key=lambda bot: abs(bot.rating_diff)):
+        def bot_filter(bot: Bot) -> bool:
             if matchmaking_type.rated and bot.tos_violation:
-                continue
+                return False
 
             if not matchmaking_type.min_rating_diff <= abs(bot.rating_diff) <= matchmaking_type.max_rating_diff:
-                continue
+                return False
 
+            return True
+
+        bots = list(filter(bot_filter, online_bots[matchmaking_type.perf_type]))
+        if not bots:
+            raise IndexError
+
+        for bot in sorted(bots, key=lambda bot: abs(bot.rating_diff)):
             if bot in self.busy_bots:
                 continue
 

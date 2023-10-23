@@ -31,11 +31,25 @@ class Matchmaking:
             return
 
         if not self.current_type:
-            self.current_type, = random.choices(self.types, [type.weight for type in self.types])
-            if len(self.types) > 1:
-                print(f'Matchmaking type: {self.current_type.to_str}')
+            if not self.types:
+                print('No usable matchmaking type configured.')
+                pending_challenge.set_final_state(Challenge_Response(is_misconfigured=True))
+                return
 
-        if next_opponent := self.opponents.get_opponent(self.online_bots, self.current_type):
+            self.current_type, = random.choices(self.types, [type.weight for type in self.types])
+            print(f'Matchmaking type: {self.current_type.to_str}')
+
+        try:
+            next_opponent = self.opponents.get_opponent(self.online_bots, self.current_type)
+        except IndexError:
+            print(f'Removing matchmaking type {self.current_type.name} because '
+                  'no opponent is online in the configured rating range.')
+            self.types.remove(self.current_type)
+            self.current_type = None
+            pending_challenge.return_early()
+            return
+
+        if next_opponent:
             opponent, color = next_opponent
         else:
             print(f'No opponent available for matchmaking type {self.current_type.name}.')
@@ -147,10 +161,6 @@ class Matchmaking:
         for category, count in bot_counts.items():
             if count:
                 print(f'{count:3} bots {category}')
-
-        for perf_type, bots in online_bots.items():
-            if not bots:
-                raise RuntimeError(f'No bots for {perf_type} in configured rating range online!')
 
         self.next_update = datetime.now() + timedelta(minutes=30.0)
         return online_bots
