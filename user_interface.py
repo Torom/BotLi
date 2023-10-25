@@ -1,6 +1,5 @@
 import argparse
 import logging
-import signal
 import sys
 from enum import Enum
 from typing import TypeVar
@@ -62,7 +61,6 @@ class UserInterface:
             self._matchmaking()
 
         if not sys.stdin.isatty():
-            signal.signal(signal.SIGINT, self._quit)
             self.event_handler.join()
             self.game_manager.join()
             return
