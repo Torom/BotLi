@@ -7,7 +7,7 @@ from botli_dataclasses import Bot, Challenge_Request, Challenge_Response, Matchm
 from challenger import Challenger
 from enums import Busy_Reason, Perf_Type, Variant
 from game import Game
-from opponents import Opponents
+from opponents import NoOpponentException, Opponents
 from pending_challenge import Pending_Challenge
 
 
@@ -22,7 +22,7 @@ class Matchmaking:
         self.blacklist: list[str] = config.get('blacklist', [])
 
         self.game_start_time: datetime = datetime.now()
-        self.online_bots: dict[Perf_Type, list[Bot]] = {}
+        self.online_bots: list[Bot] = []
         self.current_type: Matchmaking_Type | None = None
 
     def create_challenge(self, pending_challenge: Pending_Challenge) -> None:
@@ -31,21 +31,20 @@ class Matchmaking:
             return
 
         if not self.current_type:
-            if not self.types:
-                print('No usable matchmaking type configured.')
-                pending_challenge.set_final_state(Challenge_Response(is_misconfigured=True))
-                return
-
             self.current_type, = random.choices(self.types, [type.weight for type in self.types])
             print(f'Matchmaking type: {self.current_type.to_str}')
 
         try:
             next_opponent = self.opponents.get_opponent(self.online_bots, self.current_type)
-        except IndexError:
+        except NoOpponentException:
             print(f'Removing matchmaking type {self.current_type.name} because '
                   'no opponent is online in the configured rating range.')
             self.types.remove(self.current_type)
-            self.current_type = None
+            if not self.types:
+                print('No usable matchmaking type configured.')
+                pending_challenge.set_final_state(Challenge_Response(is_misconfigured=True))
+                return
+
             pending_challenge.return_early()
             return
 
@@ -59,17 +58,17 @@ class Matchmaking:
 
         if busy_reason := self._get_busy_reason(opponent):
             if busy_reason == Busy_Reason.PLAYING:
-                print(f'Skipping {opponent.username} ({opponent.rating_diff:+}) '
+                print(f'Skipping {opponent.username} ({opponent.rating_diffs[self.current_type.perf_type]:+}) '
                       f'as {color.value} because it is playing ...')
                 self.opponents.skip_bot()
             elif busy_reason == Busy_Reason.OFFLINE:
                 print(f'Removing {opponent.username} from online bots because it is offline ...')
-                self._remove_offline_bot(opponent)
+                self.online_bots.remove(opponent)
 
             pending_challenge.return_early()
             return
 
-        print(f'Challenging {opponent.username} ({opponent.rating_diff:+}) '
+        print(f'Challenging {opponent.username} ({opponent.rating_diffs[self.current_type.perf_type]:+}) '
               f'as {color.value} to {self.current_type.name} ...')
         challenge_request = Challenge_Request(opponent.username, self.current_type.initial_time,
                                               self.current_type.increment, self.current_type.rated, color,
@@ -129,10 +128,10 @@ class Matchmaking:
 
         return False
 
-    def _get_online_bots(self) -> dict[Perf_Type, list[Bot]]:
+    def _get_online_bots(self) -> list[Bot]:
         user_ratings = self._get_user_ratings()
 
-        online_bots: defaultdict[Perf_Type, list[Bot]] = defaultdict(list)
+        online_bots: list[Bot] = []
         bot_counts: defaultdict[str, int] = defaultdict(int)
         for bot in self.api.get_online_bots_stream():
             if bot['username'] == self.api.username:
@@ -153,10 +152,12 @@ class Matchmaking:
                 tos_violation = True
                 bot_counts['with tosViolation'] += 1
 
+            rating_diffs: dict[Perf_Type, int] = {}
             for perf_type in Perf_Type:
                 bot_rating = bot['perfs'][perf_type.value]['rating'] if perf_type.value in bot['perfs'] else 1500
-                rating_diff = bot_rating - user_ratings[perf_type]
-                online_bots[perf_type].append(Bot(bot['username'], tos_violation, rating_diff))
+                rating_diffs[perf_type] = bot_rating - user_ratings[perf_type]
+
+            online_bots.append(Bot(bot['username'], tos_violation, rating_diffs))
 
         for category, count in bot_counts.items():
             if count:
@@ -176,11 +177,6 @@ class Matchmaking:
                 performances[perf_type] = 2500
 
         return performances
-
-    def _remove_offline_bot(self, offline_bot: Bot) -> None:
-        for online_bots in self.online_bots.values():
-            if offline_bot in online_bots:
-                online_bots.remove(offline_bot)
 
     def _variant_to_perf_type(self, variant: Variant, initial_time: int, increment: int) -> Perf_Type:
         if variant != Variant.STANDARD:

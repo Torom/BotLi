@@ -6,6 +6,10 @@ from botli_dataclasses import Bot, Matchmaking_Type
 from enums import Challenge_Color, Perf_Type
 
 
+class NoOpponentException(Exception):
+    pass
+
+
 class Matchmaking_Data:
     def __init__(self,
                  release_time: datetime = datetime.now(),
@@ -59,23 +63,14 @@ class Opponents:
         self.last_opponent: tuple[Bot, Challenge_Color] | None = None
 
     def get_opponent(self,
-                     online_bots: dict[Perf_Type, list[Bot]],
+                     online_bots: list[Bot],
                      matchmaking_type: Matchmaking_Type
                      ) -> tuple[Bot, Challenge_Color] | None:
-        def bot_filter(bot: Bot) -> bool:
-            if matchmaking_type.rated and bot.tos_violation:
-                return False
-
-            if not matchmaking_type.min_rating_diff <= abs(bot.rating_diff) <= matchmaking_type.max_rating_diff:
-                return False
-
-            return True
-
-        bots = list(filter(bot_filter, online_bots[matchmaking_type.perf_type]))
+        bots = self._filter_bots(online_bots, matchmaking_type)
         if not bots:
-            raise IndexError
+            raise NoOpponentException
 
-        for bot in sorted(bots, key=lambda bot: abs(bot.rating_diff)):
+        for bot in sorted(bots, key=lambda bot: abs(bot.rating_diffs[matchmaking_type.perf_type])):
             if bot in self.busy_bots:
                 continue
 
@@ -133,6 +128,21 @@ class Opponents:
                 opponent.data[perf_type].release_time = datetime.now()
 
         self.busy_bots.clear()
+
+    def _filter_bots(self, bots: list[Bot], matchmaking_type: Matchmaking_Type) -> list[Bot]:
+        def bot_filter(bot: Bot) -> bool:
+            if matchmaking_type.rated and bot.tos_violation:
+                return False
+
+            if abs(bot.rating_diffs[matchmaking_type.perf_type]) > matchmaking_type.max_rating_diff:
+                return False
+
+            if abs(bot.rating_diffs[matchmaking_type.perf_type]) < matchmaking_type.min_rating_diff:
+                return False
+
+            return True
+
+        return list(filter(bot_filter, bots))
 
     def _find(self, perf_type: Perf_Type, username: str) -> Opponent:
         try:

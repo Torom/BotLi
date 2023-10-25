@@ -30,7 +30,7 @@ class Book_Settings:
 class Bot:
     username: str
     tos_violation: bool
-    rating_diff: int
+    rating_diffs: dict[Perf_Type, int]
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, Bot):
