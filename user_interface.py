@@ -207,7 +207,7 @@ class UserInterface:
         print('Starting matchmaking ...')
         self.game_manager.start_matchmaking()
 
-    def _quit(self, *_) -> None:
+    def _quit(self) -> None:
         self.is_running = False
         self.game_manager.stop()
         print('Terminating program ...')
