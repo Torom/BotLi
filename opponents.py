@@ -21,8 +21,17 @@ class Matchmaking_Data:
         self.color = color
 
     def to_dict(self) -> dict:
-        return {'release_time': self.release_time.isoformat(timespec='seconds'),
-                'multiplier': self.multiplier}
+        dict_ = {}
+        if self.release_time > datetime.now():
+            dict_['release_time'] = self.release_time.isoformat(timespec='seconds')
+
+        if self.multiplier > 1:
+            dict_['multiplier'] = self.multiplier
+
+        if self.color == Challenge_Color.BLACK:
+            dict_['color'] = Challenge_Color.BLACK.value
+
+        return dict_
 
 
 class Opponent:
@@ -36,16 +45,21 @@ class Opponent:
 
         data: dict[Perf_Type, Matchmaking_Data] = {}
         for key, value in dict_.items():
-            release_time = datetime.fromisoformat(value['release_time'])
-            data[Perf_Type(key)] = Matchmaking_Data(release_time, value['multiplier'])
+            release_time = datetime.fromisoformat(value['release_time']) if 'release_time' in value else datetime.now()
+            multiplier = value.get('multiplier', 1)
+            color = Challenge_Color(value['color']) if 'color' in value else Challenge_Color.WHITE
+
+            data[Perf_Type(key)] = Matchmaking_Data(release_time, multiplier, color)
 
         return cls(username, data)
 
     def to_dict(self) -> dict:
         dict_: dict[str, str | dict] = {'username': self.username}
-        dict_.update({perf_type.value: data.to_dict() for perf_type, data in self.data.items()})
+        for perf_type, matchmaking_data in self.data.items():
+            if matchmaking_data_dict := matchmaking_data.to_dict():
+                dict_[perf_type.value] = matchmaking_data_dict
 
-        return dict_
+        return dict_ if len(dict_) > 1 else {}
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, Opponent):
@@ -165,6 +179,8 @@ class Opponents:
     def _save(self, matchmaking_file: str) -> None:
         try:
             with open(matchmaking_file, 'w', encoding='utf-8') as json_output:
-                json.dump([opponent.to_dict() for opponent in self.opponent_list], json_output, indent=4)
+                json.dump([opponent_dict
+                           for opponent in self.opponent_list
+                           if (opponent_dict := opponent.to_dict())], json_output, indent=4)
         except PermissionError:
             print('Saving the matchmaking file failed due to missing write permissions.')
