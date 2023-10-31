@@ -43,26 +43,28 @@ class UserInterface:
         self.config = load_config(config_path)
         self.api = API(self.config)
         self.is_running = True
-        self.game_manager = Game_Manager(self.config, self.api)
-        self.event_handler = Event_Handler(self.config, self.api, self.game_manager)
+        self.game_manager: Game_Manager
+        self.event_handler: Event_Handler
 
     def main(self) -> None:
         print(LOGO, end=' ')
         print(self.config['version'], end='\n\n')
 
-        self._handle_bot_status()
+        self._post_init()
         self._test_engines()
 
-        print('Handling challenges ...')
-        self.event_handler.start()
+        self.game_manager = Game_Manager(self.config, self.api)
+        self.event_handler = Event_Handler(self.config, self.api, self.game_manager)
         self.game_manager.start()
+        self.event_handler.start()
+        print('Handling challenges ...')
 
         if self.start_matchmaking:
             self._matchmaking()
 
         if not sys.stdin.isatty():
-            self.event_handler.join()
             self.game_manager.join()
+            self.event_handler.join()
             return
 
         if readline_available:
@@ -100,14 +102,20 @@ class UserInterface:
             else:
                 self._help()
 
-    def _handle_bot_status(self) -> None:
+    def _post_init(self) -> None:
+        account = self.api.get_account()
+        self.config['username'] = account['username']
+        self.api.set_user_agent(self.config['version'], self.config['username'])
+        self._handle_bot_status(account)
+
+    def _handle_bot_status(self, account: dict) -> None:
         if 'bot:play' not in self.api.get_token_scopes(self.config['token']):
             print('Your token is missing the bot:play scope. This is mandatory to use BotLi.\n'
                   'You can create such a token by following this link:\n'
                   'https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
             sys.exit(1)
 
-        if self.api.user_title == 'BOT':
+        if account.get('title') == 'BOT':
             return
 
         print('\nBotLi can only be used by BOT accounts!\n')

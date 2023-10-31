@@ -14,6 +14,7 @@ class Chatter:
         self.api = api
         self.game_info = game_information
         self.lichess_game = lichess_game
+        self.username: str = config['username']
         self.version: str = config['version']
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
@@ -32,7 +33,7 @@ class Chatter:
                 print(chat_message.text)
             return
 
-        if chat_message.username != self.api.username:
+        if chat_message.username != self.username:
             prefix = f'{chat_message.username} ({chat_message.room}): '
             output = prefix + chat_message.text
             if len(output) > 128:
@@ -88,7 +89,7 @@ class Chatter:
             return self.lichess_game.engine.name
 
         if command == 'name':
-            return f'{self.api.username} running {self.lichess_game.engine.name} (BotLi {self.version})'
+            return f'{self.username} running {self.lichess_game.engine.name} (BotLi {self.version})'
 
         if command == 'printeval':
             if self.game_info.increment_ms or self.game_info.initial_time_ms >= 180_000:
@@ -178,7 +179,7 @@ class Chatter:
             return
 
         opponent_username = self.game_info.black_name if self.game_info.is_white else self.game_info.white_name
-        mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.api.username,
+        mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.username,
                                     'engine': self.lichess_game.engine.name, 'cpu': self.cpu_message,
                                     'ram': self.ram_message})
         return message.format_map(mapping)

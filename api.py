@@ -20,10 +20,8 @@ class API:
         self.session.headers.update({'Authorization': f'Bearer {config["token"]}',
                                      'User-Agent': f'BotLi/{config["version"]}'})
 
-        account = self.get_account()
-        self.username: str = account['username']
-        self.user_title: str | None = account.get('title')
-        self.session.headers.update({'User-Agent': f'BotLi/{config["version"]} user:{self.username}'})
+    def set_user_agent(self, version: str, username: str) -> None:
+        self.session.headers.update({'User-Agent': f'BotLi/{version} user:{username}'})
 
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
            after=after_log(logger, logging.DEBUG))

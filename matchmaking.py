@@ -14,10 +14,11 @@ from pending_challenge import Pending_Challenge
 class Matchmaking:
     def __init__(self, config: dict, api: API) -> None:
         self.api = api
+        self.username: str = config['username']
         self.next_update = datetime.now()
         self.timeout = max(config['matchmaking']['timeout'], 1)
         self.types = self._get_types(config)
-        self.opponents = Opponents(config['matchmaking'].get('delay', 10), self.api.username)
+        self.opponents = Opponents(config['matchmaking'].get('delay', 10), self.username)
         self.challenger = Challenger(config, self.api)
         self.blacklist: list[str] = config.get('blacklist', [])
 
@@ -134,10 +135,15 @@ class Matchmaking:
         online_bots: list[Bot] = []
         bot_counts: defaultdict[str, int] = defaultdict(int)
         for bot in self.api.get_online_bots_stream():
-            if bot['username'] == self.api.username:
-                continue
-
             bot_counts['online'] += 1
+
+            tos_violation = False
+            if 'tosViolation' in bot:
+                tos_violation = True
+                bot_counts['with tosViolation'] += 1
+
+            if bot['username'] == self.username:
+                continue
 
             if 'disabled' in bot:
                 bot_counts['disabled'] += 1
@@ -146,11 +152,6 @@ class Matchmaking:
             if bot['id'] in self.blacklist:
                 bot_counts['blacklisted'] += 1
                 continue
-
-            tos_violation = False
-            if 'tosViolation' in bot:
-                tos_violation = True
-                bot_counts['with tosViolation'] += 1
 
             rating_diffs: dict[Perf_Type, int] = {}
             for perf_type in Perf_Type:

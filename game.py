@@ -28,7 +28,7 @@ class Game(Thread):
         game_queue_thread = Thread(target=self.api.get_game_stream, args=(self.game_id, game_queue), daemon=True)
         game_queue_thread.start()
 
-        self.game_info = Game_Information.from_gameFull_event(game_queue.get(), self.api.username)
+        self.game_info = Game_Information.from_gameFull_event(game_queue.get(), self.config['username'])
         self._print_game_information()
 
         self.lichess_game = Lichess_Game(self.api, self.game_info, self.config)
