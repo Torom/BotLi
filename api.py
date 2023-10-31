@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class API:
     def __init__(self, config: dict) -> None:
-        self.url: str = config.get('url', 'https://lichess.org')
+        self.urls = self._get_urls(config)
         self.session = requests.session()
         self.session.headers.update({'Authorization': f'Bearer {config["token"]}',
                                      'User-Agent': f'BotLi/{config["version"]}'})
@@ -27,7 +27,7 @@ class API:
            after=after_log(logger, logging.DEBUG))
     def abort_game(self, game_id: str) -> bool:
         try:
-            response = self.session.post(urljoin(self.url, f'/api/bot/game/{game_id}/abort'), timeout=3.0)
+            response = self.session.post(self.urls['abort_game'].format(game_id), timeout=3.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
@@ -38,7 +38,7 @@ class API:
            after=after_log(logger, logging.DEBUG))
     def accept_challenge(self, challenge_id: str) -> bool:
         try:
-            response = self.session.post(urljoin(self.url, f'/api/challenge/{challenge_id}/accept'), timeout=3.0)
+            response = self.session.post(self.urls['accept_challenge'].format(challenge_id), timeout=3.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
@@ -49,7 +49,7 @@ class API:
            after=after_log(logger, logging.DEBUG))
     def cancel_challenge(self, challenge_id: str) -> bool:
         try:
-            response = self.session.post(urljoin(self.url, f'/api/challenge/{challenge_id}/cancel'), timeout=3.0)
+            response = self.session.post(self.urls['cancel_challenge'].format(challenge_id), timeout=3.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
@@ -63,7 +63,7 @@ class API:
                          response_queue: Queue[API_Challenge_Reponse]
                          ) -> None:
         response = self.session.post(
-            urljoin(self.url, f'/api/challenge/{challenge_request.opponent_username}'),
+            self.urls['create_challenge'].format(challenge_request.opponent_username),
             data={'rated': str(challenge_request.rated).lower(),
                   'clock.limit': challenge_request.initial_time, 'clock.increment': challenge_request.increment,
                   'color': challenge_request.color.value, 'variant': challenge_request.variant.value,
@@ -89,7 +89,7 @@ class API:
            after=after_log(logger, logging.DEBUG))
     def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:
-            response = self.session.post(urljoin(self.url, f'/api/challenge/{challenge_id}/decline'),
+            response = self.session.post(self.urls['decline_challenge'].format(challenge_id),
                                          data={'reason': reason.value}, timeout=3.0)
             response.raise_for_status()
             return True
@@ -100,7 +100,7 @@ class API:
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
            after=after_log(logger, logging.DEBUG))
     def get_account(self) -> dict[str, Any]:
-        response = self.session.get(urljoin(self.url, '/api/account'), timeout=3.0)
+        response = self.session.get(self.urls['get_account'], timeout=3.0)
         json_response = response.json()
         if 'error' in json_response:
             raise RuntimeError(f'Account error: {json_response["error"]}')
@@ -139,20 +139,20 @@ class API:
 
     @retry(after=after_log(logger, logging.DEBUG))
     def get_event_stream(self, queue: Queue) -> None:
-        response = self.session.get(urljoin(self.url, '/api/stream/event'), stream=True, timeout=9.0)
+        response = self.session.get(self.urls['get_event_stream'], stream=True, timeout=9.0)
         for line in filter(None, response.iter_lines()):
             queue.put(json.loads(line))
 
     @retry(after=after_log(logger, logging.DEBUG))
     def get_game_stream(self, game_id: str, queue: Queue) -> None:
-        response = self.session.get(urljoin(self.url, f'/api/bot/game/stream/{game_id}'), stream=True, timeout=9.0)
+        response = self.session.get(self.urls['get_game_stream'].format(game_id), stream=True, timeout=9.0)
         for line in response.iter_lines():
             event = json.loads(line) if line else {'type': 'ping'}
             queue.put(event)
 
     @retry(after=after_log(logger, logging.DEBUG))
     def get_online_bots_stream(self) -> list[dict[str, Any]]:
-        response = self.session.get(urljoin(self.url, '/api/bot/online'), stream=True, timeout=9.0)
+        response = self.session.get(self.urls['get_online_bots_stream'], stream=True, timeout=9.0)
         return [json.loads(line) for line in response.iter_lines() if line]
 
     def get_opening_explorer(self,
@@ -178,20 +178,20 @@ class API:
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
            after=after_log(logger, logging.DEBUG))
     def get_token_scopes(self, token: str) -> str:
-        response = self.session.post(urljoin(self.url, '/api/token/test'), data=token, timeout=3.0)
+        response = self.session.post(self.urls['get_token_scopes'], data=token, timeout=3.0)
         return response.json()[token]['scopes']
 
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
            after=after_log(logger, logging.DEBUG))
     def get_user_status(self, username: str) -> dict[str, Any]:
-        response = self.session.get(urljoin(self.url, '/api/users/status'), params={'ids': username}, timeout=3.0)
+        response = self.session.get(self.urls['get_user_status'], params={'ids': username}, timeout=3.0)
         return response.json()[0]
 
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
            after=after_log(logger, logging.DEBUG))
     def resign_game(self, game_id: str) -> bool:
         try:
-            response = self.session.post(urljoin(self.url, f'/api/bot/game/{game_id}/resign'), timeout=3.0)
+            response = self.session.post(self.urls['resign_game'].format(game_id), timeout=3.0)
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
@@ -200,7 +200,7 @@ class API:
 
     def send_chat_message(self, game_id: str, room: str, text: str) -> bool:
         try:
-            response = self.session.post(urljoin(self.url, f'/api/bot/game/{game_id}/chat'),
+            response = self.session.post(self.urls['send_chat_message'].format(game_id),
                                          data={'room': room, 'text': text}, timeout=1.0)
             response.raise_for_status()
             return True
@@ -212,7 +212,7 @@ class API:
            after=after_log(logger, logging.DEBUG))
     def send_move(self, game_id: str, uci_move: str, offer_draw: bool) -> bool:
         try:
-            response = self.session.post(urljoin(self.url, f'/api/bot/game/{game_id}/move/{uci_move}'),
+            response = self.session.post(self.urls['send_move'].format(game_id, uci_move),
                                          params={'offeringDraw': str(offer_draw).lower()}, timeout=1.0)
             response.raise_for_status()
             return True
@@ -224,9 +224,29 @@ class API:
            after=after_log(logger, logging.DEBUG))
     def upgrade_account(self) -> bool:
         try:
-            response = self.session.post(urljoin(self.url, '/api/bot/account/upgrade'))
+            response = self.session.post(self.urls['upgrade_account'])
             response.raise_for_status()
             return True
         except requests.HTTPError as e:
             print(e)
             return False
+
+    def _get_urls(self, config: dict[str, Any]) -> dict[str, str]:
+        url = config.get('url', 'https://lichess.org')
+        return {
+            'abort_game': urljoin(url, '/api/bot/game/{0}/abort'),
+            'accept_challenge': urljoin(url, '/api/challenge/{0}/accept'),
+            'cancel_challenge': urljoin(url, '/api/challenge/{0}/cancel'),
+            'create_challenge': urljoin(url, '/api/challenge/{0}'),
+            'decline_challenge': urljoin(url, '/api/challenge/{0}/decline'),
+            'get_account': urljoin(url, '/api/account'),
+            'get_event_stream': urljoin(url, '/api/stream/event'),
+            'get_game_stream': urljoin(url, '/api/bot/game/stream/{0}'),
+            'get_online_bots_stream': urljoin(url, '/api/bot/online'),
+            'get_token_scopes': urljoin(url, '/api/token/test'),
+            'get_user_status': urljoin(url, '/api/users/status'),
+            'resign_game': urljoin(url, '/api/bot/game/{0}/resign'),
+            'send_chat_message': urljoin(url, '/api/bot/game/{0}/chat'),
+            'send_move': urljoin(url, '/api/bot/game/{0}/move/{1}'),
+            'upgrade_account': urljoin(url, '/api/bot/account/upgrade')
+        }
