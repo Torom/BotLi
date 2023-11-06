@@ -107,10 +107,13 @@ class API:
 
         return json_response
 
-    def get_chessdb_eval(self, fen: str, timeout: int) -> dict[str, Any] | None:
+    def get_chessdb_eval(self, fen: str, best_move: bool, timeout: int) -> dict[str, Any] | None:
         try:
             response = self.session.get('http://www.chessdb.cn/cdb.php',
-                                        params={'action': 'querypv', 'board': fen, 'json': 1},
+                                        params={'action': 'querypv',
+                                                'board': fen,
+                                                'stable': int(best_move),
+                                                'json': 1},
                                         headers={'Authorization': None},
                                         timeout=timeout)
             response.raise_for_status()

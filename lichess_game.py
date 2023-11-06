@@ -407,8 +407,9 @@ class Lichess_Game:
 
         timeout = self.config['online_moves']['chessdb']['timeout']
         min_eval_depth = self.config['online_moves']['chessdb']['min_eval_depth']
+        best_move = self.config['online_moves']['chessdb'].get('best_move', False)
 
-        if response := self.api.get_chessdb_eval(self.board.fen(), timeout):
+        if response := self.api.get_chessdb_eval(self.board.fen(), best_move, timeout):
             if response['status'] == 'ok':
                 if response['depth'] >= min_eval_depth:
                     self.out_of_chessdb_counter = 0
