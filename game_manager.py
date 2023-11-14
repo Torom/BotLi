@@ -166,10 +166,9 @@ class Game_Manager(Thread):
         pending_challenge = Pending_Challenge()
         Thread(target=self.matchmaking.create_challenge, args=(pending_challenge,), daemon=True).start()
 
-        challenge_id = pending_challenge.get_challenge_id()
-        self.current_matchmaking_game_id = challenge_id
+        self.current_matchmaking_game_id = pending_challenge.get_challenge_id()
 
-        success, has_reached_rate_limit, is_misconfigured = pending_challenge.get_final_state()
+        success, no_opponent, has_reached_rate_limit, is_misconfigured = pending_challenge.get_final_state()
         self.is_rate_limited = False
 
         if success:
@@ -177,6 +176,8 @@ class Game_Manager(Thread):
             self.reserved_game_spots += 1
         else:
             self.current_matchmaking_game_id = None
+            if no_opponent:
+                self._delay_matchmaking(self.matchmaking_delay)
             if has_reached_rate_limit:
                 self._delay_matchmaking(timedelta(hours=1.0))
                 next_matchmaking_str = self.next_matchmaking.isoformat(sep=' ', timespec='seconds')

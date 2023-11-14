@@ -46,7 +46,7 @@ class Matchmaking:
                 pending_challenge.set_final_state(Challenge_Response(is_misconfigured=True))
                 return
 
-            pending_challenge.return_early()
+            pending_challenge.set_final_state(Challenge_Response(no_opponent=True))
             return
 
         if next_opponent:
@@ -54,13 +54,13 @@ class Matchmaking:
         else:
             print(f'No opponent available for matchmaking type {self.current_type.name}.')
             self.current_type = None
-            pending_challenge.return_early()
+            pending_challenge.set_final_state(Challenge_Response(no_opponent=True))
             return
 
         if busy_reason := self._get_busy_reason(opponent):
             if busy_reason == Busy_Reason.PLAYING:
-                print(f'Skipping {opponent.username} ({opponent.rating_diffs[self.current_type.perf_type]:+}) '
-                      f'as {color.value} because it is playing ...')
+                rating_diff = opponent.rating_diffs[self.current_type.perf_type]
+                print(f'Skipping {opponent.username} ({rating_diff:+}) as {color.value} ...')
                 self.opponents.skip_bot()
             elif busy_reason == Busy_Reason.OFFLINE:
                 print(f'Removing {opponent.username} from online bots because it is offline ...')
@@ -69,8 +69,8 @@ class Matchmaking:
             pending_challenge.return_early()
             return
 
-        print(f'Challenging {opponent.username} ({opponent.rating_diffs[self.current_type.perf_type]:+}) '
-              f'as {color.value} to {self.current_type.name} ...')
+        rating_diff = opponent.rating_diffs[self.current_type.perf_type]
+        print(f'Challenging {opponent.username} ({rating_diff:+}) as {color.value} to {self.current_type.name} ...')
         challenge_request = Challenge_Request(opponent.username, self.current_type.initial_time,
                                               self.current_type.increment, self.current_type.rated, color,
                                               self.current_type.variant, self.timeout)

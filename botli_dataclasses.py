@@ -4,7 +4,7 @@ from datetime import timedelta
 import chess
 from chess.polyglot import MemoryMappedReader
 
-from aliases import Challenge_ID
+from aliases import Challenge_ID, Has_Reached_Rate_Limit, Is_Misconfigured, No_Opponent, Success
 from enums import Challenge_Color, Perf_Type, Variant
 
 
@@ -56,12 +56,13 @@ class Challenge_Request:
         return NotImplemented
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Challenge_Response:
     challenge_id: Challenge_ID | None = None
-    success: bool = False
-    has_reached_rate_limit: bool = False
-    is_misconfigured: bool = False
+    success: Success = False
+    no_opponent: No_Opponent = False
+    has_reached_rate_limit: Has_Reached_Rate_Limit = False
+    is_misconfigured: Is_Misconfigured = False
 
 
 @dataclass
