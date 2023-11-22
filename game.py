@@ -16,9 +16,9 @@ class Game(Thread):
         self.api = api
         self.game_id = game_id
         self.game_finished_event = game_finished_event
-        self.lichess_game: Lichess_Game | None = None
-        self.chatter: Chatter | None = None
-        self.game_info: Game_Information | None = None
+        self.lichess_game: Lichess_Game
+        self.chatter: Chatter
+        self.game_info: Game_Information
 
     def start(self):
         Thread.start(self)
@@ -91,9 +91,6 @@ class Game(Thread):
         self.game_finished_event.set()
 
     def _make_move(self) -> None:
-        assert self.lichess_game
-        assert self.chatter
-
         uci_move, offer_draw, resign = self.lichess_game.make_move()
         if resign:
             self.api.resign_game(self.game_id)
@@ -102,9 +99,6 @@ class Game(Thread):
             self.chatter.print_eval()
 
     def _finish_game(self, winner: str | None) -> bool:
-        assert self.lichess_game
-        assert self.chatter
-
         if self.lichess_game.is_finished:
             self._print_result_message(winner)
             self.chatter.send_goodbyes()
@@ -113,8 +107,6 @@ class Game(Thread):
         return False
 
     def _print_game_information(self) -> None:
-        assert self.game_info
-
         opponents_str = f'{self.game_info.white_str}   -   {self.game_info.black_str}'
         delimiter = 5 * ' '
 
@@ -124,9 +116,6 @@ class Game(Thread):
         print(128 * '‾')
 
     def _print_result_message(self, winner: str | None) -> None:
-        assert self.lichess_game
-        assert self.game_info
-
         if winner:
             if winner == 'white':
                 message = f'{self.game_info.white_name_str} won'
