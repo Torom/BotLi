@@ -74,7 +74,7 @@ class Opponents:
         self.matchmaking_file = f'{username}_matchmaking.json'
         self.opponent_list = self._load(self.matchmaking_file)
         self.busy_bots: list[Bot] = []
-        self.last_opponent: tuple[Bot, Challenge_Color] | None = None
+        self.last_opponent: tuple[Bot, Challenge_Color]
 
     def get_opponent(self,
                      online_bots: list[Bot],
@@ -97,8 +97,6 @@ class Opponents:
         self.busy_bots.clear()
 
     def add_timeout(self, success: bool, game_duration: timedelta, matchmaking_type: Matchmaking_Type) -> None:
-        assert self.last_opponent
-
         bot, color = self.last_opponent
         opponent = self._find(matchmaking_type.perf_type, bot.username)
         opponent_data = opponent.data[matchmaking_type.perf_type]
@@ -132,8 +130,6 @@ class Opponents:
         self._save(self.matchmaking_file)
 
     def skip_bot(self) -> None:
-        assert self.last_opponent
-
         self.busy_bots.append(self.last_opponent[0])
 
     def reset_release_time(self, perf_type: Perf_Type) -> None:
