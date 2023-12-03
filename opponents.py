@@ -177,6 +177,6 @@ class Opponents:
             with open(matchmaking_file, 'w', encoding='utf-8') as json_output:
                 json.dump([opponent_dict
                            for opponent in self.opponent_list
-                           if (opponent_dict := opponent.to_dict())], json_output, indent=4)
+                           if (opponent_dict := opponent.to_dict())], json_output)
         except PermissionError:
             print('Saving the matchmaking file failed due to missing write permissions.')
