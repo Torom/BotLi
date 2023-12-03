@@ -84,7 +84,7 @@ class Opponents:
         if not bots:
             raise NoOpponentException
 
-        for bot in sorted(bots, key=lambda bot: abs(bot.rating_diffs[matchmaking_type.perf_type])):
+        for bot in bots:
             if bot in self.busy_bots:
                 continue
 
@@ -112,9 +112,10 @@ class Opponents:
         timeout *= matchmaking_type.multiplier * opponent_multiplier
 
         if opponent_data.release_time > datetime.now():
-            timeout += opponent_data.release_time - datetime.now()
+            opponent_data.release_time += timeout
+        else:
+            opponent_data.release_time = datetime.now() + timeout
 
-        opponent_data.release_time = datetime.now() + timeout
         release_str = opponent_data.release_time.isoformat(sep=' ', timespec='seconds')
         print(f'{bot.username} will not be challenged to a new game pair before {release_str}.')
 
@@ -152,7 +153,7 @@ class Opponents:
 
             return True
 
-        return list(filter(bot_filter, bots))
+        return sorted(filter(bot_filter, bots), key=lambda bot: abs(bot.rating_diffs[matchmaking_type.perf_type]))
 
     def _find(self, perf_type: Perf_Type, username: str) -> Opponent:
         try:
