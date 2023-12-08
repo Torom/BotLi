@@ -4,8 +4,6 @@ import subprocess
 import chess
 import chess.engine
 
-from botli_dataclasses import Game_Information
-
 
 class Engine:
     def __init__(self, engine: chess.engine.SimpleEngine, ponder: bool) -> None:
@@ -13,22 +11,13 @@ class Engine:
         self.ponder = ponder
 
     @classmethod
-    def from_config(cls,
-                    engine_config: dict,
-                    syzygy_config: dict,
-                    game_info: Game_Information | None = None
-                    ) -> 'Engine':
+    def from_config(cls, engine_config: dict, syzygy_config: dict, opponent: chess.engine.Opponent) -> 'Engine':
         engine_path, ponder, stderr, uci_options = cls._get_engine_settings(engine_config, syzygy_config)
 
         engine = chess.engine.SimpleEngine.popen_uci(engine_path, stderr=stderr)
 
         cls._configure_engine(engine, uci_options)
-
-        if game_info:
-            engine.send_opponent_information(opponent=chess.engine.Opponent(game_info.opponent_username,
-                                                                            game_info.opponent_title,
-                                                                            game_info.opponent_rating,
-                                                                            game_info.opponent_is_bot))
+        engine.send_opponent_information(opponent=opponent)
 
         return cls(engine, ponder)
 

@@ -28,7 +28,7 @@ class Game(Thread):
         game_queue_thread = Thread(target=self.api.get_game_stream, args=(self.game_id, game_queue), daemon=True)
         game_queue_thread.start()
 
-        self.game_info = Game_Information.from_gameFull_event(game_queue.get(), self.config['username'])
+        self.game_info = Game_Information.from_gameFull_event(game_queue.get())
         self._print_game_information()
 
         self.lichess_game = Lichess_Game(self.api, self.game_info, self.config)
@@ -45,7 +45,8 @@ class Game(Thread):
         else:
             self.lichess_game.start_pondering()
 
-        abortion_seconds = 30.0 if self.game_info.opponent_is_bot else 60.0
+        opponent_title = self.game_info.black_title if self.lichess_game.is_white else self.game_info.white_title
+        abortion_seconds = 30.0 if opponent_title == 'BOT' else 60.0
         abortion_time = datetime.now() + timedelta(seconds=abortion_seconds)
 
         while True:

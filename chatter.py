@@ -46,7 +46,7 @@ class Chatter:
                 self.api.send_chat_message(self.game_info.id_, chat_message.room, response)
 
     def print_eval(self) -> None:
-        if not self.game_info.increment_ms and self.lichess_game.own_time_ms < 30_000:
+        if not self.game_info.increment_ms and self.lichess_game.own_time < 30.0:
             return
 
         for room in self.print_eval_rooms:
@@ -178,7 +178,7 @@ class Chatter:
         if not message:
             return
 
-        opponent_username = self.game_info.black_name if self.game_info.is_white else self.game_info.white_name
+        opponent_username = self.game_info.black_name if self.lichess_game.is_white else self.game_info.white_name
         mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.username,
                                     'engine': self.lichess_game.engine.name, 'cpu': self.cpu_message,
                                     'ram': self.ram_message})

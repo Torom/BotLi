@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 
 import chess
+import chess.engine
 from chess.polyglot import MemoryMappedReader
 
 from aliases import Challenge_ID, Has_Reached_Rate_Limit, Is_Misconfigured, No_Opponent, Success
@@ -100,11 +101,10 @@ class Game_Information:
     variant: Variant
     variant_name: str
     initial_fen: str
-    is_white: bool
     state: dict
 
     @classmethod
-    def from_gameFull_event(cls, gameFull_event: dict, username: str) -> 'Game_Information':
+    def from_gameFull_event(cls, gameFull_event: dict) -> 'Game_Information':
         assert gameFull_event['type'] == 'gameFull'
 
         id_ = gameFull_event['id']
@@ -125,12 +125,11 @@ class Game_Information:
         variant = Variant(gameFull_event['variant']['key'])
         variant_name = gameFull_event['variant']['name']
         initial_fen = gameFull_event['initialFen']
-        is_white = white_name == username
         state = gameFull_event['state']
 
         return cls(id_, white_title, white_name, white_rating, white_ai_level, white_provisional, black_title,
-                   black_name, black_rating, black_ai_level, black_provisional, initial_time_ms,
-                   increment_ms, speed, rated, variant, variant_name, initial_fen, is_white, state)
+                   black_name, black_rating, black_ai_level, black_provisional, initial_time_ms, increment_ms, speed,
+                   rated, variant, variant_name, initial_fen, state)
 
     @property
     def id_str(self) -> str:
@@ -183,20 +182,12 @@ class Game_Information:
         return f'Variant: {self.variant_name}'
 
     @property
-    def opponent_is_bot(self) -> bool:
-        return self.black_title == 'BOT' if self.is_white else self.white_title == 'BOT'
+    def white_opponent(self) -> chess.engine.Opponent:
+        return chess.engine.Opponent(self.white_name, self.white_title, self.white_rating, self.white_title == 'BOT')
 
     @property
-    def opponent_username(self) -> str:
-        return self.black_name if self.is_white else self.white_name
-
-    @property
-    def opponent_title(self) -> str | None:
-        return self.black_title if self.is_white else self.white_title
-
-    @property
-    def opponent_rating(self) -> int | None:
-        return self.black_rating if self.is_white else self.white_rating
+    def black_opponent(self) -> chess.engine.Opponent:
+        return chess.engine.Opponent(self.black_name, self.black_title, self.black_rating, self.black_title == 'BOT')
 
 
 @dataclass
