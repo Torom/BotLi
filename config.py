@@ -207,6 +207,16 @@ def _check_matchmaking_sections(matchmaking_section: dict) -> None:
 
 
 def _check_messages(messages_section: dict) -> None:
+    messages_sections = [
+        ['greeting', str, '"greeting" must be a string wrapped in quotes.'],
+        ['goodbye', str, '"goodbye" must be a string wrapped in quotes.'],
+        ['greeting_spectators', str, '"greeting_spectators" must be a string wrapped in quotes.'],
+        ['goodbye_spectators', str, '"goodbye_spectators" must be a string wrapped in quotes.']]
+    for subsection in messages_sections:
+        if subsection[0] in messages_section:
+            if not isinstance(messages_section[subsection[0]], subsection[1]):
+                raise TypeError(f'`messages` subsection {subsection[2]}')
+
     for message_name, message in messages_section.items():
         if message.strip() == '!printeval':
             print(f'Ignoring message "{message_name}": "!printeval" is not allowed in messages.')
