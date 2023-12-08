@@ -22,12 +22,14 @@ class Lichess_Game:
         self.api = api
         self.game_info = game_information
         self.board = self._setup_board()
-        self.white_time_ms: int = game_information.state['wtime']
-        self.black_time_ms: int = game_information.state['btime']
-        self.status = Game_Status(game_information.state['status'])
+        self.white_time: float = self.game_info.state['wtime'] / 1000
+        self.black_time: float = self.game_info.state['btime'] / 1000
+        self.increment = self.game_info.increment_ms / 1000
+        self.is_white: bool = self.game_info.white_name == config['username']
+        self.status = Game_Status(self.game_info.state['status'])
         self.draw_enabled: bool = config['offer_draw']['enabled']
         self.resign_enabled: bool = config['resign']['enabled']
-        self.move_overhead_ms = self._get_move_overhead()
+        self.move_overhead = self._get_move_overhead()
         self.book_settings = self._get_book_settings()
         self.syzygy_tablebase = self._get_syzygy_tablebase()
         self.gaviota_tablebase = self._get_gaviota_tablebase()
@@ -40,7 +42,8 @@ class Lichess_Game:
         self.out_of_cloud_counter = 0
         self.chessdb_counter = 0
         self.out_of_chessdb_counter = 0
-        self.engine = Engine.from_config(config['engines'][self._get_engine_key()], config['syzygy'], self.game_info)
+        opponent = self.game_info.black_opponent if self.is_white else self.game_info.white_opponent
+        self.engine = Engine.from_config(config['engines'][self._get_engine_key()], config['syzygy'], opponent)
         consecutive_draw_moves = config['offer_draw']['consecutive_moves']
         self.draw_scores: deque[chess.engine.PovScore | None] = deque(maxlen=consecutive_draw_moves)
         consecutive_resign_moves = config['resign']['consecutive_moves']
@@ -86,14 +89,14 @@ class Lichess_Game:
             return False
 
         self.board.push(chess.Move.from_uci(moves[-1]))
-        self.white_time_ms = gameState_event['wtime']
-        self.black_time_ms = gameState_event['btime']
+        self.white_time = gameState_event['wtime'] / 1000
+        self.black_time = gameState_event['btime'] / 1000
 
         return True
 
     @property
     def is_our_turn(self) -> bool:
-        return self.game_info.is_white == self.board.turn
+        return self.is_white == self.board.turn
 
     @property
     def is_game_over(self) -> bool:
@@ -112,31 +115,29 @@ class Lichess_Game:
         return self.status != Game_Status.STARTED
 
     @property
-    def own_time_ms(self) -> int:
-        return self.white_time_ms if self.game_info.is_white else self.black_time_ms
+    def own_time(self) -> float:
+        return self.white_time if self.is_white else self.black_time
 
     @property
-    def opponent_time_ms(self) -> int:
-        return self.black_time_ms if self.game_info.is_white else self.white_time_ms
+    def opponent_time(self) -> float:
+        return self.black_time if self.is_white else self.white_time
 
     @property
     def engine_times(self) -> tuple[float, float, float]:
-        if self.game_info.is_white:
-            if self.white_time_ms > self.move_overhead_ms:
-                white_time = self.white_time_ms - self.move_overhead_ms
+        if self.is_white:
+            if self.white_time > self.move_overhead:
+                white_time = self.white_time - self.move_overhead
             else:
-                white_time = self.white_time_ms / 2
-            white_time /= 1000
-            black_time = self.black_time_ms / 1000
-        else:
-            white_time = self.white_time_ms / 1000
-            if self.black_time_ms > self.move_overhead_ms:
-                black_time = self.black_time_ms - self.move_overhead_ms
-            else:
-                black_time = self.black_time_ms / 2
-            black_time /= 1000
+                white_time = self.white_time / 2
 
-        return white_time, black_time, self.game_info.increment_ms / 1000
+            return white_time, self.black_time, self.increment
+
+        if self.black_time > self.move_overhead:
+            black_time = self.black_time - self.move_overhead
+        else:
+            black_time = self.black_time / 2
+
+        return self.white_time, black_time, self.increment
 
     def start_pondering(self) -> None:
         self.engine.start_pondering(self.board)
@@ -181,7 +182,7 @@ class Lichess_Game:
         if not self.draw_enabled:
             return False
 
-        if not self.game_info.increment_ms and self.opponent_time_ms < 30_000:
+        if not self.increment and self.opponent_time < 30.0:
             return False
 
         return True
@@ -211,7 +212,7 @@ class Lichess_Game:
         if not self.resign_enabled:
             return False
 
-        if not self.game_info.increment_ms and self.opponent_time_ms < 30_000:
+        if not self.increment and self.opponent_time < 30.0:
             return False
 
         return True
@@ -262,7 +263,7 @@ class Lichess_Game:
 
     def _get_book_key(self) -> str | None:
         books: dict[str, dict] = self.config['opening_books']['books']
-        color = 'white' if self.game_info.is_white else 'black'
+        color = 'white' if self.is_white else 'black'
 
         if self.board.uci_variant != 'chess':
             for alias in [alias.lower() for alias in self.board.aliases]:
@@ -339,7 +340,7 @@ class Lichess_Game:
 
             self.out_of_opening_explorer_counter += 1
         else:
-            self._reduce_own_time(timeout * 1000)
+            self._reduce_own_time(timeout)
 
     def _get_opening_explorer_top_move(self, moves: list[dict]) -> dict:
         selection = self.config['online_moves']['opening_explorer']['selection']
@@ -391,7 +392,7 @@ class Lichess_Game:
 
             self.out_of_cloud_counter += 1
         else:
-            self._reduce_own_time(timeout * 1000)
+            self._reduce_own_time(timeout)
 
     def _make_chessdb_move(self) -> Move_Response | None:
         out_of_book = self.out_of_chessdb_counter >= 5
@@ -423,7 +424,7 @@ class Lichess_Game:
 
             self.out_of_chessdb_counter += 1
         else:
-            self._reduce_own_time(timeout * 1000)
+            self._reduce_own_time(timeout)
 
     def _make_gaviota_move(self) -> Move_Response | None:
         assert self.gaviota_tablebase
@@ -629,7 +630,7 @@ class Lichess_Game:
             message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
             return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
 
-        self._reduce_own_time(timeout * 1000)
+        self._reduce_own_time(timeout)
 
     def _format_move(self, move: chess.Move) -> str:
         if self.board.turn:
@@ -721,7 +722,7 @@ class Lichess_Game:
         return performance, (win, draw, loss)
 
     def _get_engine_key(self) -> str:
-        color = 'white' if self.game_info.is_white else 'black'
+        color = 'white' if self.is_white else 'black'
 
         if self.board.uci_variant == 'chess':
             if self.board.chess960:
@@ -816,21 +817,21 @@ class Lichess_Game:
 
         return move_sources
 
-    def _get_move_overhead(self) -> int:
+    def _get_move_overhead(self) -> float:
         multiplier = self.config.get('move_overhead_multiplier', 1.0)
-        return max(int(self.game_info.initial_time_ms / 60 * multiplier), 1000)
+        return max(self.game_info.initial_time_ms / 60_000 * multiplier, 1.0)
 
-    def _has_time(self, min_time: int) -> bool:
+    def _has_time(self, min_time: float) -> bool:
         if len(self.board.move_stack) < 2:
             return True
 
-        return self.own_time_ms >= min_time * 1000
+        return self.own_time >= min_time
 
-    def _reduce_own_time(self, milliseconds: int) -> None:
-        if self.game_info.is_white:
-            self.white_time_ms -= milliseconds
+    def _reduce_own_time(self, seconds: float) -> None:
+        if self.is_white:
+            self.white_time -= seconds
         else:
-            self.black_time_ms -= milliseconds
+            self.black_time -= seconds
 
     def _is_repetition(self, move: chess.Move) -> bool:
         board = self.board.copy()
