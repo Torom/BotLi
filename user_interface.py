@@ -15,9 +15,8 @@ from logo import LOGO
 
 try:
     import readline
-    readline_available = True
 except ImportError:
-    readline_available = False
+    readline = None
 
 COMMANDS = {
     'blacklist': 'Temporarily blacklists a user. Use config for permanent blacklisting. Usage: blacklist USERNAME',
@@ -67,7 +66,7 @@ class UserInterface:
             self.event_handler.join()
             return
 
-        if readline_available:
+        if readline:
             completer = Autocompleter(list(COMMANDS.keys()))
             readline.set_completer(completer.complete)
             readline.parse_and_bind('tab: complete')
