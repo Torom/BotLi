@@ -51,6 +51,7 @@ class UserInterface:
 
         self._post_init()
         self._test_engines()
+        self._download_lists()
 
         self.game_manager = Game_Manager(self.config, self.api)
         self.event_handler = Event_Handler(self.config, self.api, self.game_manager)
@@ -143,6 +144,17 @@ class UserInterface:
             print(f'Testing engine "{engine_name}" ... ', end='')
             Engine.test(engine_section, self.config['syzygy'])
             print('OK')
+
+    def _download_lists(self) -> None:
+        for url in self.config.get('whitelist_urls', []):
+            usernames = list(map(str.lower, self.api.download_usernames(url)))
+            self.config['whitelist'].extend(usernames)
+            print(f'Downloaded {len(usernames)} usernames from "{url}" to whitelist.')
+
+        for url in self.config.get('blacklist_urls', []):
+            usernames = list(map(str.lower, self.api.download_usernames(url)))
+            self.config['blacklist'].extend(usernames)
+            print(f'Downloaded {len(usernames)} usernames from "{url}" to blacklist.')
 
     def _blacklist(self, command: list[str]) -> None:
         if len(command) != 2:

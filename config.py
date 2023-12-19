@@ -226,15 +226,21 @@ def _check_messages(messages_section: dict) -> None:
 def _init_lists(config: dict) -> None:
     if 'whitelist' in config:
         if not isinstance(config['whitelist'], list):
-            raise TypeError('If uncommented, "whitelist" must be a list of usernames.')
+            raise TypeError('If uncommented, "whitelist" must be a list of strings.')
 
-        config['whitelist'] = [username.lower() for username in config['whitelist']]
+        config['whitelist_urls'] = [string for string in config['whitelist']
+                                    if string.startswith('http://') or string.startswith('https://')]
+        config['whitelist'] = [string.lower() for string in config['whitelist']
+                               if string not in config['whitelist_urls']]
 
     if 'blacklist' in config:
         if not isinstance(config['blacklist'], list):
-            raise TypeError('If uncommented, "blacklist" must be a list of usernames.')
+            raise TypeError('If uncommented, "blacklist" must be a list of strings.')
 
-        config['blacklist'] = [username.lower() for username in config['blacklist']]
+        config['blacklist_urls'] = [string for string in config['blacklist']
+                                    if string.startswith('http://') or string.startswith('https://')]
+        config['blacklist'] = [string.lower() for string in config['blacklist']
+                               if string not in config['blacklist_urls']]
 
 
 def _init_engines(engines_section: dict) -> None:

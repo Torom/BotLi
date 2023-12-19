@@ -97,6 +97,15 @@ class API:
             print(e)
             return False
 
+    def download_usernames(self, url: str) -> list[str]:
+        try:
+            response = self.session.get(url, headers={'Authorization': None}, timeout=5.0)
+            response.raise_for_status()
+            return response.text.splitlines()
+        except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
+            print(e)
+            return []
+
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
            after=after_log(logger, logging.DEBUG))
     def get_account(self) -> dict[str, Any]:
