@@ -1,4 +1,4 @@
-FROM FROM debian:stable-slim
+FROM debian:stable-slim
 
 COPY . .
 
