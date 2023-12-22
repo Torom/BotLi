@@ -1,0 +1,8 @@
+build:
+  docker:
+    worker: Dockerfile
+run:
+  worker:
+    command:
+      - python3 lichess-bot.py -u
+    image: worker
