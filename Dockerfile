@@ -2,7 +2,7 @@ FROM debian:stable-slim
 
 COPY . .
 
-RUN apt-get update && apt-get upgrade -y && apt install -y wget python3 python3-pip p7zip-full unzip 
+RUN apt-get update && apt-get upgrade -y && apt install -y wget python3 python3-pip p7zip-full unzip python3-xyz python3.11-venv
 RUN mv config.yml.default config.yml
 
 # Create a virtual environment and activate it
