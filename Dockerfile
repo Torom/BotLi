@@ -4,7 +4,7 @@ COPY . .
 
 RUN apt-get update && apt-get upgrade -y && apt install -y wget python3 python3-pip p7zip-full unzip
 RUN mv config.yml.default config.yml
-RUN python3 --no-cache-dir install -U pip && python3 --no-cache-dir install -r requirements.txt
+RUN pip3 --no-cache-dir install -U pip3 && pip3 --no-cache-dir install -r requirements.txt
 
 # Stockfish - Depending on your CPU it may be necessary to pick a binary other than bmi2
 RUN wget https://abrok.eu/stockfish/latest/linux/stockfish_x64_bmi2.zip -O stockfish.zip
