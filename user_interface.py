@@ -324,8 +324,6 @@ class Autocompleter:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--non_interactive', '-n', action='store_true',
-                          help='Set if run as a service or on Heroku.')
     parser.add_argument('--config', '-c', default='config.yml', type=str, help='Path to config.yml.')
     parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
     parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
