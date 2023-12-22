@@ -1,15 +1,13 @@
-FROM python:3.12
-
+FROM ubuntu:jammy
 COPY . .
 
-RUN apt-get update && apt-get upgrade -y && apt install -y wget unzip git
-RUN mv config.yml.default config.yml
-RUN pip --no-cache-dir install -U pip && pip --no-cache-dir install -r requirements.txt
+RUN apt-get update && apt-get upgrade -y && apt-get install -y wget unzip python3 python3-pip
 
-# Stockfish - Depending on your CPU it may be necessary to pick a binary other than bmi2
+RUN mv config.yml.default config.yml
 RUN wget https://abrok.eu/stockfish/latest/linux/stockfish_x64_bmi2.zip -O stockfish.zip
 RUN unzip stockfish.zip && rm stockfish.zip
 RUN mv stockfish_* engines/stockfish && chmod +x engines/stockfish
+RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 # Fairy-Stockfish - Depending on your CPU it may be necessary to pick a binary other than bmi2
 # To use Fairy-Stockfish, uncomment the following lines and adjust config.yml.default accordingly
@@ -24,4 +22,4 @@ RUN mv stockfish_* engines/stockfish && chmod +x engines/stockfish
 # RUN wget "https://drive.google.com/u/0/uc?id=1Tiq8FqSu7eiekE2iaWQzSdJPg-mhvLzJ&export=download" -O engines/racingkings-636b95f085e3.nnue
 
 # Add the "--matchmaking" flag to start the matchmaking mode.
-CMD python3 user_interface.py
+CMD python3 user_interface.py --non_interactive
