@@ -1,1 +1,1 @@
-worker: python user_interface.py
+worker: python3 user_interface.py
