@@ -22,4 +22,4 @@ RUN python3 -m pip install --no-cache-dir -r requirements.txt
 # RUN wget "https://drive.google.com/u/0/uc?id=1Tiq8FqSu7eiekE2iaWQzSdJPg-mhvLzJ&export=download" -O engines/racingkings-636b95f085e3.nnue
 
 # Add the "--matchmaking" flag to start the matchmaking mode.
-CMD python3 user_interface.py --non_interactive
+CMD python3 user_interface.py
