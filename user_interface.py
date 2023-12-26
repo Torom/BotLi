@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import sys
 from enum import Enum
 from typing import TypeVar
@@ -67,7 +68,7 @@ class UserInterface:
             self.event_handler.join()
             return
 
-        if readline:
+        if readline and not os.name == 'nt':
             completer = Autocompleter(list(COMMANDS.keys()))
             readline.set_completer(completer.complete)
             readline.parse_and_bind('tab: complete')
