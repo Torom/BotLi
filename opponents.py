@@ -106,10 +106,9 @@ class Opponents:
         elif not success:
             opponent_data.multiplier += 1
 
-        opponent_multiplier = opponent_data.multiplier if opponent_data.multiplier >= 5 else 1
         duration_ratio = game_duration / matchmaking_type.estimated_game_duration
         timeout = duration_ratio * matchmaking_type.estimated_game_duration + self.delay
-        timeout *= matchmaking_type.multiplier * opponent_multiplier
+        timeout *= matchmaking_type.multiplier * opponent_data.multiplier
 
         if opponent_data.release_time > datetime.now():
             opponent_data.release_time += timeout
