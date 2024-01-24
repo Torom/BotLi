@@ -480,7 +480,7 @@ class Lichess_Game:
     def _make_syzygy_move(self) -> Move_Response | None:
         assert self.syzygy_tablebase
 
-        if chess.popcount(self.board.occupied) > self.config['syzygy']['max_pieces']:
+        if chess.popcount(self.board.occupied) > self.config['syzygy']['max_pieces'] or self._has_mate_score():
             return
 
         best_moves: list[chess.Move] = []
@@ -602,7 +602,7 @@ class Lichess_Game:
         is_endgame = chess.popcount(self.board.occupied) <= max_pieces
         has_time = self._has_time(self.config['online_moves']['online_egtb']['min_time'])
 
-        if not is_endgame or not has_time:
+        if not is_endgame or not has_time or self._has_mate_score():
             return
 
         timeout = self.config['online_moves']['online_egtb']['timeout']
@@ -827,3 +827,10 @@ class Lichess_Game:
         board = self.board.copy()
         board.push(move)
         return board.is_repetition(count=2)
+
+    def _has_mate_score(self) -> bool:
+        for score in filter(None, reversed(self.scores)):
+            mate = score.relative.mate()
+            return mate is not None and mate > 0
+
+        return False
