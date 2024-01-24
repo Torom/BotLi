@@ -1,6 +1,6 @@
 import random
-from collections import deque
 from collections.abc import Callable
+from itertools import islice
 
 import chess
 import chess.engine
@@ -44,10 +44,7 @@ class Lichess_Game:
         self.out_of_chessdb_counter = 0
         opponent = self.game_info.black_opponent if self.is_white else self.game_info.white_opponent
         self.engine = Engine.from_config(config['engines'][self._get_engine_key()], config['syzygy'], opponent)
-        consecutive_draw_moves = config['offer_draw']['consecutive_moves']
-        self.draw_scores: deque[chess.engine.PovScore | None] = deque(maxlen=consecutive_draw_moves)
-        consecutive_resign_moves = config['resign']['consecutive_moves']
-        self.resign_scores: deque[chess.engine.PovScore | None] = deque(maxlen=consecutive_resign_moves)
+        self.scores: list[chess.engine.PovScore | None] = []
         self.last_message = 'No eval available yet.'
         self.last_pv: list[chess.Move] = []
 
@@ -58,10 +55,7 @@ class Lichess_Game:
         else:
             move, info = self.engine.make_move(self.board, *self.engine_times)
 
-            score = info.get('score')
-            self.draw_scores.append(score)
-            self.resign_scores.append(score)
-
+            self.scores.append(info.get('score'))
             message = f'Engine:  {self._format_move(move):14} {self._format_engine_info(info)}'
             move_response = Move_Response(move, message,
                                           pv=info.get('pv', []),
@@ -159,18 +153,16 @@ class Lichess_Game:
             return False
 
         too_shallow = self.board.fullmove_number < self.config['offer_draw']['min_game_length']
-        too_few_scores = len(self.draw_scores) < self.config['offer_draw']['consecutive_moves']
+        too_few_scores = len(self.scores) < self.config['offer_draw']['consecutive_moves']
 
         if too_shallow or too_few_scores:
             return False
 
-        max_score = self.config['offer_draw']['score']
-
-        for score in self.draw_scores:
+        for score in islice(self.scores, len(self.scores) - self.config['offer_draw']['consecutive_moves'], None):
             if score is None:
                 return False
 
-            if abs(score.relative.score(mate_score=40000)) > max_score:
+            if abs(score.relative.score(mate_score=40000)) > self.config['offer_draw']['score']:
                 return False
 
         return True
@@ -191,16 +183,14 @@ class Lichess_Game:
         if not self.resign_enabled:
             return False
 
-        if len(self.resign_scores) < self.config['resign']['consecutive_moves']:
+        if len(self.scores) < self.config['resign']['consecutive_moves']:
             return False
 
-        max_score = self.config['resign']['score']
-
-        for score in self.resign_scores:
+        for score in islice(self.scores, len(self.scores) - self.config['resign']['consecutive_moves'], None):
             if score is None:
                 return False
 
-            if score.relative.score(mate_score=40000) > max_score:
+            if score.relative.score(mate_score=40000) > self.config['resign']['score']:
                 return False
 
         return True
