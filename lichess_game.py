@@ -456,17 +456,14 @@ class Lichess_Game:
                 best_dtm = dtm
 
         if best_wdl == 2:
-            move = random.choice(best_moves)
             egtb_info = self._format_egtb_info('win', dtm=best_dtm)
             offer_draw = False
             resign = False
         elif best_wdl == 0:
-            move = random.choice(best_moves)
             egtb_info = self._format_egtb_info('draw', dtm=0)
             offer_draw = True
             resign = False
         elif best_wdl == -2:
-            move = random.choice(best_moves)
             egtb_info = self._format_egtb_info('loss', dtm=best_dtm)
             offer_draw = False
             resign = True
@@ -474,6 +471,7 @@ class Lichess_Game:
             return
 
         self.engine.stop_pondering()
+        move = random.choice(best_moves)
         message = f'Gaviota: {self._format_move(move):14} {egtb_info}'
         return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
 
@@ -525,32 +523,28 @@ class Lichess_Game:
                 best_real_dtz = real_dtz
 
         if best_wdl == 2:
-            move = random.choice(best_moves)
             egtb_info = self._format_egtb_info('win', dtz=best_real_dtz)
             offer_draw = False
             resign = False
         elif best_wdl == 1:
-            move = random.choice(best_moves)
             egtb_info = self._format_egtb_info('cursed win', dtz=best_real_dtz)
             offer_draw = False
             resign = False
         elif best_wdl == 0:
-            move = random.choice(best_moves)
-            egtb_info = self._format_egtb_info('draw', dtz=best_real_dtz)
+            egtb_info = self._format_egtb_info('draw', dtz=0)
             offer_draw = True
             resign = False
         elif best_wdl == -1:
-            move = random.choice(best_moves)
             egtb_info = self._format_egtb_info('blessed loss', dtz=best_real_dtz)
             offer_draw = True
             resign = False
         else:
-            move = random.choice(best_moves)
             egtb_info = self._format_egtb_info('loss', dtz=best_real_dtz)
             offer_draw = False
             resign = True
 
         self.engine.stop_pondering()
+        move = random.choice(best_moves)
         message = f'Syzygy:  {self._format_move(move):14} {egtb_info}'
         return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
 
