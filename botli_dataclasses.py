@@ -195,7 +195,6 @@ class Matchmaking_Type:
     name: str
     initial_time: int
     increment: int
-    estimated_game_duration: timedelta = field(init=False)
     rated: bool
     variant: Variant
     perf_type: Perf_Type
@@ -205,10 +204,9 @@ class Matchmaking_Type:
     max_rating_diff: int
 
     def __post_init__(self) -> None:
-        self.estimated_game_duration = timedelta(seconds=(self.initial_time * 0.8 + self.increment * 80) * 2)
+        self.estimated_game_duration = timedelta(seconds=self.initial_time * 2 + self.increment * 160)
 
-    @property
-    def to_str(self) -> str:
+    def __str__(self) -> str:
         initial_time_min = self.initial_time / 60
         if initial_time_min.is_integer():
             initial_time_str = str(int(initial_time_min))

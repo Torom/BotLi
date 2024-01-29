@@ -33,7 +33,7 @@ class Matchmaking:
 
         if not self.current_type:
             self.current_type, = random.choices(self.types, [type.weight for type in self.types])
-            print(f'Matchmaking type: {self.current_type.to_str}')
+            print(f'Matchmaking type: {self.current_type}')
 
         try:
             next_opponent = self.opponents.get_opponent(self.online_bots, self.current_type)
