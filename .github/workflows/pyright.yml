@@ -1,6 +1,14 @@
 name: Pyright
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'requirements.txt'
+      - '**.py'
+  pull_request:
+    paths:
+      - 'requirements.txt'
+      - '**.py'
 
 jobs:
   build:

@@ -1,6 +1,16 @@
 name: Pylint
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - '.pylintrc'
+      - 'requirements.txt'
+      - '**.py'
+  pull_request:
+    paths:
+      - '.pylintrc'
+      - 'requirements.txt'
+      - '**.py'
 
 jobs:
   build:
