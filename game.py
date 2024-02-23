@@ -5,38 +5,32 @@ from threading import Event, Thread
 from api import API
 from botli_dataclasses import Game_Information
 from chatter import Chatter
-from enums import Game_Status
 from lichess_game import Lichess_Game
 
 
 class Game(Thread):
-    def __init__(self, config: dict, api: API, game_id: str, game_finished_event: Event) -> None:
+    def __init__(self, config: dict, api: API, game_id: str, game_finished_event: Event, game_queue: Queue) -> None:
         Thread.__init__(self)
         self.config = config
         self.api = api
         self.game_id = game_id
         self.game_finished_event = game_finished_event
-        self.lichess_game: Lichess_Game
-        self.chatter: Chatter
-        self.game_info: Game_Information
+        self.game_queue = game_queue
+
+        self.game_info = Game_Information.from_gameFull_event(self.game_queue.get())
+        self.lichess_game = Lichess_Game(self.api, self.game_info, self.config)
+        self.chatter = Chatter(self.api, self.config, self.game_info, self.lichess_game)
 
     def start(self):
         Thread.start(self)
 
     def run(self) -> None:
-        game_queue = Queue()
-        game_queue_thread = Thread(target=self.api.get_game_stream, args=(self.game_id, game_queue), daemon=True)
-        game_queue_thread.start()
-
-        self.game_info = Game_Information.from_gameFull_event(game_queue.get())
         self._print_game_information()
-
-        self.lichess_game = Lichess_Game(self.api, self.game_info, self.config)
-        self.chatter = Chatter(self.api, self.config, self.game_info, self.lichess_game)
-
         self.chatter.send_greetings()
 
-        if self._finish_game(self.game_info.state.get('winner')):
+        if self.game_info.state['status'] != 'started':
+            self._print_result_message(self.game_info.state)
+            self.chatter.send_goodbyes()
             self.lichess_game.end_game()
             return
 
@@ -50,7 +44,7 @@ class Game(Thread):
         abortion_time = datetime.now() + timedelta(seconds=abortion_seconds)
 
         while True:
-            event = game_queue.get()
+            event = self.game_queue.get()
 
             if event['type'] not in ['gameFull', 'gameState']:
                 if self.lichess_game.is_abortable and datetime.now() >= abortion_time:
@@ -59,25 +53,26 @@ class Game(Thread):
                     self.chatter.send_abortion_message()
 
             if event['type'] == 'gameFull':
-                self.lichess_game.update(event['state'])
-
-                if self._finish_game(event['state'].get('winner')):
+                if event['state']['status'] != 'started':
+                    self._print_result_message(event['state'])
+                    self.chatter.send_goodbyes()
                     break
+
+                self.lichess_game.update(event['state'])
 
                 if self.lichess_game.is_our_turn:
                     self._make_move()
                 else:
                     self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
-                updated = self.lichess_game.update(event)
-
-                if self._finish_game(event.get('winner')):
+                if event['status'] != 'started':
+                    self._print_result_message(event)
+                    self.chatter.send_goodbyes()
                     break
 
-                if self.lichess_game.is_game_over:
-                    continue
+                self.lichess_game.update(event)
 
-                if self.lichess_game.is_our_turn and updated:
+                if self.lichess_game.is_our_turn and not self.lichess_game.board.is_repetition():
                     self._make_move()
             elif event['type'] == 'chatLine':
                 self.chatter.handle_chat_message(event)
@@ -99,14 +94,6 @@ class Game(Thread):
             self.api.send_move(self.game_id, uci_move, offer_draw)
             self.chatter.print_eval()
 
-    def _finish_game(self, winner: str | None) -> bool:
-        if self.lichess_game.is_finished:
-            self._print_result_message(winner)
-            self.chatter.send_goodbyes()
-            return True
-
-        return False
-
     def _print_game_information(self) -> None:
         opponents_str = f'{self.game_info.white_str}   -   {self.game_info.black_str}'
         message = (5 * ' ').join([self.game_info.id_str, opponents_str, self.game_info.tc_str,
@@ -114,8 +101,8 @@ class Game(Thread):
 
         print(f'\n{message}\n{128 * "‾"}')
 
-    def _print_result_message(self, winner: str | None) -> None:
-        if winner:
+    def _print_result_message(self, game_state: dict) -> None:
+        if winner := game_state.get('winner'):
             if winner == 'white':
                 message = f'{self.game_info.white_name} won'
                 loser = self.game_info.black_name
@@ -127,19 +114,19 @@ class Game(Thread):
                 white_result = '0'
                 black_result = '1'
 
-            if self.lichess_game.status == Game_Status.MATE:
+            if game_state['status'] == 'mate':
                 message += ' by checkmate!'
-            elif self.lichess_game.status == Game_Status.OUT_OF_TIME:
+            elif game_state['status'] == 'outoftime':
                 message += f'! {loser} ran out of time.'
-            elif self.lichess_game.status == Game_Status.RESIGN:
+            elif game_state['status'] == 'resign':
                 message += f'! {loser} resigned.'
-            elif self.lichess_game.status == Game_Status.VARIANT_END:
+            elif game_state['status'] == 'variantEnd':
                 message += ' by variant rules!'
         else:
             white_result = '½'
             black_result = '½'
 
-            if self.lichess_game.status == Game_Status.DRAW:
+            if game_state['status'] == 'draw':
                 if self.lichess_game.board.is_fifty_moves():
                     message = 'Game drawn by 50-move rule.'
                 elif self.lichess_game.board.is_repetition():
@@ -150,7 +137,7 @@ class Game(Thread):
                     message = 'Game drawn by variant rules.'
                 else:
                     message = 'Game drawn by agreement.'
-            elif self.lichess_game.status == Game_Status.STALEMATE:
+            elif game_state['status'] == 'stalemate':
                 message = 'Game drawn by stalemate.'
             else:
                 message = 'Game aborted.'

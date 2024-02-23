@@ -1,5 +1,6 @@
 from collections import deque
 from datetime import datetime, timedelta
+from queue import Queue
 from threading import Event, Thread
 
 from aliases import Challenge_ID, Game_ID
@@ -129,7 +130,10 @@ class Game_Manager(Thread):
             self.api.abort_game(game_id)
             return
 
-        self.games[game_id] = Game(self.config, self.api, game_id, self.changed_event)
+        game_queue = Queue()
+        Thread(target=self.api.get_game_stream, args=(game_id, game_queue), daemon=True).start()
+
+        self.games[game_id] = Game(self.config, self.api, game_id, self.changed_event, game_queue)
         self.games[game_id].start()
 
     def _finish_game(self, game_id: Game_ID) -> None:

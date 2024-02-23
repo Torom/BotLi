@@ -13,7 +13,7 @@ from aliases import DTM, DTZ, Offer_Draw, Outcome, Performance, Resign, UCI_Move
 from api import API
 from botli_dataclasses import Book_Settings, Game_Information, Move_Response
 from engine import Engine
-from enums import Game_Status, Variant
+from enums import Variant
 
 
 class Lichess_Game:
@@ -26,7 +26,6 @@ class Lichess_Game:
         self.black_time: float = self.game_info.state['btime'] / 1000
         self.increment = self.game_info.increment_ms / 1000
         self.is_white: bool = self.game_info.white_name == config['username']
-        self.status = Game_Status(self.game_info.state['status'])
         self.draw_enabled: bool = config['offer_draw']['enabled']
         self.resign_enabled: bool = config['resign']['enabled']
         self.move_overhead = self._get_move_overhead()
@@ -75,38 +74,22 @@ class Lichess_Game:
                 self._offer_draw(move_response.is_drawish),
                 self._resign(move_response.is_resignable))
 
-    def update(self, gameState_event: dict) -> bool:
-        self.status = Game_Status(gameState_event['status'])
-
+    def update(self, gameState_event: dict) -> None:
         moves = gameState_event['moves'].split()
         if len(moves) <= len(self.board.move_stack):
-            return False
+            return
 
         self.board.push(chess.Move.from_uci(moves[-1]))
         self.white_time = gameState_event['wtime'] / 1000
         self.black_time = gameState_event['btime'] / 1000
-
-        return True
 
     @property
     def is_our_turn(self) -> bool:
         return self.is_white == self.board.turn
 
     @property
-    def is_game_over(self) -> bool:
-        return self.board.is_checkmate() or \
-            self.board.is_stalemate() or \
-            self.board.is_insufficient_material() or \
-            self.board.is_fifty_moves() or \
-            self.board.is_repetition()
-
-    @property
     def is_abortable(self) -> bool:
         return len(self.board.move_stack) < 2
-
-    @property
-    def is_finished(self) -> bool:
-        return self.status != Game_Status.STARTED
 
     @property
     def own_time(self) -> float:
