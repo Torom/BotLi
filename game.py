@@ -119,13 +119,13 @@ class Game(Thread):
     def _print_result_message(self, winner: str | None) -> None:
         if winner:
             if winner == 'white':
-                message = f'{self.game_info.white_name_str} won'
-                loser = self.game_info.black_name_str
+                message = f'{self.game_info.white_name} won'
+                loser = self.game_info.black_name
                 white_result = '1'
                 black_result = '0'
             else:
-                message = f'{self.game_info.black_name_str} won'
-                loser = self.game_info.white_name_str
+                message = f'{self.game_info.black_name} won'
+                loser = self.game_info.white_name
                 white_result = '0'
                 black_result = '1'
 
