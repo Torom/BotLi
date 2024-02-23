@@ -109,12 +109,10 @@ class Game(Thread):
 
     def _print_game_information(self) -> None:
         opponents_str = f'{self.game_info.white_str}   -   {self.game_info.black_str}'
-        delimiter = 5 * ' '
+        message = (5 * ' ').join([self.game_info.id_str, opponents_str, self.game_info.tc_str,
+                                  self.game_info.rated_str, self.game_info.variant_str])
 
-        print()
-        print(delimiter.join([self.game_info.id_str, opponents_str, self.game_info.tc_str,
-                              self.game_info.rated_str, self.game_info.variant_str]))
-        print(128 * '‾')
+        print(f'\n{message}\n{128 * "‾"}')
 
     def _print_result_message(self, winner: str | None) -> None:
         if winner:
@@ -161,7 +159,6 @@ class Game(Thread):
                 black_result = 'X'
 
         opponents_str = f'{self.game_info.white_str} {white_result} - {black_result} {self.game_info.black_str}'
-        delimiter = 5 * ' '
+        message = (5 * ' ').join([self.game_info.id_str, opponents_str, message])
 
-        print(delimiter.join([self.game_info.id_str, opponents_str, message]))
-        print(128 * '‾')
+        print(f'{message}\n{128 * "‾"}')
