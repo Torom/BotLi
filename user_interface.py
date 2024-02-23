@@ -43,8 +43,6 @@ class UserInterface:
         self.config = load_config(config_path)
         self.api = API(self.config)
         self.is_running = True
-        self.game_manager: Game_Manager
-        self.event_handler: Event_Handler
 
     def main(self) -> None:
         print(LOGO, end=' ')
@@ -54,18 +52,18 @@ class UserInterface:
         self._test_engines()
         self._download_lists()
 
-        self.game_manager = Game_Manager(self.config, self.api)
-        self.event_handler = Event_Handler(self.config, self.api, self.game_manager)
-        self.game_manager.start()
-        self.event_handler.start()
+        game_manager = Game_Manager(self.config, self.api)
+        event_handler = Event_Handler(self.config, self.api, game_manager)
+        game_manager.start()
+        event_handler.start()
         print('Handling challenges ...')
 
         if self.start_matchmaking:
-            self._matchmaking()
+            self._matchmaking(game_manager)
 
         if not sys.stdin.isatty():
-            self.game_manager.join()
-            self.event_handler.join()
+            game_manager.join()
+            event_handler.join()
             return
 
         if readline and not os.name == 'nt':
@@ -79,27 +77,27 @@ class UserInterface:
                 continue
 
             if command[0] == 'blacklist':
-                self._blacklist(command)
+                self._blacklist(command, game_manager, event_handler)
             elif command[0] == 'challenge':
-                self._challenge(command)
+                self._challenge(command, game_manager)
             elif command[0] == 'create':
-                self._create(command)
+                self._create(command, game_manager)
             elif command[0] == 'clear':
-                self._clear()
+                self._clear(game_manager)
             elif command[0] == 'exit':
-                self._quit()
+                self._quit(game_manager, event_handler)
             elif command[0] == 'matchmaking':
-                self._matchmaking()
+                self._matchmaking(game_manager)
             elif command[0] == 'quit':
-                self._quit()
+                self._quit(game_manager, event_handler)
             elif command[0] == 'rechallenge':
-                self._rechallenge()
+                self._rechallenge(game_manager, event_handler)
             elif command[0] == 'reset':
-                self._reset(command)
+                self._reset(command, game_manager)
             elif command[0] == 'stop':
-                self._stop()
+                self._stop(game_manager)
             elif command[0] == 'whitelist':
-                self._whitelist(command)
+                self._whitelist(command, event_handler)
             else:
                 self._help()
 
@@ -157,17 +155,17 @@ class UserInterface:
             self.config['blacklist'].extend(usernames)
             print(f'Downloaded {len(usernames)} usernames from "{url}" to blacklist.')
 
-    def _blacklist(self, command: list[str]) -> None:
+    def _blacklist(self, command: list[str], game_manager: Game_Manager, event_handler: Event_Handler) -> None:
         if len(command) != 2:
             print(COMMANDS['blacklist'])
             return
 
         username = command[1].lower()
-        self.event_handler.challenge_validator.blacklist.append(username)
-        self.game_manager.matchmaking.blacklist.append(username)
+        event_handler.challenge_validator.blacklist.append(username)
+        game_manager.matchmaking.blacklist.append(username)
         print(f'Added {command[1]} to the blacklist.')
 
-    def _challenge(self, command: list[str]) -> None:
+    def _challenge(self, command: list[str], game_manager: Game_Manager) -> None:
         command_length = len(command)
         if command_length < 2 or command_length > 6:
             print(COMMANDS['challenge'])
@@ -187,10 +185,10 @@ class UserInterface:
             return
 
         challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 30)
-        self.game_manager.request_challenge(challenge_request)
+        game_manager.request_challenge(challenge_request)
         print(f'Challenge against {challenge_request.opponent_username} added to the queue.')
 
-    def _create(self, command: list[str]) -> None:
+    def _create(self, command: list[str], game_manager: Game_Manager) -> None:
         command_length = len(command)
         if command_length < 3 or command_length > 6:
             print(COMMANDS['create'])
@@ -216,27 +214,27 @@ class UserInterface:
             challenges.append(Challenge_Request(opponent_username, initial_time,
                               increment, rated, Challenge_Color.BLACK, variant, 30))
 
-        self.game_manager.request_challenge(*challenges)
+        game_manager.request_challenge(*challenges)
         print(f'Challenges for {count} game pairs against {opponent_username} added to the queue.')
 
-    def _clear(self) -> None:
-        self.game_manager.challenge_requests.clear()
+    def _clear(self, game_manager: Game_Manager) -> None:
+        game_manager.challenge_requests.clear()
         print('Challenge queue cleared.')
 
-    def _matchmaking(self) -> None:
+    def _matchmaking(self, game_manager: Game_Manager) -> None:
         print('Starting matchmaking ...')
-        self.game_manager.start_matchmaking()
+        game_manager.start_matchmaking()
 
-    def _quit(self) -> None:
+    def _quit(self, game_manager: Game_Manager, event_handler: Event_Handler) -> None:
         self.is_running = False
-        self.game_manager.stop()
+        game_manager.stop()
         print('Terminating program ...')
-        self.game_manager.join()
-        self.event_handler.stop()
-        self.event_handler.join()
+        game_manager.join()
+        event_handler.stop()
+        event_handler.join()
 
-    def _rechallenge(self) -> None:
-        last_challenge_event = self.event_handler.last_challenge_event
+    def _rechallenge(self, game_manager: Game_Manager, event_handler: Event_Handler) -> None:
+        last_challenge_event = event_handler.last_challenge_event
         if last_challenge_event is None:
             print('No last challenge available.')
             return
@@ -260,10 +258,10 @@ class UserInterface:
             color = Challenge_Color.RANDOM
 
         challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 30)
-        self.game_manager.request_challenge(challenge_request)
+        game_manager.request_challenge(challenge_request)
         print(f'Challenge against {challenge_request.opponent_username} added to the queue.')
 
-    def _reset(self, command: list[str]) -> None:
+    def _reset(self, command: list[str], game_manager: Game_Manager) -> None:
         if len(command) != 2:
             print(COMMANDS['reset'])
             return
@@ -274,22 +272,22 @@ class UserInterface:
             print(e)
             return
 
-        self.game_manager.matchmaking.opponents.reset_release_time(perf_type)
+        game_manager.matchmaking.opponents.reset_release_time(perf_type)
         print('Matchmaking has been reset.')
 
-    def _stop(self) -> None:
-        if self.game_manager.stop_matchmaking():
+    def _stop(self, game_manager: Game_Manager) -> None:
+        if game_manager.stop_matchmaking():
             print('Stopping matchmaking ...')
         else:
             print('Matchmaking isn\'t currently running ...')
 
-    def _whitelist(self, command: list[str]) -> None:
+    def _whitelist(self, command: list[str], event_handler: Event_Handler) -> None:
         if len(command) != 2:
             print(COMMANDS['whitelist'])
             return
 
         username = command[1].lower()
-        self.event_handler.challenge_validator.whitelist.append(username)
+        event_handler.challenge_validator.whitelist.append(username)
         print(f'Added {command[1]} to the whitelist.')
 
     def _help(self) -> None:
