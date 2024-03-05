@@ -6,9 +6,10 @@ import chess.engine
 
 
 class Engine:
-    def __init__(self, engine: chess.engine.SimpleEngine, ponder: bool) -> None:
+    def __init__(self, engine: chess.engine.SimpleEngine, ponder: bool, opponent: chess.engine.Opponent) -> None:
         self.engine = engine
         self.ponder = ponder
+        self.opponent = opponent
 
     @classmethod
     def from_config(cls, engine_config: dict, syzygy_config: dict, opponent: chess.engine.Opponent) -> 'Engine':
@@ -19,7 +20,7 @@ class Engine:
         cls._configure_engine(engine, uci_options)
         engine.send_opponent_information(opponent=opponent)
 
-        return cls(engine, ponder)
+        return cls(engine, ponder, opponent)
 
     @classmethod
     def test(cls, engine_config: dict, syzygy_config: dict) -> None:
@@ -71,7 +72,7 @@ class Engine:
                   increment: float
                   ) -> tuple[chess.Move, chess.engine.InfoDict]:
         if len(board.move_stack) < 2:
-            limit = chess.engine.Limit(time=15.0)
+            limit = chess.engine.Limit(time=15.0) if self.opponent.is_engine else chess.engine.Limit(time=5.0)
             ponder = False
         else:
             limit = chess.engine.Limit(white_clock=white_time, white_inc=increment,
