@@ -5,21 +5,21 @@ from threading import Event, Thread
 from api import API
 from botli_dataclasses import Game_Information
 from chatter import Chatter
+from config import Config
 from lichess_game import Lichess_Game
 
 
 class Game(Thread):
-    def __init__(self, config: dict, api: API, game_id: str, game_finished_event: Event, game_queue: Queue) -> None:
+    def __init__(self, api: API, config: Config, game_id: str, game_finished_event: Event, game_queue: Queue) -> None:
         Thread.__init__(self)
-        self.config = config
         self.api = api
         self.game_id = game_id
         self.game_finished_event = game_finished_event
         self.game_queue = game_queue
 
-        self.game_info = Game_Information.from_gameFull_event(self.game_queue.get())
-        self.lichess_game = Lichess_Game(self.api, self.game_info, self.config)
-        self.chatter = Chatter(self.api, self.config, self.game_info, self.lichess_game)
+        self.game_info = Game_Information.from_gameFull_event(game_queue.get())
+        self.lichess_game = Lichess_Game(api, config, self.game_info)
+        self.chatter = Chatter(api, config, self.game_info, self.lichess_game)
 
     def start(self):
         Thread.start(self)

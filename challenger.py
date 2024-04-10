@@ -7,8 +7,7 @@ from botli_dataclasses import API_Challenge_Reponse, Challenge_Request, Challeng
 
 
 class Challenger:
-    def __init__(self, config: dict, api: API) -> None:
-        self.config = config
+    def __init__(self, api: API) -> None:
         self.api = api
 
     def create(self, challenge_request: Challenge_Request) -> Iterator[Challenge_Response]:

@@ -8,20 +8,22 @@ from requests.compat import urljoin
 from tenacity import after_log, retry, retry_if_exception_type
 
 from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
+from config import Config
 from enums import Decline_Reason, Variant
 
 logger = logging.getLogger(__name__)
 
 
 class API:
-    def __init__(self, config: dict) -> None:
-        self.urls = self._get_urls(config)
+    def __init__(self, config: Config) -> None:
+        self.config = config
+        self.urls = self._get_urls()
         self.session = requests.session()
-        self.session.headers.update({'Authorization': f'Bearer {config["token"]}',
-                                     'User-Agent': f'BotLi/{config["version"]}'})
+        self.session.headers.update({'Authorization': f'Bearer {config.token}',
+                                     'User-Agent': f'BotLi/{config.version}'})
 
-    def set_user_agent(self, version: str, username: str) -> None:
-        self.session.headers.update({'User-Agent': f'BotLi/{version} user:{username}'})
+    def set_user_agent(self) -> None:
+        self.session.headers.update({'User-Agent': f'BotLi/{self.config.version} user:{self.config.username}'})
 
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
            after=after_log(logger, logging.DEBUG))
@@ -96,15 +98,6 @@ class API:
         except requests.HTTPError as e:
             print(e)
             return False
-
-    def download_usernames(self, url: str) -> list[str]:
-        try:
-            response = self.session.get(url, headers={'Authorization': None}, timeout=5.0)
-            response.raise_for_status()
-            return response.text.splitlines()
-        except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
-            print(e)
-            return []
 
     @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
            after=after_log(logger, logging.DEBUG))
@@ -243,22 +236,21 @@ class API:
             print(e)
             return False
 
-    def _get_urls(self, config: dict[str, Any]) -> dict[str, str]:
-        url = config.get('url', 'https://lichess.org')
+    def _get_urls(self) -> dict[str, str]:
         return {
-            'abort_game': urljoin(url, '/api/bot/game/{0}/abort'),
-            'accept_challenge': urljoin(url, '/api/challenge/{0}/accept'),
-            'cancel_challenge': urljoin(url, '/api/challenge/{0}/cancel'),
-            'create_challenge': urljoin(url, '/api/challenge/{0}'),
-            'decline_challenge': urljoin(url, '/api/challenge/{0}/decline'),
-            'get_account': urljoin(url, '/api/account'),
-            'get_event_stream': urljoin(url, '/api/stream/event'),
-            'get_game_stream': urljoin(url, '/api/bot/game/stream/{0}'),
-            'get_online_bots_stream': urljoin(url, '/api/bot/online'),
-            'get_token_scopes': urljoin(url, '/api/token/test'),
-            'get_user_status': urljoin(url, '/api/users/status'),
-            'resign_game': urljoin(url, '/api/bot/game/{0}/resign'),
-            'send_chat_message': urljoin(url, '/api/bot/game/{0}/chat'),
-            'send_move': urljoin(url, '/api/bot/game/{0}/move/{1}'),
-            'upgrade_account': urljoin(url, '/api/bot/account/upgrade')
+            'abort_game': urljoin(self.config.url, '/api/bot/game/{0}/abort'),
+            'accept_challenge': urljoin(self.config.url, '/api/challenge/{0}/accept'),
+            'cancel_challenge': urljoin(self.config.url, '/api/challenge/{0}/cancel'),
+            'create_challenge': urljoin(self.config.url, '/api/challenge/{0}'),
+            'decline_challenge': urljoin(self.config.url, '/api/challenge/{0}/decline'),
+            'get_account': urljoin(self.config.url, '/api/account'),
+            'get_event_stream': urljoin(self.config.url, '/api/stream/event'),
+            'get_game_stream': urljoin(self.config.url, '/api/bot/game/stream/{0}'),
+            'get_online_bots_stream': urljoin(self.config.url, '/api/bot/online'),
+            'get_token_scopes': urljoin(self.config.url, '/api/token/test'),
+            'get_user_status': urljoin(self.config.url, '/api/users/status'),
+            'resign_game': urljoin(self.config.url, '/api/bot/game/{0}/resign'),
+            'send_chat_message': urljoin(self.config.url, '/api/bot/game/{0}/chat'),
+            'send_move': urljoin(self.config.url, '/api/bot/game/{0}/move/{1}'),
+            'upgrade_account': urljoin(self.config.url, '/api/bot/account/upgrade')
         }

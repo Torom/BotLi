@@ -7,7 +7,7 @@ from typing import TypeVar
 
 from api import API
 from botli_dataclasses import Challenge_Request
-from config import load_config
+from config import Config
 from engine import Engine
 from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
@@ -40,20 +40,19 @@ class UserInterface:
     def __init__(self, config_path: str, start_matchmaking: bool, allow_upgrade: bool) -> None:
         self.start_matchmaking = start_matchmaking
         self.allow_upgrade = allow_upgrade
-        self.config = load_config(config_path)
+        self.config = Config.from_yaml(config_path)
         self.api = API(self.config)
         self.is_running = True
 
     def main(self) -> None:
         print(LOGO, end=' ')
-        print(self.config['version'], end='\n\n')
+        print(self.config.version, end='\n\n')
 
         self._post_init()
         self._test_engines()
-        self._download_lists()
 
-        game_manager = Game_Manager(self.config, self.api)
-        event_handler = Event_Handler(self.config, self.api, game_manager)
+        game_manager = Game_Manager(self.api, self.config)
+        event_handler = Event_Handler(self.api, self.config, game_manager)
         game_manager.start()
         event_handler.start()
         print('Handling challenges ...')
@@ -77,7 +76,7 @@ class UserInterface:
                 continue
 
             if command[0] == 'blacklist':
-                self._blacklist(command, game_manager, event_handler)
+                self._blacklist(command)
             elif command[0] == 'challenge':
                 self._challenge(command, game_manager)
             elif command[0] == 'create':
@@ -97,18 +96,18 @@ class UserInterface:
             elif command[0] == 'stop':
                 self._stop(game_manager)
             elif command[0] == 'whitelist':
-                self._whitelist(command, event_handler)
+                self._whitelist(command)
             else:
                 self._help()
 
     def _post_init(self) -> None:
         account = self.api.get_account()
-        self.config['username'] = account['username']
-        self.api.set_user_agent(self.config['version'], self.config['username'])
+        self.config.username = account['username']
+        self.api.set_user_agent()
         self._handle_bot_status(account)
 
     def _handle_bot_status(self, account: dict) -> None:
-        if 'bot:play' not in self.api.get_token_scopes(self.config['token']):
+        if 'bot:play' not in self.api.get_token_scopes(self.config.token):
             print('Your token is missing the bot:play scope. This is mandatory to use BotLi.\n'
                   'You can create such a token by following this link:\n'
                   'https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
@@ -139,30 +138,17 @@ class UserInterface:
             sys.exit(1)
 
     def _test_engines(self) -> None:
-        for engine_name, engine_section in self.config['engines'].items():
+        for engine_name, engine_config in self.config.engines.items():
             print(f'Testing engine "{engine_name}" ... ', end='')
-            Engine.test(engine_section, self.config['syzygy'])
+            Engine.test(engine_config, self.config.syzygy)
             print('OK')
 
-    def _download_lists(self) -> None:
-        for url in self.config.get('whitelist_urls', []):
-            usernames = list(map(str.lower, self.api.download_usernames(url)))
-            self.config['whitelist'].extend(usernames)
-            print(f'Downloaded {len(usernames)} usernames from "{url}" to whitelist.')
-
-        for url in self.config.get('blacklist_urls', []):
-            usernames = list(map(str.lower, self.api.download_usernames(url)))
-            self.config['blacklist'].extend(usernames)
-            print(f'Downloaded {len(usernames)} usernames from "{url}" to blacklist.')
-
-    def _blacklist(self, command: list[str], game_manager: Game_Manager, event_handler: Event_Handler) -> None:
+    def _blacklist(self, command: list[str]) -> None:
         if len(command) != 2:
             print(COMMANDS['blacklist'])
             return
 
-        username = command[1].lower()
-        event_handler.challenge_validator.blacklist.append(username)
-        game_manager.matchmaking.blacklist.append(username)
+        self.config.blacklist.append(command[1].lower())
         print(f'Added {command[1]} to the blacklist.')
 
     def _challenge(self, command: list[str], game_manager: Game_Manager) -> None:
@@ -281,13 +267,12 @@ class UserInterface:
         else:
             print('Matchmaking isn\'t currently running ...')
 
-    def _whitelist(self, command: list[str], event_handler: Event_Handler) -> None:
+    def _whitelist(self, command: list[str]) -> None:
         if len(command) != 2:
             print(COMMANDS['whitelist'])
             return
 
-        username = command[1].lower()
-        event_handler.challenge_validator.whitelist.append(username)
+        self.config.whitelist.append(command[1].lower())
         print(f'Added {command[1]} to the whitelist.')
 
     def _help(self) -> None:

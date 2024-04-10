@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from api import API
 from botli_dataclasses import Bot, Challenge_Request, Challenge_Response, Matchmaking_Type
 from challenger import Challenger
+from config import Config
 from enums import Busy_Reason, Perf_Type, Variant
 from game import Game
 from opponents import NoOpponentException, Opponents
@@ -12,15 +13,14 @@ from pending_challenge import Pending_Challenge
 
 
 class Matchmaking:
-    def __init__(self, config: dict, api: API) -> None:
+    def __init__(self, api: API, config: Config) -> None:
         self.api = api
-        self.username: str = config['username']
+        self.config = config
         self.next_update = datetime.now()
-        self.timeout = max(config['matchmaking']['timeout'], 1)
-        self.types = self._get_types(config)
-        self.opponents = Opponents(config['matchmaking'].get('delay', 10), self.username)
-        self.challenger = Challenger(config, self.api)
-        self.blacklist: list[str] = config.get('blacklist', [])
+        self.timeout = max(config.matchmaking.timeout, 1)
+        self.types = self._get_types()
+        self.opponents = Opponents(config.matchmaking.delay, config.username)
+        self.challenger = Challenger(api)
 
         self.game_start_time: datetime = datetime.now()
         self.online_bots: list[Bot] = []
@@ -102,19 +102,19 @@ class Matchmaking:
         self.opponents.add_timeout(not was_aborted, game_duration, self.current_type)
         self.current_type = None
 
-    def _get_types(self, config: dict) -> list[Matchmaking_Type]:
+    def _get_types(self) -> list[Matchmaking_Type]:
         types: list[Matchmaking_Type] = []
-        for name, options in config['matchmaking']['types'].items():
-            initial_time, increment = options['tc'].split('+')
+        for name, type_config in self.config.matchmaking.types.items():
+            initial_time, increment = type_config.tc.split('+')
             initial_time = int(float(initial_time) * 60) if initial_time else 0
             increment = int(increment) if increment else 0
-            rated = options.get('rated', True)
-            variant = Variant(options.get('variant', 'standard'))
+            rated = True if type_config.rated is None else type_config.rated
+            variant = Variant.STANDARD if type_config.variant is None else Variant(type_config.variant)
             perf_type = self._variant_to_perf_type(variant, initial_time, increment)
-            multiplier = options.get('multiplier', 15)
-            weight = options.get('weight', 100)
-            min_rating_diff = options.get('min_rating_diff', 0)
-            max_rating_diff = options.get('max_rating_diff', 10_000)
+            multiplier = 15 if type_config.multiplier is None else type_config.multiplier
+            weight = 100 if type_config.weight is None else type_config.weight
+            min_rating_diff = 0 if type_config.min_rating_diff is None else type_config.min_rating_diff
+            max_rating_diff = 10_000 if type_config.max_rating_diff is None else type_config.max_rating_diff
 
             types.append(Matchmaking_Type(name, initial_time, increment, rated, variant,
                          perf_type, multiplier, weight, min_rating_diff, max_rating_diff))
@@ -142,14 +142,14 @@ class Matchmaking:
                 tos_violation = True
                 bot_counts['with tosViolation'] += 1
 
-            if bot['username'] == self.username:
+            if bot['username'] == self.config.username:
                 continue
 
             if 'disabled' in bot:
                 bot_counts['disabled'] += 1
                 continue
 
-            if bot['id'] in self.blacklist:
+            if bot['id'] in self.config.blacklist:
                 bot_counts['blacklisted'] += 1
                 continue
 

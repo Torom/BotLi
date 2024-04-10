@@ -6,23 +6,28 @@ import psutil
 
 from api import API
 from botli_dataclasses import Chat_Message, Game_Information
+from config import Config
 from lichess_game import Lichess_Game
 
 
 class Chatter:
-    def __init__(self, api: API, config: dict, game_information: Game_Information, lichess_game: Lichess_Game) -> None:
+    def __init__(self,
+                 api: API,
+                 config: Config,
+                 game_information: Game_Information,
+                 lichess_game: Lichess_Game
+                 ) -> None:
         self.api = api
+        self.config = config
         self.game_info = game_information
         self.lichess_game = lichess_game
-        self.username: str = config['username']
-        self.version: str = config['version']
         self.cpu_message = self._get_cpu()
-        self.draw_message = self._get_draw_message(config)
+        self.draw_message = self._get_draw_message()
         self.ram_message = self._get_ram()
-        self.player_greeting = self._format_message(config['messages'].get('greeting'))
-        self.player_goodbye = self._format_message(config['messages'].get('goodbye'))
-        self.spectator_greeting = self._format_message(config['messages'].get('greeting_spectators'))
-        self.spectator_goodbye = self._format_message(config['messages'].get('goodbye_spectators'))
+        self.player_greeting = self._format_message(config.messages.greeting)
+        self.player_goodbye = self._format_message(config.messages.goodbye)
+        self.spectator_greeting = self._format_message(config.messages.greeting_spectators)
+        self.spectator_goodbye = self._format_message(config.messages.goodbye_spectators)
         self.print_eval_rooms: set[str] = set()
 
     def handle_chat_message(self, chatLine_Event: dict) -> None:
@@ -33,7 +38,7 @@ class Chatter:
                 print(chat_message.text)
             return
 
-        if chat_message.username != self.username:
+        if chat_message.username != self.config.username:
             prefix = f'{chat_message.username} ({chat_message.room}): '
             output = prefix + chat_message.text
             if len(output) > 128:
@@ -89,7 +94,7 @@ class Chatter:
             return self.lichess_game.engine.name
 
         if command == 'name':
-            return f'{self.username} running {self.lichess_game.engine.name} (BotLi {self.version})'
+            return f'{self.config.username} running {self.lichess_game.engine.name} (BotLi {self.config.version})'
 
         if command == 'printeval':
             if self.game_info.increment_ms or self.game_info.initial_time_ms >= 180_000:
@@ -157,25 +162,22 @@ class Chatter:
 
         return f'{mem_gib:.1f} GiB'
 
-    def _get_draw_message(self, config: dict) -> str:
-        draw_enabled = config['offer_draw']['enabled']
-
-        if not draw_enabled:
+    def _get_draw_message(self) -> str:
+        if not self.config.offer_draw.enabled:
             return 'This bot will neither accept nor offer draws.'
 
-        min_game_length = config['offer_draw']['min_game_length']
-        max_score = config['offer_draw']['score'] / 100
-        consecutive_moves = config['offer_draw']['consecutive_moves']
+        max_score = self.config.offer_draw.score / 100
 
-        return f'The bot offers draw at move {min_game_length} or later ' \
-            f'if the eval is within +{max_score:.2f} to -{max_score:.2f} for the last {consecutive_moves} moves.'
+        return (f'The bot offers draw at move {self.config.offer_draw.min_game_length} or later '
+                f'if the eval is within +{max_score:.2f} to -{max_score:.2f} for the last '
+                f'{self.config.offer_draw.consecutive_moves} moves.')
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:
             return
 
         opponent_username = self.game_info.black_name if self.lichess_game.is_white else self.game_info.white_name
-        mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.username,
+        mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.config.username,
                                     'engine': self.lichess_game.engine.name, 'cpu': self.cpu_message,
                                     'ram': self.ram_message})
         return message.format_map(mapping)

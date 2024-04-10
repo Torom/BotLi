@@ -7,13 +7,14 @@ from aliases import Challenge_ID, Game_ID
 from api import API
 from botli_dataclasses import Challenge_Request
 from challenger import Challenger
+from config import Config
 from game import Game
 from matchmaking import Matchmaking
 from pending_challenge import Pending_Challenge
 
 
 class Game_Manager(Thread):
-    def __init__(self, config: dict, api: API) -> None:
+    def __init__(self, api: API, config: Config) -> None:
         Thread.__init__(self)
         self.config = config
         self.api = api
@@ -24,13 +25,12 @@ class Game_Manager(Thread):
         self.started_game_ids: deque[Game_ID] = deque()
         self.challenge_requests: deque[Challenge_Request] = deque()
         self.changed_event = Event()
-        self.matchmaking = Matchmaking(self.config, self.api)
+        self.matchmaking = Matchmaking(api, config)
         self.current_matchmaking_game_id: Game_ID | None = None
-        self.challenger = Challenger(self.config, self.api)
+        self.challenger = Challenger(api)
         self.is_rate_limited = False
         self.next_matchmaking = datetime.max
-        self.matchmaking_delay = timedelta(seconds=config['matchmaking'].get('delay', 10))
-        self.concurrency: int = config['challenge'].get('concurrency', 1)
+        self.matchmaking_delay = timedelta(seconds=config.matchmaking.delay)
 
     def start(self):
         Thread.start(self)
@@ -125,7 +125,7 @@ class Game_Manager(Thread):
             # Remove reserved spot, if it exists:
             self.reserved_game_spots -= 1
 
-        if len(self.games) >= self.concurrency:
+        if len(self.games) >= self.config.challenge.concurrency:
             print(f'Max number of concurrent games exceeded. Aborting already started game {game_id}.')
             self.api.abort_game(game_id)
             return
@@ -133,7 +133,7 @@ class Game_Manager(Thread):
         game_queue = Queue()
         Thread(target=self.api.get_game_stream, args=(game_id, game_queue), daemon=True).start()
 
-        self.games[game_id] = Game(self.config, self.api, game_id, self.changed_event, game_queue)
+        self.games[game_id] = Game(self.api, self.config, game_id, self.changed_event, game_queue)
         self.games[game_id].start()
 
     def _finish_game(self, game_id: Game_ID) -> None:
@@ -144,7 +144,7 @@ class Game_Manager(Thread):
         if not self.open_challenge_ids:
             return
 
-        if len(self.games) + self.reserved_game_spots >= self.concurrency:
+        if len(self.games) + self.reserved_game_spots >= self.config.challenge.concurrency:
             return
 
         return self.open_challenge_ids.popleft()
@@ -160,7 +160,7 @@ class Game_Manager(Thread):
         if self.next_matchmaking > datetime.now():
             return
 
-        if len(self.games) + self.reserved_game_spots >= self.concurrency:
+        if len(self.games) + self.reserved_game_spots >= self.config.challenge.concurrency:
             return
 
         if self.current_matchmaking_game_id:
@@ -195,7 +195,7 @@ class Game_Manager(Thread):
         if not self.challenge_requests:
             return
 
-        if len(self.games) + self.reserved_game_spots >= self.concurrency:
+        if len(self.games) + self.reserved_game_spots >= self.config.challenge.concurrency:
             return
 
         return self.challenge_requests.popleft()
