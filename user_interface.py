@@ -61,8 +61,6 @@ class UserInterface:
             self._matchmaking(game_manager)
 
         if not sys.stdin.isatty():
-            game_manager.join()
-            event_handler.join()
             return
 
         if readline and not os.name == 'nt':
