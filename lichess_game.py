@@ -13,6 +13,7 @@ from aliases import DTM, DTZ, Offer_Draw, Outcome, Performance, Resign, UCI_Move
 from api import API
 from botli_dataclasses import Book_Settings, Game_Information, Move_Response
 from config import Config
+from configs import Engine_Config
 from engine import Engine
 from enums import Variant
 
@@ -27,7 +28,6 @@ class Lichess_Game:
         self.black_time: float = self.game_info.state['btime'] / 1000
         self.increment = self.game_info.increment_ms / 1000
         self.is_white: bool = self.game_info.white_name == config.username
-        self.move_overhead = self._get_move_overhead()
         self.book_settings = self._get_book_settings()
         self.syzygy_tablebase = self._get_syzygy_tablebase()
         self.gaviota_tablebase = self._get_gaviota_tablebase()
@@ -40,8 +40,10 @@ class Lichess_Game:
         self.out_of_cloud_counter = 0
         self.chessdb_counter = 0
         self.out_of_chessdb_counter = 0
+        engine_config = config.engines[self._get_engine_key()]
         opponent = self.game_info.black_opponent if self.is_white else self.game_info.white_opponent
-        self.engine = Engine.from_config(config.engines[self._get_engine_key()], config.syzygy, opponent)
+        self.move_overhead = self._get_move_overhead(engine_config)
+        self.engine = Engine.from_config(engine_config, config.syzygy, opponent)
         self.scores: list[chess.engine.PovScore | None] = []
         self.last_message = 'No eval available yet.'
         self.last_pv: list[chess.Move] = []
@@ -766,8 +768,11 @@ class Lichess_Game:
 
         return move_sources
 
-    def _get_move_overhead(self) -> float:
-        return max(self.game_info.initial_time_ms / 60_000 * self.config.move_overhead_multiplier, 1.0)
+    def _get_move_overhead(self, engine_config: Engine_Config) -> float:
+        move_overhead_multiplier = (1.0
+                                    if engine_config.move_overhead_multiplier is None
+                                    else engine_config.move_overhead_multiplier)
+        return max(self.game_info.initial_time_ms / 60_000 * move_overhead_multiplier, 1.0)
 
     def _has_time(self, min_time: float) -> bool:
         if len(self.board.move_stack) < 2:

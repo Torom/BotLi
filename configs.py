@@ -8,6 +8,7 @@ class Engine_Config:
     ponder: bool
     use_syzygy: bool
     silence_stderr: bool
+    move_overhead_multiplier: float | None
     uci_options: dict[str, Any]
 
 

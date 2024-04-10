@@ -23,7 +23,6 @@ class Config:
     online_moves: Online_Moves_Config
     offer_draw: Offer_Draw_Config
     resign: Resign_Config
-    move_overhead_multiplier: float
     challenge: Challenge_Config
     matchmaking: Matchmaking_Config
     messages: Messages_Config
@@ -67,7 +66,6 @@ class Config:
                    online_moves_config,
                    offer_draw_config,
                    resign_config,
-                   yaml_config.get('move_overhead_multiplier', 1.0),
                    challenge_config,
                    matchmaking_config,
                    messages_config,
@@ -145,6 +143,7 @@ class Config:
                                                 settings['ponder'],
                                                 settings['use_syzygy'],
                                                 settings['silence_stderr'],
+                                                settings.get('move_overhead_multiplier'),
                                                 settings['uci_options'])
 
         return engine_configs
