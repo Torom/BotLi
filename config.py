@@ -55,6 +55,8 @@ class Config:
         challenge_config = cls._get_challenge_config(yaml_config['challenge'])
         matchmaking_config = cls._get_matchmaking_config(yaml_config['matchmaking'])
         messages_config = cls._get_messages_config(yaml_config['messages'] or {})
+        whitelist = [string.lower() for string in yaml_config.get('whitelist') or []]
+        blacklist = [string.lower() for string in yaml_config.get('blacklist') or []]
 
         return cls(yaml_config.get('url', 'https://lichess.org'),
                    yaml_config['token'],
@@ -68,8 +70,8 @@ class Config:
                    challenge_config,
                    matchmaking_config,
                    messages_config,
-                   yaml_config.get('whitelist') or [],
-                   yaml_config.get('blacklist') or [],
+                   whitelist,
+                   blacklist,
                    cls._get_version(),
                    username='')
 
@@ -97,14 +99,6 @@ class Config:
 
             if not isinstance(config[section[0]], section[1]):
                 raise TypeError(section[2])
-
-        if 'whitelist' in config:
-            if not isinstance(config['whitelist'], list):
-                raise TypeError('If uncommented, "whitelist" must be a list of strings.')
-
-        if 'blacklist' in config:
-            if not isinstance(config['blacklist'], list):
-                raise TypeError('If uncommented, "blacklist" must be a list of strings.')
 
     @staticmethod
     def _get_engine_configs(engines_section: dict) -> dict[str, Engine_Config]:
