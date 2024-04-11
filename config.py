@@ -28,7 +28,6 @@ class Config:
     messages: Messages_Config
     whitelist: list[str]
     blacklist: list[str]
-    books: dict[str, str]
     version: str
     username: str
 
@@ -55,7 +54,7 @@ class Config:
         resign_config = cls._get_resign_config(yaml_config['resign'])
         challenge_config = cls._get_challenge_config(yaml_config['challenge'])
         matchmaking_config = cls._get_matchmaking_config(yaml_config['matchmaking'])
-        messages_config = cls._get_messages_config(yaml_config['messages'])
+        messages_config = cls._get_messages_config(yaml_config['messages'] or {})
 
         return cls(yaml_config.get('url', 'https://lichess.org'),
                    yaml_config['token'],
@@ -69,9 +68,8 @@ class Config:
                    challenge_config,
                    matchmaking_config,
                    messages_config,
-                   yaml_config.get('whitelist', []),
-                   yaml_config.get('blacklist', []),
-                   yaml_config['books'],
+                   yaml_config.get('whitelist') or [],
+                   yaml_config.get('blacklist') or [],
                    cls._get_version(),
                    username='')
 
@@ -91,7 +89,7 @@ class Config:
             ['resign', dict, 'Section `resign` must be a dictionary with indented keys followed by colons.'],
             ['challenge', dict, 'Section `challenge` must be a dictionary with indented keys followed by colons.'],
             ['matchmaking', dict, 'Section `matchmaking` must be a dictionary with indented keys followed by colons.'],
-            ['messages', dict, 'Section `messages` must be a dictionary with indented keys followed by colons.'],
+            ['messages', dict | None, 'Section `messages` must be a dictionary with indented keys followed by colons.'],
             ['books', dict, 'Section `books` must be a dictionary with indented keys followed by colons.']]
         for section in sections:
             if section[0] not in config:
@@ -116,7 +114,7 @@ class Config:
             ['ponder', bool, '"ponder" must be a bool.'],
             ['use_syzygy', bool, '"use_syzygy" must be a bool.'],
             ['silence_stderr', bool, '"silence_stderr" must be a bool.'],
-            ['uci_options', dict, '"uci_options" must be a dictionary with indented keys followed by colons.']]
+            ['uci_options', dict | None, '"uci_options" must be a dictionary with indented keys followed by colons.']]
 
         engine_configs: dict[str, Engine_Config] = {}
         for key, settings in engines_section.items():
@@ -144,7 +142,7 @@ class Config:
                                                 settings['use_syzygy'],
                                                 settings['silence_stderr'],
                                                 settings.get('move_overhead_multiplier'),
-                                                settings['uci_options'])
+                                                settings['uci_options'] or {})
 
         return engine_configs
 
@@ -411,9 +409,9 @@ class Config:
             ['concurrency', int, '"concurrency" must be an integer.'],
             ['bullet_with_increment_only', bool, '"bullet_with_increment_only" must be a bool.'],
             ['variants', list, '"variants" must be a list of variants.'],
-            ['time_controls', list, '"time_controls" must be a list of speeds or time controls.'],
-            ['bot_modes', list, '"bot_modes" must be a list of game modes.'],
-            ['human_modes', list, '"human_modes" must be a list of game modes.']]
+            ['time_controls', list | None, '"time_controls" must be a list of speeds or time controls.'],
+            ['bot_modes', list | None, '"bot_modes" must be a list of game modes.'],
+            ['human_modes', list | None, '"human_modes" must be a list of game modes.']]
 
         for subsection in challenge_sections:
             if subsection[0] not in challenge_section:
@@ -429,9 +427,9 @@ class Config:
                                 challenge_section.get('min_initial'),
                                 challenge_section.get('max_initial'),
                                 challenge_section['variants'],
-                                challenge_section['time_controls'],
-                                challenge_section['bot_modes'],
-                                challenge_section['human_modes'])
+                                challenge_section['time_controls'] or [],
+                                challenge_section['bot_modes'] or [],
+                                challenge_section['human_modes'] or [])
 
     @staticmethod
     def _get_matchmaking_config(matchmaking_section: dict) -> Matchmaking_Config:
