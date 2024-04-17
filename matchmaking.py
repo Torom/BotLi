@@ -103,7 +103,7 @@ class Matchmaking:
         self.current_type = None
 
     def _get_types(self) -> list[Matchmaking_Type]:
-        types: list[Matchmaking_Type] = []
+        matchmaking_types: list[Matchmaking_Type] = []
         for name, type_config in self.config.matchmaking.types.items():
             initial_time, increment = type_config.tc.split('+')
             initial_time = int(float(initial_time) * 60) if initial_time else 0
@@ -116,10 +116,15 @@ class Matchmaking:
             min_rating_diff = 0 if type_config.min_rating_diff is None else type_config.min_rating_diff
             max_rating_diff = 10_000 if type_config.max_rating_diff is None else type_config.max_rating_diff
 
-            types.append(Matchmaking_Type(name, initial_time, increment, rated, variant,
-                         perf_type, multiplier, weight, min_rating_diff, max_rating_diff))
+            matchmaking_types.append(Matchmaking_Type(name, initial_time, increment, rated, variant,
+                                                      perf_type, multiplier, weight, min_rating_diff, max_rating_diff))
 
-        return types
+        perf_type_count = len({matchmaking_type.perf_type for matchmaking_type in matchmaking_types})
+        for matchmaking_type, type_config in zip(matchmaking_types, self.config.matchmaking.types.values()):
+            if type_config.multiplier is None:
+                matchmaking_type.multiplier *= perf_type_count
+
+        return matchmaking_types
 
     def _call_update(self) -> bool:
         if self.next_update <= datetime.now():
