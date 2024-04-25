@@ -198,8 +198,8 @@ class Matchmaking_Type:
     rated: bool
     variant: Variant
     perf_type: Perf_Type
-    multiplier: int
-    weight: int
+    multiplier: float
+    weight: float
     min_rating_diff: int
     max_rating_diff: int
 

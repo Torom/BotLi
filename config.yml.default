@@ -146,17 +146,17 @@ matchmaking:
   types:                                  # Matchmaking types of which one is randomly selected before each game.
     bullet:                               # Arbitrary name of the matchmaking type. Names must be unique.
       tc: 1+1                             # Time control in initial_minutes+increment_seconds format.
-      rated: true                         # Whether matchmaking should play rated games.
-      variant: standard                   # Chess variant (https://lichess.org/variant) to challenge.
-      weight: 100                         # Weight with which this type is selected. (Default: 100)
-      multiplier: 15                      # Multiplier for calculating timeouts in matchmaking. Higher values lead to a wider range of opponents.
-#     min_rating_diff: 0                  # Minimum rating distance to opponent.
-#     max_rating_diff: 300                # Maximum rating distance to opponent.
 #   casual_chess960:
 #     tc: 0.5+1
 #     rated: false
 #     variant: chess960
-#     weight: 50
+#   optional_settings:
+#     rated: true                         # Whether matchmaking should play rated games. Default: true
+#     variant: standard                   # Chess variant (https://lichess.org/variant) to challenge. Default: standard
+#     weight: 100                         # Weight with which this type is selected. Default: Types are played evenly according to their time control.
+#     multiplier: 15                      # Multiplier for calculating timeouts in matchmaking. Default: 15 * number of configured performance types.
+#     min_rating_diff: 0                  # Minimum rating distance to opponent. Default: 0
+#     max_rating_diff: 300                # Maximum rating distance to opponent. Default: 10000
 
 messages:
   # Optional substitution keywords (include curly braces):

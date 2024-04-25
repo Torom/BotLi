@@ -112,7 +112,7 @@ class Matchmaking:
             variant = Variant.STANDARD if type_config.variant is None else Variant(type_config.variant)
             perf_type = self._variant_to_perf_type(variant, initial_time, increment)
             multiplier = 15 if type_config.multiplier is None else type_config.multiplier
-            weight = 100 if type_config.weight is None else type_config.weight
+            weight = 1.0 if type_config.weight is None else type_config.weight
             min_rating_diff = 0 if type_config.min_rating_diff is None else type_config.min_rating_diff
             max_rating_diff = 10_000 if type_config.max_rating_diff is None else type_config.max_rating_diff
 
@@ -123,6 +123,9 @@ class Matchmaking:
         for matchmaking_type, type_config in zip(matchmaking_types, self.config.matchmaking.types.values()):
             if type_config.multiplier is None:
                 matchmaking_type.multiplier *= perf_type_count
+
+            if type_config.weight is None:
+                matchmaking_type.weight /= matchmaking_type.estimated_game_duration.seconds
 
         return matchmaking_types
 
