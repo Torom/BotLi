@@ -99,7 +99,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout, requests.JSONDecodeError)),
            after=after_log(logger, logging.DEBUG))
     def get_account(self) -> dict[str, Any]:
         response = self.session.get(self.urls['get_account'], timeout=3.0)
@@ -120,7 +120,7 @@ class API:
                                         timeout=timeout)
             response.raise_for_status()
             return response.json()
-        except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
+        except (requests.Timeout, requests.HTTPError, requests.ConnectionError, requests.JSONDecodeError) as e:
             print(e)
 
     def get_cloud_eval(self, fen: str, variant: Variant, timeout: int) -> dict[str, Any] | None:
@@ -128,7 +128,7 @@ class API:
             response = self.session.get('https://lichess.org/api/cloud-eval',
                                         params={'fen': fen, 'variant': variant.value}, timeout=timeout)
             return response.json()
-        except (requests.Timeout, requests.ConnectionError) as e:
+        except (requests.Timeout, requests.ConnectionError, requests.JSONDecodeError) as e:
             print(e)
 
     def get_egtb(self, fen: str, variant: str, timeout: int) -> dict[str, Any] | None:
@@ -139,7 +139,7 @@ class API:
                 timeout=timeout)
             response.raise_for_status()
             return response.json()
-        except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
+        except (requests.Timeout, requests.HTTPError, requests.ConnectionError, requests.JSONDecodeError) as e:
             print(e)
 
     @retry(after=after_log(logger, logging.DEBUG))
@@ -158,7 +158,7 @@ class API:
     @retry(after=after_log(logger, logging.DEBUG))
     def get_online_bots_stream(self) -> list[dict[str, Any]]:
         response = self.session.get(self.urls['get_online_bots_stream'], stream=True, timeout=9.0)
-        return [json.loads(line) for line in response.iter_lines() if line]
+        return [json.loads(line) for line in filter(None, response.iter_lines())]
 
     def get_opening_explorer(self,
                              username: str,
@@ -180,13 +180,13 @@ class API:
         except (requests.Timeout, requests.HTTPError, requests.ConnectionError) as e:
             print(e)
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout, requests.JSONDecodeError)),
            after=after_log(logger, logging.DEBUG))
     def get_token_scopes(self, token: str) -> str:
         response = self.session.post(self.urls['get_token_scopes'], data=token, timeout=3.0)
         return response.json()[token]['scopes']
 
-    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+    @retry(retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout, requests.JSONDecodeError)),
            after=after_log(logger, logging.DEBUG))
     def get_user_status(self, username: str) -> dict[str, Any]:
         response = self.session.get(self.urls['get_user_status'], params={'ids': username}, timeout=3.0)
