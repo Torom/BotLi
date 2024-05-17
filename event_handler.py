@@ -1,6 +1,7 @@
 import queue
 from queue import Queue
 from threading import Thread
+from typing import Any
 
 from api import API
 from challenge_validator import Challenge_Validator
@@ -25,7 +26,7 @@ class Event_Handler(Thread):
         self.is_running = False
 
     def run(self) -> None:
-        challenge_queue = Queue()
+        challenge_queue: Queue[dict[str, Any]] = Queue()
         challenge_queue_thread = Thread(target=self.api.get_event_stream, args=(challenge_queue,), daemon=True)
         challenge_queue_thread.start()
 
@@ -52,6 +53,9 @@ class Event_Handler(Thread):
                 print('Challenge added to queue.')
                 print(128 * '‾')
             elif event['type'] == 'gameStart':
+                if not event['game']['hasMoved'] and event['game']['opponent']['id'] in self.config.blacklist:
+                    continue
+
                 self.game_manager.on_game_started(event['game']['id'])
             elif event['type'] == 'gameFinish':
                 continue
