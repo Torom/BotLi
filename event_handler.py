@@ -43,7 +43,7 @@ class Event_Handler(Thread):
                 self._print_challenge_event(event)
 
                 challenge_id = event['challenge']['id']
-                if decline_reason := self.challenge_validator.get_decline_reason(event):
+                if decline_reason := self.challenge_validator.get_decline_reason(event['challenge']):
                     print(128 * '‾')
                     self.api.decline_challenge(challenge_id, decline_reason)
                     continue

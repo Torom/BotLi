@@ -1,3 +1,5 @@
+from typing import Any
+
 from config import Config
 from enums import Decline_Reason
 
@@ -11,21 +13,21 @@ class Challenge_Validator:
         self.min_initial = 0 if config.challenge.min_initial is None else config.challenge.min_initial
         self.max_initial = 315360000 if config.challenge.max_initial is None else config.challenge.max_initial
 
-    def get_decline_reason(self, challenge_event: dict) -> Decline_Reason | None:
-        speed: str = challenge_event['challenge']['speed']
+    def get_decline_reason(self, challenge_event: dict[str, Any]) -> Decline_Reason | None:
+        speed: str = challenge_event['speed']
         if speed == 'correspondence':
             print('Time control "Correspondence" is not supported by BotLi.')
             return Decline_Reason.TIME_CONTROL
 
-        variant: str = challenge_event['challenge']['variant']['key']
+        variant: str = challenge_event['variant']['key']
         if variant not in self.config.challenge.variants:
             print(f'Variant "{variant}" is not allowed according to config.')
             return Decline_Reason.VARIANT
 
-        if challenge_event['challenge']['challenger']['id'] in self.config.whitelist:
+        if challenge_event['challenger']['id'] in self.config.whitelist:
             return
 
-        if challenge_event['challenge']['challenger']['id'] in self.config.blacklist:
+        if challenge_event['challenger']['id'] in self.config.blacklist:
             print('Challenger is blacklisted.')
             return Decline_Reason.GENERIC
 
@@ -33,7 +35,7 @@ class Challenge_Validator:
             print('Neither bots nor humans are allowed according to config.')
             return Decline_Reason.GENERIC
 
-        is_bot: bool = challenge_event['challenge']['challenger']['title'] == 'BOT'
+        is_bot: bool = challenge_event['challenger']['title'] == 'BOT'
         modes = self.config.challenge.bot_modes if is_bot else self.config.challenge.human_modes
         if modes is None:
             if is_bot:
@@ -43,8 +45,8 @@ class Challenge_Validator:
             print('Only bots are allowed according to config.')
             return Decline_Reason.ONLY_BOT
 
-        increment: int = challenge_event['challenge']['timeControl']['increment']
-        initial: int = challenge_event['challenge']['timeControl']['limit']
+        increment: int = challenge_event['timeControl']['increment']
+        initial: int = challenge_event['timeControl']['limit']
         if not self.config.challenge.time_controls:
             print('No time control is allowed according to config.')
             return Decline_Reason.GENERIC
@@ -73,7 +75,7 @@ class Challenge_Validator:
             print('Bullet against bots is only allowed with increment according to config.')
             return Decline_Reason.TOO_FAST
 
-        is_rated: bool = challenge_event['challenge']['rated']
+        is_rated: bool = challenge_event['rated']
         is_casual = not is_rated
         if is_rated and 'rated' not in modes:
             print('Rated is not allowed according to config.')
