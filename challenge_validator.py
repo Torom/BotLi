@@ -19,11 +19,6 @@ class Challenge_Validator:
             print('Time control "Correspondence" is not supported by BotLi.')
             return Decline_Reason.TIME_CONTROL
 
-        rules: list[str] = challenge_event.get('rules', [])
-        if 'noAbort' in rules:
-            print('Rule "noAbort" is not allowed.')
-            return Decline_Reason.GENERIC
-
         variant: str = challenge_event['variant']['key']
         if variant not in self.config.challenge.variants:
             print(f'Variant "{variant}" is not allowed according to config.')

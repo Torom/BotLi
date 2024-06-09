@@ -53,9 +53,6 @@ class Event_Handler(Thread):
                 print('Challenge added to queue.')
                 print(128 * '‾')
             elif event['type'] == 'gameStart':
-                if not event['game']['hasMoved'] and event['game']['opponent']['id'] in self.config.blacklist:
-                    continue
-
                 self.game_manager.on_game_started(event['game']['id'])
             elif event['type'] == 'gameFinish':
                 continue
