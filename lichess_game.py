@@ -33,7 +33,6 @@ class Lichess_Game:
         self.gaviota_tablebase = self._get_gaviota_tablebase()
         self.move_sources = self._get_move_sources()
 
-        self.out_of_book_counter = 0
         self.opening_explorer_counter = 0
         self.out_of_opening_explorer_counter = 0
         self.cloud_counter = 0
@@ -192,32 +191,30 @@ class Lichess_Game:
         return True
 
     def _make_book_move(self) -> Move_Response | None:
-        out_of_book = self.out_of_book_counter >= 10
-        too_deep = self.board.ply() >= self.book_settings.max_depth
-
-        if out_of_book or too_deep:
+        if self.board.ply() >= self.book_settings.max_depth:
             return
 
         for name, book_reader in self.book_settings.readers.items():
             entries = list(book_reader.find_all(self.board))
-            if entries:
-                if self.book_settings.selection == 'weighted_random':
-                    entry, = random.choices(entries, [entry.weight for entry in entries])
-                elif self.book_settings.selection == 'uniform_random':
-                    entry = random.choice(entries)
-                else:
-                    entry = max(entries, key=lambda entry: entry.weight)
+            if not entries:
+                return
 
-                if not self._is_repetition(entry.move):
-                    self.out_of_book_counter = 0
-                    weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
-                    learn = entry.learn if self.config.opening_books.read_learn else 0
-                    name = name if len(self.book_settings.readers) > 1 else ''
-                    public_message = f'Book:    {self._format_move(entry.move):14}'
-                    private_message = f'{self._format_book_info(weight, learn)}     {name}'
-                    return Move_Response(entry.move, public_message, private_message=private_message)
+            if self.book_settings.selection == 'weighted_random':
+                entry, = random.choices(entries, [entry.weight for entry in entries])
+            elif self.book_settings.selection == 'uniform_random':
+                entry = random.choice(entries)
+            else:
+                entry = max(entries, key=lambda entry: entry.weight)
 
-        self.out_of_book_counter += 1
+            if self._is_repetition(entry.move):
+                return
+
+            weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
+            learn = entry.learn if self.config.opening_books.read_learn else 0
+            name = name if len(self.book_settings.readers) > 1 else ''
+            public_message = f'Book:    {self._format_move(entry.move):14}'
+            private_message = f'{self._format_book_info(weight, learn)}     {name}'
+            return Move_Response(entry.move, public_message, private_message=private_message)
 
     def _get_book_settings(self) -> Book_Settings:
         if not self.config.opening_books.enabled:
@@ -733,6 +730,20 @@ class Lichess_Game:
         return board
 
     def _get_move_sources(self) -> list[Callable[[], Move_Response | None]]:
+        move_sources: list[Callable[[], Move_Response | None]] = []
+
+        if self.config.gaviota.enabled:
+            if self.board.uci_variant == 'chess':
+                move_sources.append(self._make_gaviota_move)
+
+        if self.config.syzygy.enabled and self.config.syzygy.instant_play:
+            if self.board.uci_variant in ['chess', 'antichess', 'atomic']:
+                move_sources.append(self._make_syzygy_move)
+
+        if self.config.online_moves.online_egtb.enabled:
+            if self.board.uci_variant in ['chess', 'antichess', 'atomic']:
+                move_sources.append(self._make_egtb_move)
+
         opening_sources: dict[Callable[[], Move_Response | None], int] = {}
 
         if self.config.opening_books.enabled:
@@ -750,21 +761,9 @@ class Lichess_Game:
             if self.board.uci_variant == 'chess':
                 opening_sources[self._make_chessdb_move] = self.config.online_moves.chessdb.priority
 
-        move_sources = [opening_source
-                        for opening_source, _
-                        in sorted(opening_sources.items(), key=lambda item: item[1], reverse=True)]
-
-        if self.config.gaviota.enabled:
-            if self.board.uci_variant == 'chess':
-                move_sources.append(self._make_gaviota_move)
-
-        if self.config.syzygy.enabled and self.config.syzygy.instant_play:
-            if self.board.uci_variant in ['chess', 'antichess', 'atomic']:
-                move_sources.append(self._make_syzygy_move)
-
-        if self.config.online_moves.online_egtb.enabled:
-            if self.board.uci_variant in ['chess', 'antichess', 'atomic']:
-                move_sources.append(self._make_egtb_move)
+        move_sources += [opening_source
+                         for opening_source, _
+                         in sorted(opening_sources.items(), key=lambda item: item[1], reverse=True)]
 
         return move_sources
 
