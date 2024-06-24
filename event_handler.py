@@ -17,7 +17,7 @@ class Event_Handler(Thread):
         self.is_running = True
         self.game_manager = game_manager
         self.challenge_validator = Challenge_Validator(config)
-        self.last_challenge_event: dict | None = None
+        self.last_challenge_event: dict[str, Any] | None = None
 
     def start(self):
         Thread.start(self)
@@ -40,16 +40,15 @@ class Event_Handler(Thread):
                 if event['challenge']['challenger']['name'] == self.config.username:
                     continue
 
-                self.last_challenge_event = event
-                self._print_challenge_event(event)
+                self.last_challenge_event = event['challenge']
+                self._print_challenge_event(event['challenge'])
 
-                challenge_id = event['challenge']['id']
                 if decline_reason := self.challenge_validator.get_decline_reason(event['challenge']):
                     print(128 * '‾')
-                    self.api.decline_challenge(challenge_id, decline_reason)
+                    self.api.decline_challenge(event['challenge']['id'], decline_reason)
                     continue
 
-                self.game_manager.add_challenge(challenge_id)
+                self.game_manager.add_challenge(event['challenge']['id'])
                 print('Challenge added to queue.')
                 print(128 * '‾')
             elif event['type'] == 'gameStart':
@@ -68,23 +67,23 @@ class Event_Handler(Thread):
                     continue
 
                 self.game_manager.remove_challenge(event['challenge']['id'])
-                self._print_challenge_event(event)
+                self._print_challenge_event(event['challenge'])
                 print('Challenge has been canceled.')
                 print(128 * '‾')
             else:
                 print(event)
 
-    def _print_challenge_event(self, challenge_event: dict) -> None:
-        id_str = f'ID: {challenge_event["challenge"]["id"]}'
-        title = challenge_event['challenge']['challenger'].get('title') or ''
-        name = challenge_event['challenge']['challenger']['name']
-        rating = challenge_event['challenge']['challenger']['rating']
-        provisional = '?' if challenge_event['challenge']['challenger'].get('provisional') else ''
+    def _print_challenge_event(self, challenge_event: dict[str, Any]) -> None:
+        id_str = f'ID: {challenge_event["id"]}'
+        title = challenge_event['challenger'].get('title') or ''
+        name = challenge_event['challenger']['name']
+        rating = challenge_event['challenger']['rating']
+        provisional = '?' if challenge_event['challenger'].get('provisional') else ''
         challenger_str = f'Challenger: {title}{" " if title else ""}{name} ({rating}{provisional})'
-        tc_str = f'TC: {challenge_event["challenge"]["timeControl"].get("show", "Correspondence")}'
-        rated_str = 'Rated' if challenge_event['challenge']['rated'] else 'Casual'
-        color_str = f'Color: {challenge_event["challenge"]["color"].capitalize()}'
-        variant_str = f'Variant: {challenge_event["challenge"]["variant"]["name"]}'
+        tc_str = f'TC: {challenge_event["timeControl"].get("show", "Correspondence")}'
+        rated_str = 'Rated' if challenge_event['rated'] else 'Casual'
+        color_str = f'Color: {challenge_event["color"].capitalize()}'
+        variant_str = f'Variant: {challenge_event["variant"]["name"]}'
         delimiter = 5 * ' '
 
         print(128 * '_')

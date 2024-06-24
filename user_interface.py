@@ -223,16 +223,16 @@ class UserInterface:
             print('No last challenge available.')
             return
 
-        if last_challenge_event['challenge']['speed'] == 'correspondence':
+        if last_challenge_event['speed'] == 'correspondence':
             print('Correspondence is not supported by BotLi.')
             return
 
-        opponent_username: str = last_challenge_event['challenge']['challenger']['name']
-        initial_time: int = last_challenge_event['challenge']['timeControl']['limit']
-        increment: int = last_challenge_event['challenge']['timeControl']['increment']
-        rated: bool = last_challenge_event['challenge']['rated']
-        event_color: str = last_challenge_event['challenge']['color']
-        variant = Variant(last_challenge_event['challenge']['variant']['key'])
+        opponent_username: str = last_challenge_event['challenger']['name']
+        initial_time: int = last_challenge_event['timeControl']['limit']
+        increment: int = last_challenge_event['timeControl']['increment']
+        rated: bool = last_challenge_event['rated']
+        event_color: str = last_challenge_event['color']
+        variant = Variant(last_challenge_event['variant']['key'])
 
         if event_color == 'white':
             color = Challenge_Color.BLACK

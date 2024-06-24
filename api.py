@@ -77,8 +77,8 @@ class API:
             return
 
         for line in filter(None, response.iter_lines()):
-            data = json.loads(line)
-            challenge_id = data.get('challenge', {'id': None}).get('id')
+            data: dict[str, Any] = json.loads(line)
+            challenge_id = data.get('id', None)
             was_accepted = data.get('done') == 'accepted'
             error = data.get('error')
             was_declined = data.get('done') == 'declined'
