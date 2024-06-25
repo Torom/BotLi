@@ -81,10 +81,7 @@ class Matchmaking:
             if response.challenge_id:
                 pending_challenge.set_challenge_id(response.challenge_id)
 
-        if last_response is None:
-            pending_challenge.return_early()
-            return
-
+        assert last_response
         if not last_response.success and not (last_response.has_reached_rate_limit or last_response.is_misconfigured):
             self.opponents.add_timeout(False, self.current_type.estimated_game_duration, self.current_type)
 
