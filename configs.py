@@ -102,6 +102,7 @@ class Offer_Draw_Config:
     score: int
     consecutive_moves: int
     min_game_length: int
+    against_humans: bool
 
 
 @dataclass
@@ -109,6 +110,7 @@ class Resign_Config:
     enabled: bool
     score: int
     consecutive_moves: int
+    against_humans: bool
 
 
 @dataclass

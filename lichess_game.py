@@ -157,6 +157,9 @@ class Lichess_Game:
         if not self.config.offer_draw.enabled:
             return False
 
+        if not self.engine.opponent.is_engine and not self.config.offer_draw.against_humans:
+            return False
+
         if not self.increment and self.opponent_time < 30.0:
             return False
 
@@ -183,6 +186,9 @@ class Lichess_Game:
             return False
 
         if not self.config.resign.enabled:
+            return False
+
+        if not self.engine.opponent.is_engine and not self.config.resign.against_humans:
             return False
 
         if not self.increment and self.opponent_time < 30.0:
