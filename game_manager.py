@@ -63,7 +63,7 @@ class Game_Manager(Thread):
             game.join()
 
             if game_id == self.current_matchmaking_game_id:
-                self.matchmaking.on_game_finished(game)
+                self.matchmaking.on_game_finished(game.lichess_game.is_abortable)
 
     def add_challenge(self, challenge_id: Challenge_ID) -> None:
         if challenge_id not in self.open_challenge_ids:
@@ -110,7 +110,7 @@ class Game_Manager(Thread):
                 continue
 
             if game_id == self.current_matchmaking_game_id:
-                self.matchmaking.on_game_finished(game)
+                self.matchmaking.on_game_finished(game.lichess_game.is_abortable)
                 self.current_matchmaking_game_id = None
 
             self._delay_matchmaking(self.matchmaking_delay)

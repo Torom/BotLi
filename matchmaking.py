@@ -7,7 +7,6 @@ from botli_dataclasses import Bot, Challenge_Request, Challenge_Response, Matchm
 from challenger import Challenger
 from config import Config
 from enums import Busy_Reason, Perf_Type, Variant
-from game import Game
 from opponents import NoOpponentException, Opponents
 from pending_challenge import Pending_Challenge
 
@@ -90,12 +89,10 @@ class Matchmaking:
     def on_game_started(self) -> None:
         self.game_start_time = datetime.now()
 
-    def on_game_finished(self, game: Game) -> None:
+    def on_game_finished(self, was_aborted: bool) -> None:
         assert self.current_type
 
         game_duration = datetime.now() - self.game_start_time
-        was_aborted = game.lichess_game.is_abortable if game.lichess_game else True
-
         if was_aborted:
             game_duration += self.current_type.estimated_game_duration
 
