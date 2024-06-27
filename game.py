@@ -90,11 +90,11 @@ class Game(Thread):
         self.game_finished_event.set()
 
     def _make_move(self) -> None:
-        uci_move, offer_draw, resign = self.lichess_game.make_move()
-        if resign:
+        lichess_move = self.lichess_game.make_move()
+        if lichess_move.resign:
             self.api.resign_game(self.game_id)
         else:
-            self.api.send_move(self.game_id, uci_move, offer_draw)
+            self.api.send_move(self.game_id, lichess_move.uci_move, lichess_move.offer_draw)
             self.chatter.print_eval()
 
     def _print_game_information(self) -> None:

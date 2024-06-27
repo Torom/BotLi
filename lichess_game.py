@@ -9,9 +9,8 @@ import chess.polyglot
 import chess.syzygy
 from chess.variant import find_variant
 
-from aliases import DTM, DTZ, Offer_Draw, Outcome, Performance, Resign, UCI_Move
 from api import API
-from botli_dataclasses import Book_Settings, Game_Information, Move_Response
+from botli_dataclasses import Book_Settings, Game_Information, Lichess_Move, Move_Response
 from config import Config
 from configs import Engine_Config
 from engine import Engine
@@ -47,7 +46,7 @@ class Lichess_Game:
         self.last_message = 'No eval available yet.'
         self.last_pv: list[chess.Move] = []
 
-    def make_move(self) -> tuple[UCI_Move, Offer_Draw, Resign]:
+    def make_move(self) -> Lichess_Move:
         for move_source in self.move_sources:
             if move_response := move_source():
                 break
@@ -70,9 +69,9 @@ class Lichess_Game:
         self.last_message = move_response.public_message
         self.last_pv = move_response.pv
 
-        return (move_response.move.uci(),
-                self._offer_draw(move_response.is_drawish),
-                self._resign(move_response.is_resignable))
+        return Lichess_Move(move_response.move.uci(),
+                            self._offer_draw(move_response.is_drawish),
+                            self._resign(move_response.is_resignable))
 
     def update(self, gameState_event: dict) -> None:
         moves = gameState_event['moves'].split()
@@ -150,7 +149,7 @@ class Lichess_Game:
 
         return True
 
-    def _offer_draw(self, is_drawish: bool) -> Offer_Draw:
+    def _offer_draw(self, is_drawish: bool) -> bool:
         if not is_drawish:
             return False
 
@@ -181,7 +180,7 @@ class Lichess_Game:
 
         return True
 
-    def _resign(self, is_resignable: bool) -> Resign:
+    def _resign(self, is_resignable: bool) -> bool:
         if not is_resignable:
             return False
 
@@ -655,7 +654,7 @@ class Lichess_Game:
 
         return str(score.pov(self.board.turn))
 
-    def _format_egtb_info(self, outcome: Outcome, dtz: DTZ | None = None, dtm: DTM | None = None) -> str:
+    def _format_egtb_info(self, outcome: str, dtz: int | None = None, dtm: int | None = None) -> str:
         outcome_str = f'{outcome:>7}'
         dtz_str = f'DTZ: {dtz}' if dtz else ''
         dtm_str = f'DTM: {dtm}' if dtm else ''
@@ -673,7 +672,7 @@ class Lichess_Game:
 
         return delimiter.join(output)
 
-    def _deserialize_learn(self, learn: int) -> tuple[Performance, tuple[float, float, float]]:
+    def _deserialize_learn(self, learn: int) -> tuple[int, tuple[float, float, float]]:
         performance = (learn >> 20) & 0b111111111111
         win = ((learn >> 10) & 0b1111111111) / 1020.0 * 100.0
         draw = (learn & 0b1111111111) / 1020.0 * 100.0

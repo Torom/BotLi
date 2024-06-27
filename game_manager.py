@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from queue import Queue
 from threading import Event, Thread
 
-from aliases import Game_ID
 from api import API
 from botli_dataclasses import Challenge, Challenge_Request
 from challenger import Challenger
@@ -20,14 +19,14 @@ class Game_Manager(Thread):
         self.config = config
         self.api = api
         self.is_running = True
-        self.games: dict[Game_ID, Game] = {}
+        self.games: dict[str, Game] = {}
         self.open_challenges: deque[Challenge] = deque()
         self.reserved_game_spots = 0
-        self.started_game_ids: deque[Game_ID] = deque()
+        self.started_game_ids: deque[str] = deque()
         self.challenge_requests: deque[Challenge_Request] = deque()
         self.changed_event = Event()
         self.matchmaking = Matchmaking(api, config)
-        self.current_matchmaking_game_id: Game_ID | None = None
+        self.current_matchmaking_game_id: str | None = None
         self.challenger = Challenger(api)
         self.is_rate_limited = False
         self.next_matchmaking = datetime.max
@@ -80,7 +79,7 @@ class Game_Manager(Thread):
             self.open_challenges.remove(challenge)
             self.changed_event.set()
 
-    def on_game_started(self, game_id: Game_ID) -> None:
+    def on_game_started(self, game_id: str) -> None:
         self.started_game_ids.append(game_id)
         if game_id == self.current_matchmaking_game_id:
             self.matchmaking.on_game_started()
@@ -123,7 +122,7 @@ class Game_Manager(Thread):
 
             del self.games[game_id]
 
-    def _start_game(self, game_id: Game_ID) -> None:
+    def _start_game(self, game_id: str) -> None:
         if game_id in self.games:
             return
 
@@ -142,7 +141,7 @@ class Game_Manager(Thread):
         self.games[game_id] = Game(self.api, self.config, game_id, self.changed_event, game_queue)
         self.games[game_id].start()
 
-    def _finish_game(self, game_id: Game_ID) -> None:
+    def _finish_game(self, game_id: str) -> None:
         self.games[game_id].join()
         del self.games[game_id]
 
@@ -178,22 +177,22 @@ class Game_Manager(Thread):
 
         self.current_matchmaking_game_id = pending_challenge.get_challenge_id()
 
-        success, no_opponent, has_reached_rate_limit, is_misconfigured = pending_challenge.get_final_state()
+        challenge_response = pending_challenge.get_final_state()
         self.is_rate_limited = False
 
-        if success:
+        if challenge_response.success:
             # Reserve a spot for this game
             self.reserved_game_spots += 1
         else:
             self.current_matchmaking_game_id = None
-            if no_opponent:
+            if challenge_response.no_opponent:
                 self._delay_matchmaking(self.matchmaking_delay)
-            if has_reached_rate_limit:
+            if challenge_response.has_reached_rate_limit:
                 self._delay_matchmaking(timedelta(hours=1.0))
                 next_matchmaking_str = self.next_matchmaking.isoformat(sep=' ', timespec='seconds')
                 print(f'Matchmaking has reached rate limit, next attempt at {next_matchmaking_str}.')
                 self.is_rate_limited = True
-            if is_misconfigured:
+            if challenge_response.is_misconfigured:
                 print('Matchmaking stopped due to misconfiguration.')
                 self.stop_matchmaking()
 

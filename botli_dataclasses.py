@@ -5,13 +5,12 @@ import chess
 import chess.engine
 from chess.polyglot import MemoryMappedReader
 
-from aliases import Challenge_ID, Has_Reached_Rate_Limit, Is_Misconfigured, No_Opponent, Success
 from enums import Challenge_Color, Perf_Type, Variant
 
 
 @dataclass
 class API_Challenge_Reponse:
-    challenge_id: Challenge_ID | None = None
+    challenge_id: str | None = None
     was_accepted: bool = False
     error: str | None = None
     was_declined: bool = False
@@ -42,7 +41,7 @@ class Bot:
 
 @dataclass
 class Challenge:
-    challenge_id: Challenge_ID
+    challenge_id: str
     opponent_username: str
 
     def __eq__(self, __o: object) -> bool:
@@ -71,11 +70,11 @@ class Challenge_Request:
 
 @dataclass(kw_only=True)
 class Challenge_Response:
-    challenge_id: Challenge_ID | None = None
-    success: Success = False
-    no_opponent: No_Opponent = False
-    has_reached_rate_limit: Has_Reached_Rate_Limit = False
-    is_misconfigured: Is_Misconfigured = False
+    challenge_id: str | None = None
+    success: bool = False
+    no_opponent: bool = False
+    has_reached_rate_limit: bool = False
+    is_misconfigured: bool = False
 
 
 @dataclass
@@ -200,6 +199,13 @@ class Game_Information:
     @property
     def black_opponent(self) -> chess.engine.Opponent:
         return chess.engine.Opponent(self.black_name, self.black_title, self.black_rating, self.black_title == 'BOT')
+
+
+@dataclass
+class Lichess_Move:
+    uci_move: str
+    offer_draw: bool
+    resign: bool
 
 
 @dataclass
