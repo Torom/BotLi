@@ -663,22 +663,15 @@ class Lichess_Game:
         return delimiter.join(filter(None, [outcome_str, dtz_str, dtm_str]))
 
     def _format_book_info(self, weight: float, learn: int) -> str:
-        output = [f'{weight:>5.0f} %']
+        output = f'{weight:>5.0f} %'
         if learn:
-            performance, wdl = self._deserialize_learn(learn)
-            output.append(f'Performance: {performance}')
-            output.append(f'WDL: {wdl[0]:5.1f} % {wdl[1]:5.1f} % {wdl[2]:5.1f} %')
-        delimiter = 5 * ' '
+            output += f'     Performance: {learn >> 20}'
+            win = (learn >> 10 & 0b1111111111) / 10.2
+            draw = (learn & 0b1111111111) / 10.2
+            loss = max(100.0 - win - draw, 0.0)
+            output += f'     WDL: {win:5.1f} % {draw:5.1f} % {loss:5.1f} %'
 
-        return delimiter.join(output)
-
-    def _deserialize_learn(self, learn: int) -> tuple[int, tuple[float, float, float]]:
-        performance = (learn >> 20) & 0b111111111111
-        win = ((learn >> 10) & 0b1111111111) / 1020.0 * 100.0
-        draw = (learn & 0b1111111111) / 1020.0 * 100.0
-        loss = max(100.0 - win - draw, 0.0)
-
-        return performance, (win, draw, loss)
+        return output
 
     def _get_engine_key(self) -> str:
         color = 'white' if self.is_white else 'black'
