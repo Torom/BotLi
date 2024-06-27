@@ -21,6 +21,8 @@ class Game(Thread):
         self.lichess_game = Lichess_Game(api, config, self.game_info)
         self.chatter = Chatter(api, config, self.game_info, self.lichess_game)
 
+        self.has_timed_out = False
+
     def start(self):
         Thread.start(self)
 
@@ -51,6 +53,7 @@ class Game(Thread):
                     print('Aborting game ...')
                     self.api.abort_game(self.game_id)
                     self.chatter.send_abortion_message()
+                    self.has_timed_out = True
 
             if event['type'] == 'gameFull':
                 if event['state']['status'] != 'started':

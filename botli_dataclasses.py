@@ -41,6 +41,18 @@ class Bot:
 
 
 @dataclass
+class Challenge:
+    challenge_id: Challenge_ID
+    opponent_username: str
+
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, Challenge):
+            return __o.challenge_id == self.challenge_id
+
+        return NotImplemented
+
+
+@dataclass
 class Challenge_Request:
     opponent_username: str
     initial_time: int

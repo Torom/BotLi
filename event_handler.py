@@ -4,6 +4,7 @@ from threading import Thread
 from typing import Any
 
 from api import API
+from botli_dataclasses import Challenge
 from challenge_validator import Challenge_Validator
 from config import Config
 from game_manager import Game_Manager
@@ -48,7 +49,8 @@ class Event_Handler(Thread):
                     self.api.decline_challenge(event['challenge']['id'], decline_reason)
                     continue
 
-                self.game_manager.add_challenge(event['challenge']['id'])
+                self.game_manager.add_challenge(Challenge(event['challenge']['id'],
+                                                          event['challenge']['challenger']['name']))
                 print('Challenge added to queue.')
                 print(128 * '‾')
             elif event['type'] == 'gameStart':
@@ -66,7 +68,8 @@ class Event_Handler(Thread):
                 if event['challenge']['challenger']['name'] == self.config.username:
                     continue
 
-                self.game_manager.remove_challenge(event['challenge']['id'])
+                self.game_manager.remove_challenge(Challenge(event['challenge']['id'],
+                                                             event['challenge']['challenger']['name']))
                 self._print_challenge_event(event['challenge'])
                 print('Challenge has been canceled.')
                 print(128 * '‾')

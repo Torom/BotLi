@@ -3,11 +3,12 @@ from datetime import datetime, timedelta
 from queue import Queue
 from threading import Event, Thread
 
-from aliases import Challenge_ID, Game_ID
+from aliases import Game_ID
 from api import API
-from botli_dataclasses import Challenge_Request
+from botli_dataclasses import Challenge, Challenge_Request
 from challenger import Challenger
 from config import Config
+from enums import Decline_Reason
 from game import Game
 from matchmaking import Matchmaking
 from pending_challenge import Pending_Challenge
@@ -20,7 +21,7 @@ class Game_Manager(Thread):
         self.api = api
         self.is_running = True
         self.games: dict[Game_ID, Game] = {}
-        self.open_challenge_ids: deque[Challenge_ID] = deque()
+        self.open_challenges: deque[Challenge] = deque()
         self.reserved_game_spots = 0
         self.started_game_ids: deque[Game_ID] = deque()
         self.challenge_requests: deque[Challenge_Request] = deque()
@@ -56,8 +57,8 @@ class Game_Manager(Thread):
             while challenge_request := self._get_next_challenge_request():
                 self._create_challenge(challenge_request)
 
-            while challenge_id := self._get_next_challenge_id():
-                self._accept_challenge(challenge_id)
+            while challenge := self._get_next_challenge():
+                self._accept_challenge(challenge)
 
         for game_id, game in self.games.items():
             game.join()
@@ -65,18 +66,18 @@ class Game_Manager(Thread):
             if game_id == self.current_matchmaking_game_id:
                 self.matchmaking.on_game_finished(game.lichess_game.is_abortable)
 
-    def add_challenge(self, challenge_id: Challenge_ID) -> None:
-        if challenge_id not in self.open_challenge_ids:
-            self.open_challenge_ids.append(challenge_id)
+    def add_challenge(self, challenge: Challenge) -> None:
+        if challenge not in self.open_challenges:
+            self.open_challenges.append(challenge)
             self.changed_event.set()
 
     def request_challenge(self, *challenge_requests: Challenge_Request) -> None:
         self.challenge_requests.extend(challenge_requests)
         self.changed_event.set()
 
-    def remove_challenge(self, challenge_id: Challenge_ID) -> None:
-        if challenge_id in self.open_challenge_ids:
-            self.open_challenge_ids.remove(challenge_id)
+    def remove_challenge(self, challenge: Challenge) -> None:
+        if challenge in self.open_challenges:
+            self.open_challenges.remove(challenge)
             self.changed_event.set()
 
     def on_game_started(self, game_id: Game_ID) -> None:
@@ -113,6 +114,11 @@ class Game_Manager(Thread):
                 self.matchmaking.on_game_finished(game.lichess_game.is_abortable)
                 self.current_matchmaking_game_id = None
 
+            if game.has_timed_out:
+                self._decline_challenges(game.game_info.black_name
+                                         if game.lichess_game.is_white
+                                         else game.game_info.white_name)
+
             self._delay_matchmaking(self.matchmaking_delay)
 
             del self.games[game_id]
@@ -140,21 +146,21 @@ class Game_Manager(Thread):
         self.games[game_id].join()
         del self.games[game_id]
 
-    def _get_next_challenge_id(self) -> Challenge_ID | None:
-        if not self.open_challenge_ids:
+    def _get_next_challenge(self) -> Challenge | None:
+        if not self.open_challenges:
             return
 
         if len(self.games) + self.reserved_game_spots >= self.config.challenge.concurrency:
             return
 
-        return self.open_challenge_ids.popleft()
+        return self.open_challenges.popleft()
 
-    def _accept_challenge(self, challenge_id: Challenge_ID) -> None:
-        if self.api.accept_challenge(challenge_id):
+    def _accept_challenge(self, challenge: Challenge) -> None:
+        if self.api.accept_challenge(challenge.challenge_id):
             # Reserve a spot for this game
             self.reserved_game_spots += 1
         else:
-            print(f'Challenge "{challenge_id}" could not be accepted!')
+            print(f'Challenge "{challenge.challenge_id}" could not be accepted!')
 
     def _check_matchmaking(self) -> None:
         if self.next_matchmaking > datetime.now():
@@ -214,3 +220,10 @@ class Game_Manager(Thread):
             print(f'Challenges against {challenge_request.opponent_username} removed from queue.')
             while challenge_request in self.challenge_requests:
                 self.challenge_requests.remove(challenge_request)
+
+    def _decline_challenges(self, opponent_username: str) -> None:
+        for challenge in list(self.open_challenges):
+            if opponent_username == challenge.opponent_username:
+                print(f'Declining challenge "{challenge.challenge_id}" due to inactivity ...')
+                self.api.decline_challenge(challenge.challenge_id, Decline_Reason.GENERIC)
+                self.open_challenges.remove(challenge)
