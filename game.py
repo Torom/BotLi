@@ -56,24 +56,24 @@ class Game(Thread):
                     self.has_timed_out = True
 
             if event['type'] == 'gameFull':
+                self.lichess_game.update(event['state'])
+
                 if event['state']['status'] != 'started':
                     self._print_result_message(event['state'])
                     self.chatter.send_goodbyes()
                     break
-
-                self.lichess_game.update(event['state'])
 
                 if self.lichess_game.is_our_turn:
                     self._make_move()
                 else:
                     self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
+                self.lichess_game.update(event)
+
                 if event['status'] != 'started':
                     self._print_result_message(event)
                     self.chatter.send_goodbyes()
                     break
-
-                self.lichess_game.update(event)
 
                 if self.lichess_game.is_our_turn and not self.lichess_game.board.is_repetition():
                     self._make_move()
