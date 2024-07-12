@@ -45,8 +45,7 @@ class UserInterface:
         self.is_running = True
 
     def main(self) -> None:
-        print(LOGO, end=' ')
-        print(self.config.version, end='\n\n')
+        print(f'{LOGO} {self.config.version}\n')
 
         self._post_init()
         self._test_engines()
