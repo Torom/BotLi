@@ -1,6 +1,7 @@
 import random
 from collections.abc import Callable
 from itertools import islice
+from typing import Any
 
 import chess
 import chess.engine
@@ -73,7 +74,7 @@ class Lichess_Game:
                             self._offer_draw(move_response.is_drawish),
                             self._resign(move_response.is_resignable))
 
-    def update(self, gameState_event: dict) -> None:
+    def update(self, gameState_event: dict[str, Any]) -> None:
         moves = gameState_event['moves'].split()
         if len(moves) <= len(self.board.move_stack):
             return
@@ -292,35 +293,42 @@ class Lichess_Game:
             color = 'white' if self.board.turn else 'black'
             username = self.game_info.white_name if self.board.turn else self.game_info.black_name
 
-        if response := self.api.get_opening_explorer(username,
-                                                     self.board.fen(),
-                                                     self.game_info.variant,
-                                                     color,
-                                                     self.config.online_moves.opening_explorer.timeout):
-            game_count = response['white'] + response['draws'] + response['black']
-            if game_count >= max(self.config.online_moves.opening_explorer.min_games, 1):
-                top_move = self._get_opening_explorer_top_move(response['moves'])
-                missing_win = self.config.online_moves.opening_explorer.only_with_wins and not bool(top_move['wins'])
-                if not missing_win:
-                    self.out_of_opening_explorer_counter = 0
-                    move = chess.Move.from_uci(top_move['uci'])
-                    if not self._is_repetition(move):
-                        self.opening_explorer_counter += 1
-                        message = f'Explore: {self._format_move(move):14} Performance: {top_move["performance"]}' \
-                            f'      WDL: {top_move["wins"]}/{top_move["draws"]}/{top_move["losses"]}'
-                        return Move_Response(move, message)
-
-            self.out_of_opening_explorer_counter += 1
-        else:
+        response = self.api.get_opening_explorer(username,
+                                                 self.board.fen(),
+                                                 self.game_info.variant,
+                                                 color,
+                                                 self.config.online_moves.opening_explorer.timeout)
+        if response is None:
             self._reduce_own_time(self.config.online_moves.opening_explorer.timeout)
+            return
 
-    def _get_opening_explorer_top_move(self, moves: list[dict]) -> dict:
+        game_count = response['white'] + response['draws'] + response['black']
+        if game_count < max(self.config.online_moves.opening_explorer.min_games, 1):
+            self.out_of_opening_explorer_counter += 1
+            return
+
+        top_move = self._get_opening_explorer_top_move(response['moves'])
+        if self.config.online_moves.opening_explorer.only_with_wins and not bool(top_move['wins']):
+            self.out_of_opening_explorer_counter += 1
+            return
+
+        self.out_of_opening_explorer_counter = 0
+        move = chess.Move.from_uci(top_move['uci'])
+        if self._is_repetition(move):
+            return
+
+        self.opening_explorer_counter += 1
+        message = (f'Explore: {self._format_move(move):14} Performance: {top_move["performance"]}      '
+                   f'WDL: {top_move["wins"]}/{top_move["draws"]}/{top_move["losses"]}')
+        return Move_Response(move, message)
+
+    def _get_opening_explorer_top_move(self, moves: list[dict[str, Any]]) -> dict[str, Any]:
         if self.config.online_moves.opening_explorer.selection == 'win_rate':
             for move in moves:
                 move['wins'] = move['white'] if self.board.turn else move['black']
                 move['losses'] = move['black'] if self.board.turn else move['white']
 
-            def win_performance(move: dict):
+            def win_performance(move: dict[str, Any]) -> float:
                 return (move['wins'] - move['losses']) / (move['white'] + move['draws'] + move['black'])
 
             return max(moves, key=win_performance)
@@ -346,27 +354,36 @@ class Lichess_Game:
         if out_of_book or too_deep or too_many_moves or not has_time:
             return
 
-        if response := self.api.get_cloud_eval(
-                self.board.fen().replace('[', '/').replace(']', ''),
-                self.game_info.variant, self.config.online_moves.lichess_cloud.timeout):
-            if 'error' not in response:
-                if response['depth'] >= self.config.online_moves.lichess_cloud.min_eval_depth:
-                    self.out_of_cloud_counter = 0
-                    pv = [chess.Move.from_uci(uci_move) for uci_move in response['pvs'][0]['moves'].split()]
-                    if not self._is_repetition(pv[0]):
-                        self.cloud_counter += 1
-                        if 'mate' in response['pvs'][0]:
-                            score = chess.engine.Mate(response['pvs'][0]['mate'])
-                        else:
-                            score = chess.engine.Cp(response['pvs'][0]['cp'])
-                        message = (f'Cloud:   {self._format_move(pv[0]):14} '
-                                   f'{self._format_score(chess.engine.PovScore(score, chess.WHITE))}     '
-                                   f'Depth: {response["depth"]}')
-                        return Move_Response(pv[0], message, pv=pv)
-
-            self.out_of_cloud_counter += 1
-        else:
+        response = self.api.get_cloud_eval(self.board.fen().replace('[', '/').replace(']', ''),
+                                           self.game_info.variant,
+                                           self.config.online_moves.lichess_cloud.timeout)
+        if response is None:
             self._reduce_own_time(self.config.online_moves.lichess_cloud.timeout)
+            return
+
+        if 'error' in response:
+            self.out_of_cloud_counter += 1
+            return
+
+        if response['depth'] < self.config.online_moves.lichess_cloud.min_eval_depth:
+            self.out_of_cloud_counter += 1
+            return
+
+        self.out_of_cloud_counter = 0
+        pv = [chess.Move.from_uci(uci_move) for uci_move in response['pvs'][0]['moves'].split()]
+        if self._is_repetition(pv[0]):
+            return
+
+        if 'mate' in response['pvs'][0]:
+            score = chess.engine.Mate(response['pvs'][0]['mate'])
+        else:
+            score = chess.engine.Cp(response['pvs'][0]['cp'])
+
+        self.cloud_counter += 1
+        message = (f'Cloud:   {self._format_move(pv[0]):14} '
+                   f'{self._format_score(chess.engine.PovScore(score, chess.WHITE))}     '
+                   f'Depth: {response["depth"]}')
+        return Move_Response(pv[0], message, pv=pv)
 
     def _make_chessdb_move(self) -> Move_Response | None:
         out_of_book = self.out_of_chessdb_counter >= 5
@@ -384,23 +401,31 @@ class Lichess_Game:
         if out_of_book or too_deep or too_many_moves or not has_time or is_endgame:
             return
 
-        if response := self.api.get_chessdb_eval(self.board.fen(),
-                                                 self.config.online_moves.chessdb.best_move,
-                                                 self.config.online_moves.chessdb.timeout):
-            if response['status'] == 'ok':
-                if response['depth'] >= self.config.online_moves.chessdb.min_eval_depth:
-                    self.out_of_chessdb_counter = 0
-                    pv = [chess.Move.from_uci(uci_move) for uci_move in response['pv']]
-                    if not self._is_repetition(pv[0]):
-                        self.chessdb_counter += 1
-                        pov_score = chess.engine.PovScore(chess.engine.Cp(response['score']), self.board.turn)
-                        message = f'ChessDB: {self._format_move(pv[0]):14} {self._format_score(pov_score)}' \
-                            f'     Depth: {response["depth"]}'
-                        return Move_Response(pv[0], message, pv=pv)
-
-            self.out_of_chessdb_counter += 1
-        else:
+        response = self.api.get_chessdb_eval(self.board.fen(),
+                                             self.config.online_moves.chessdb.best_move,
+                                             self.config.online_moves.chessdb.timeout)
+        if response is None:
             self._reduce_own_time(self.config.online_moves.chessdb.timeout)
+            return
+
+        if response['status'] != 'ok':
+            self.out_of_chessdb_counter += 1
+            return
+
+        if response['depth'] < self.config.online_moves.chessdb.min_eval_depth:
+            self.out_of_chessdb_counter += 1
+            return
+
+        self.out_of_chessdb_counter = 0
+        pv = [chess.Move.from_uci(uci_move) for uci_move in response['pv']]
+        if self._is_repetition(pv[0]):
+            return
+
+        self.chessdb_counter += 1
+        pov_score = chess.engine.PovScore(chess.engine.Cp(response['score']), self.board.turn)
+        message = (f'ChessDB: {self._format_move(pv[0]):14} {self._format_score(pov_score)}     '
+                   f'Depth: {response["depth"]}')
+        return Move_Response(pv[0], message, pv=pv)
 
     def _make_gaviota_move(self) -> Move_Response | None:
         assert self.gaviota_tablebase
@@ -582,18 +607,20 @@ class Lichess_Game:
         variant = 'standard' if self.board.uci_variant == 'chess' else self.board.uci_variant
         assert variant
 
-        if response := self.api.get_egtb(self.board.fen(), variant, self.config.online_moves.online_egtb.timeout):
-            uci_move: str = response['moves'][0]['uci']
-            outcome: str = response['category']
-            dtz: int = -response['moves'][0]['dtz']
-            dtm: int | None = response['dtm']
-            offer_draw = outcome in ['draw', 'blessed loss']
-            resign = outcome == 'loss'
-            move = chess.Move.from_uci(uci_move)
-            message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
-            return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
+        response = self.api.get_egtb(self.board.fen(), variant, self.config.online_moves.online_egtb.timeout)
+        if response is None:
+            self._reduce_own_time(self.config.online_moves.online_egtb.timeout)
+            return
 
-        self._reduce_own_time(self.config.online_moves.online_egtb.timeout)
+        uci_move: str = response['moves'][0]['uci']
+        outcome: str = response['category']
+        dtz: int = -response['moves'][0]['dtz']
+        dtm: int | None = response['dtm']
+        offer_draw = outcome in ['draw', 'blessed loss']
+        resign = outcome == 'loss'
+        move = chess.Move.from_uci(uci_move)
+        message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
+        return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
 
     def _format_move(self, move: chess.Move) -> str:
         if self.board.turn:
