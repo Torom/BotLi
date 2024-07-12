@@ -355,9 +355,13 @@ class Lichess_Game:
                     pv = [chess.Move.from_uci(uci_move) for uci_move in response['pvs'][0]['moves'].split()]
                     if not self._is_repetition(pv[0]):
                         self.cloud_counter += 1
-                        pov_score = chess.engine.PovScore(chess.engine.Cp(response['pvs'][0]['cp']), chess.WHITE)
-                        message = f'Cloud:   {self._format_move(pv[0]):14} {self._format_score(pov_score)}' \
-                            f'     Depth: {response["depth"]}'
+                        if 'mate' in response['pvs'][0]:
+                            score = chess.engine.Mate(response['pvs'][0]['mate'])
+                        else:
+                            score = chess.engine.Cp(response['pvs'][0]['cp'])
+                        message = (f'Cloud:   {self._format_move(pv[0]):14} '
+                                   f'{self._format_score(chess.engine.PovScore(score, chess.WHITE))}     '
+                                   f'Depth: {response["depth"]}')
                         return Move_Response(pv[0], message, pv=pv)
 
             self.out_of_cloud_counter += 1
