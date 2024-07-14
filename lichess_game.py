@@ -203,7 +203,7 @@ class Lichess_Game:
         for name, book_reader in self.book_settings.readers.items():
             entries = list(book_reader.find_all(self.board))
             if not entries:
-                return
+                continue
 
             if self.book_settings.selection == 'weighted_random':
                 entry, = random.choices(entries, [entry.weight for entry in entries])
@@ -213,7 +213,7 @@ class Lichess_Game:
                 entry = max(entries, key=lambda entry: entry.weight)
 
             if self._is_repetition(entry.move):
-                return
+                continue
 
             weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
             learn = entry.learn if self.config.opening_books.read_learn else 0
