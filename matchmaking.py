@@ -18,6 +18,7 @@ class Matchmaking:
         self.next_update = datetime.now()
         self.timeout = max(config.matchmaking.timeout, 1)
         self.types = self._get_types()
+        self.suspended_types: list[Matchmaking_Type] = []
         self.opponents = Opponents(config.matchmaking.delay, config.username)
         self.challenger = Challenger(api)
 
@@ -37,9 +38,10 @@ class Matchmaking:
         try:
             next_opponent = self.opponents.get_opponent(self.online_bots, self.current_type)
         except NoOpponentException:
-            print(f'Removing matchmaking type {self.current_type.name} because '
-                  'no opponent is online in the configured rating range.')
+            print(f'Suspending matchmaking type {self.current_type.name} because no suitable opponent is available.')
+            self.suspended_types.append(self.current_type)
             self.types.remove(self.current_type)
+            self.current_type = None
             if not self.types:
                 print('No usable matchmaking type configured.')
                 pending_challenge.set_final_state(Challenge_Response(is_misconfigured=True))
@@ -129,6 +131,8 @@ class Matchmaking:
     def _call_update(self) -> bool:
         if self.next_update <= datetime.now():
             print('Updating online bots and rankings ...')
+            self.types.extend(self.suspended_types)
+            self.suspended_types.clear()
             self.online_bots = self._get_online_bots()
             return True
 
