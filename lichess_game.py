@@ -197,7 +197,7 @@ class Lichess_Game:
         return True
 
     def _make_book_move(self) -> Move_Response | None:
-        if self.board.ply() >= self.book_settings.max_depth:
+        if self.book_settings.max_depth and self.board.ply() >= self.book_settings.max_depth:
             return
 
         for name, book_reader in self.book_settings.readers.items():
@@ -232,7 +232,7 @@ class Lichess_Game:
 
         books_config = self.config.opening_books.books[key]
         return Book_Settings(books_config.selection,
-                             600 if books_config.max_depth is None else books_config.max_depth,
+                             books_config.max_depth,
                              {name: chess.polyglot.open_reader(path)
                               for name, path in books_config.names.items()})
 

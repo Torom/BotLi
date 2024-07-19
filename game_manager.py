@@ -162,14 +162,14 @@ class Game_Manager(Thread):
             print(f'Challenge "{challenge.challenge_id}" could not be accepted!')
 
     def _check_matchmaking(self) -> None:
-        if self.next_matchmaking > datetime.now():
+        if self.current_matchmaking_game_id:
+            # There is already a matchmaking game running
             return
 
         if len(self.games) + self.reserved_game_spots >= self.config.challenge.concurrency:
             return
 
-        if self.current_matchmaking_game_id:
-            # There is already a matchmaking game running
+        if self.next_matchmaking > datetime.now():
             return
 
         pending_challenge = Pending_Challenge()

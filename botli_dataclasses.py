@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
+from typing import Literal
 
 import chess
 import chess.engine
@@ -21,8 +22,8 @@ class API_Challenge_Reponse:
 
 @dataclass
 class Book_Settings:
-    selection: str = ''
-    max_depth: int = 600
+    selection: Literal['weighted_random', 'uniform_random', 'best_move'] = 'best_move'
+    max_depth: int | None = None
     readers: dict[str, MemoryMappedReader] = field(default_factory=dict)
 
 
