@@ -165,12 +165,13 @@ class API:
                              fen: str,
                              variant: Variant,
                              color: str,
+                             speeds: str,
                              timeout: int
                              ) -> dict[str, Any] | None:
         try:
             response = self.session.get('https://explorer.lichess.ovh/player',
                                         params={'player': username, 'variant': variant.value, 'fen': fen,
-                                                'color': color, 'speeds': 'bullet,blitz,rapid,classical',
+                                                'color': color, 'speeds': speeds,
                                                 'modes': 'rated', 'recentGames': 0},
                                         headers={'Authorization': None},
                                         stream=True, timeout=timeout)

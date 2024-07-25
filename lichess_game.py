@@ -273,14 +273,12 @@ class Lichess_Game:
 
     def _make_opening_explorer_move(self) -> Move_Response | None:
         out_of_book = self.out_of_opening_explorer_counter >= 5
-        max_depth = (600
-                     if self.config.online_moves.opening_explorer.max_depth is None
-                     else self.config.online_moves.opening_explorer.max_depth)
-        too_deep = self.board.ply() >= max_depth
-        max_moves = (600
-                     if self.config.online_moves.opening_explorer.max_moves is None
-                     else self.config.online_moves.opening_explorer.max_moves)
-        too_many_moves = self.opening_explorer_counter >= max_moves
+        too_deep = (False
+                    if self.config.online_moves.opening_explorer.max_depth is None
+                    else self.board.ply() >= self.config.online_moves.opening_explorer.max_depth)
+        too_many_moves = (False
+                          if self.config.online_moves.opening_explorer.max_moves is None
+                          else self.opening_explorer_counter >= self.config.online_moves.opening_explorer.max_moves)
         has_time = self._has_time(self.config.online_moves.opening_explorer.min_time)
 
         if out_of_book or too_deep or too_many_moves or not has_time:
@@ -293,10 +291,16 @@ class Lichess_Game:
             color = 'white' if self.board.turn else 'black'
             username = self.game_info.white_name if self.board.turn else self.game_info.black_name
 
+        if self.board.uci_variant != 'chess' or self.board.chess960:
+            speeds = 'bullet,blitz,rapid,classical'
+        else:
+            speeds = self.game_info.speed
+
         response = self.api.get_opening_explorer(username,
                                                  self.board.fen(),
                                                  self.game_info.variant,
                                                  color,
+                                                 speeds,
                                                  self.config.online_moves.opening_explorer.timeout)
         if response is None:
             self._reduce_own_time(self.config.online_moves.opening_explorer.timeout)
@@ -307,37 +311,40 @@ class Lichess_Game:
             self.out_of_opening_explorer_counter += 1
             return
 
-        top_move = self._get_opening_explorer_top_move(response['moves'])
-        if self.config.online_moves.opening_explorer.only_with_wins and not bool(top_move['wins']):
-            self.out_of_opening_explorer_counter += 1
-            return
+        for move in response['moves']:
+            move['wins'] = move['white'] if self.board.turn else move['black']
+            move['losses'] = move['black'] if self.board.turn else move['white']
+
+        if self.config.online_moves.opening_explorer.only_with_wins:
+            response['moves'] = list(filter(lambda move: move['wins'] > 0, response['moves']))
+
+            if not response['moves']:
+                self.out_of_opening_explorer_counter += 1
+                return
 
         self.out_of_opening_explorer_counter = 0
+        top_move = self._get_opening_explorer_top_move(response['moves'])
         move = chess.Move.from_uci(top_move['uci'])
         if self._is_repetition(move):
             return
 
         self.opening_explorer_counter += 1
-        message = (f'Explore: {self._format_move(move):14} Performance: {top_move["performance"]}      '
-                   f'WDL: {top_move["wins"]}/{top_move["draws"]}/{top_move["losses"]}')
-        return Move_Response(move, message)
+        public_message = f'Explore: {self._format_move(move):14}'
+        private_message = (f'Performance: {top_move["performance"]}      '
+                           f'WDL: {top_move["wins"]}/{top_move["draws"]}/{top_move["losses"]}')
+        return Move_Response(move, public_message, private_message=private_message)
 
     def _get_opening_explorer_top_move(self, moves: list[dict[str, Any]]) -> dict[str, Any]:
         if self.config.online_moves.opening_explorer.selection == 'win_rate':
-            for move in moves:
-                move['wins'] = move['white'] if self.board.turn else move['black']
-                move['losses'] = move['black'] if self.board.turn else move['white']
-
             def win_performance(move: dict[str, Any]) -> float:
                 return (move['wins'] - move['losses']) / (move['white'] + move['draws'] + move['black'])
 
             return max(moves, key=win_performance)
 
-        min_or_max = min if self.config.online_moves.opening_explorer.anti else max
-        top_move = min_or_max(moves, key=lambda move: move['performance'])
-        top_move['wins'] = top_move['white'] if self.board.turn else top_move['black']
-        top_move['losses'] = top_move['black'] if self.board.turn else top_move['white']
-        return top_move
+        if self.config.online_moves.opening_explorer.anti:
+            return min(moves, key=lambda move: move['performance'])
+
+        return max(moves, key=lambda move: move['performance'])
 
     def _make_cloud_move(self) -> Move_Response | None:
         out_of_book = self.out_of_cloud_counter >= 5
