@@ -82,7 +82,7 @@ class Challenge_Response:
 class Chat_Message:
     username: str
     text: str
-    room: str
+    room: Literal['player', 'spectator']
 
     @classmethod
     def from_chatLine_event(cls, chatLine_event: dict) -> 'Chat_Message':
