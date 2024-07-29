@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import Literal
+from typing import Any, Literal
 
 import chess
 import chess.engine
@@ -85,7 +85,7 @@ class Chat_Message:
     room: Literal['player', 'spectator']
 
     @classmethod
-    def from_chatLine_event(cls, chatLine_event: dict) -> 'Chat_Message':
+    def from_chatLine_event(cls, chatLine_event: dict[str, Any]) -> 'Chat_Message':
         username = chatLine_event['username']
         text = chatLine_event['text']
         room = chatLine_event['room']
@@ -113,10 +113,10 @@ class Game_Information:
     variant: Variant
     variant_name: str
     initial_fen: str
-    state: dict
+    state: dict[str, Any]
 
     @classmethod
-    def from_gameFull_event(cls, gameFull_event: dict) -> 'Game_Information':
+    def from_gameFull_event(cls, gameFull_event: dict[str, Any]) -> 'Game_Information':
         assert gameFull_event['type'] == 'gameFull'
 
         id_ = gameFull_event['id']

@@ -30,7 +30,7 @@ class Chatter:
         self.spectator_goodbye = self._format_message(config.messages.goodbye_spectators)
         self.print_eval_rooms: set[str] = set()
 
-    def handle_chat_message(self, chatLine_Event: dict) -> None:
+    async def handle_chat_message(self, chatLine_Event: dict) -> None:
         chat_message = Chat_Message.from_chatLine_event(chatLine_Event)
 
         if chat_message.username == 'lichess':
@@ -47,63 +47,65 @@ class Chatter:
             print(output)
 
         if chat_message.text.startswith('!'):
-            self._handle_command(chat_message)
+            await self._handle_command(chat_message)
 
-    def print_eval(self) -> None:
+    async def print_eval(self) -> None:
         if not self.game_info.increment_ms and self.lichess_game.own_time < 30.0:
             return
 
         for room in self.print_eval_rooms:
-            self._send_last_message(room)
+            await self._send_last_message(room)
 
-    def send_greetings(self) -> None:
+    async def send_greetings(self) -> None:
         if self.player_greeting:
-            self.api.send_chat_message(self.game_info.id_, 'player', self.player_greeting)
+            await self.api.send_chat_message(self.game_info.id_, 'player', self.player_greeting)
 
         if self.spectator_greeting:
-            self.api.send_chat_message(self.game_info.id_, 'spectator', self.spectator_greeting)
+            await self.api.send_chat_message(self.game_info.id_, 'spectator', self.spectator_greeting)
 
-    def send_goodbyes(self) -> None:
+    async def send_goodbyes(self) -> None:
         if self.lichess_game.is_abortable:
             return
 
         if self.player_goodbye:
-            self.api.send_chat_message(self.game_info.id_, 'player', self.player_goodbye)
+            await self.api.send_chat_message(self.game_info.id_, 'player', self.player_goodbye)
 
         if self.spectator_goodbye:
-            self.api.send_chat_message(self.game_info.id_, 'spectator', self.spectator_goodbye)
+            await self.api.send_chat_message(self.game_info.id_, 'spectator', self.spectator_goodbye)
 
-    def send_abortion_message(self) -> None:
-        self.api.send_chat_message(self.game_info.id_, 'player', ('Too bad you weren\'t there. '
-                                                                  'Feel free to challenge me again, '
-                                                                  'I will accept the challenge if possible.'))
+    async def send_abortion_message(self) -> None:
+        await self.api.send_chat_message(self.game_info.id_, 'player', ('Too bad you weren\'t there. '
+                                                                        'Feel free to challenge me again, '
+                                                                        'I will accept the challenge if possible.'))
 
-    def _handle_command(self, chat_message: Chat_Message) -> None:
+    async def _handle_command(self, chat_message: Chat_Message) -> None:
         command = chat_message.text[1:].lower()
         if command == 'cpu':
-            self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
+            await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
         elif command == 'draw':
-            self.api.send_chat_message(self.game_info.id_, chat_message.room, self.draw_message)
+            await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.draw_message)
         elif command == 'eval':
-            self._send_last_message(chat_message.room)
+            await self._send_last_message(chat_message.room)
         elif command == 'motor':
-            self.api.send_chat_message(self.game_info.id_, chat_message.room, self.lichess_game.engine.name)
+            await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.lichess_game.engine.name)
         elif command == 'name':
-            self.api.send_chat_message(self.game_info.id_,
-                                       chat_message.room,
-                                       (f'{self.config.username} running {self.lichess_game.engine.name} '
-                                        f'(BotLi {self.config.version})'))
+            await self.api.send_chat_message(self.game_info.id_,
+                                             chat_message.room,
+                                             (f'{self.config.username} running {self.lichess_game.engine.name} '
+                                              f'(BotLi {self.config.version})'))
         elif command == 'printeval':
             if not self.game_info.increment_ms and self.game_info.initial_time_ms < 180_000:
-                self._send_last_message(chat_message.room)
+                await self._send_last_message(chat_message.room)
                 return
 
             if chat_message.room in self.print_eval_rooms:
                 return
 
             self.print_eval_rooms.add(chat_message.room)
-            self.api.send_chat_message(self.game_info.id_, chat_message.room, 'Type !quiet to stop eval printing.')
-            self._send_last_message(chat_message.room)
+            await self.api.send_chat_message(self.game_info.id_,
+                                             chat_message.room,
+                                             'Type !quiet to stop eval printing.')
+            await self._send_last_message(chat_message.room)
         elif command == 'quiet':
             self.print_eval_rooms.discard(chat_message.room)
         elif command == 'pv':
@@ -113,25 +115,25 @@ class Chatter:
             if not (message := self._append_pv()):
                 message = 'No PV available.'
 
-            self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
+            await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
         elif command == 'ram':
-            self.api.send_chat_message(self.game_info.id_, chat_message.room, self.ram_message)
+            await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.ram_message)
         elif command in ['help', 'commands']:
             if chat_message.room == 'player':
                 message = 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval, !ram'
             else:
                 message = 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval, !pv, !ram'
 
-            self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
+            await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
 
-    def _send_last_message(self, room: str) -> None:
+    async def _send_last_message(self, room: str) -> None:
         last_message = self.lichess_game.last_message.replace('Engine', 'Eval')
         last_message = ' '.join(last_message.split())
 
         if room == 'spectator':
             last_message = self._append_pv(last_message)
 
-        self.api.send_chat_message(self.game_info.id_, room, last_message)
+        await self.api.send_chat_message(self.game_info.id_, room, last_message)
 
     def _get_cpu(self) -> str:
         cpu = ''
