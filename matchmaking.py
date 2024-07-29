@@ -8,7 +8,6 @@ from challenger import Challenger
 from config import Config
 from enums import Busy_Reason, Perf_Type, Variant
 from opponents import NoOpponentException, Opponents
-from pending_challenge import Pending_Challenge
 
 
 class Matchmaking:
@@ -26,9 +25,8 @@ class Matchmaking:
         self.online_bots: list[Bot] = []
         self.current_type: Matchmaking_Type | None = None
 
-    def create_challenge(self, pending_challenge: Pending_Challenge) -> None:
-        if self._call_update():
-            pending_challenge.return_early()
+    async def create_challenge(self) -> Challenge_Response | None:
+        if await self._call_update():
             return
 
         if not self.current_type:
@@ -44,21 +42,18 @@ class Matchmaking:
             self.current_type = None
             if not self.types:
                 print('No usable matchmaking type configured.')
-                pending_challenge.set_final_state(Challenge_Response(is_misconfigured=True))
-                return
+                return Challenge_Response(is_misconfigured=True)
 
-            pending_challenge.set_final_state(Challenge_Response(no_opponent=True))
-            return
+            return Challenge_Response(no_opponent=True)
 
         if next_opponent:
             opponent, color = next_opponent
         else:
             print(f'No opponent available for matchmaking type {self.current_type.name}.')
             self.current_type = None
-            pending_challenge.set_final_state(Challenge_Response(no_opponent=True))
-            return
+            return Challenge_Response(no_opponent=True)
 
-        if busy_reason := self._get_busy_reason(opponent):
+        if busy_reason := await self._get_busy_reason(opponent):
             if busy_reason == Busy_Reason.PLAYING:
                 rating_diff = opponent.rating_diffs[self.current_type.perf_type]
                 print(f'Skipping {opponent.username} ({rating_diff:+}) as {color.value} ...')
@@ -67,7 +62,6 @@ class Matchmaking:
                 print(f'Removing {opponent.username} from online bots because it is offline ...')
                 self.online_bots.remove(opponent)
 
-            pending_challenge.return_early()
             return
 
         rating_diff = opponent.rating_diffs[self.current_type.perf_type]
@@ -76,17 +70,11 @@ class Matchmaking:
                                               self.current_type.increment, self.current_type.rated, color,
                                               self.current_type.variant, self.timeout)
 
-        last_response: Challenge_Response | None = None
-        for response in self.challenger.create(challenge_request):
-            last_response = response
-            if response.challenge_id:
-                pending_challenge.set_challenge_id(response.challenge_id)
-
-        assert last_response
-        if not last_response.success and not (last_response.has_reached_rate_limit or last_response.is_misconfigured):
+        response = await self.challenger.create(challenge_request)
+        if not response.success and not (response.has_reached_rate_limit or response.is_misconfigured):
             self.opponents.add_timeout(False, self.current_type.estimated_game_duration, self.current_type)
 
-        pending_challenge.set_final_state(last_response)
+        return response
 
     def on_game_started(self) -> None:
         self.game_start_time = datetime.now()
@@ -128,22 +116,22 @@ class Matchmaking:
 
         return matchmaking_types
 
-    def _call_update(self) -> bool:
+    async def _call_update(self) -> bool:
         if self.next_update <= datetime.now():
             print('Updating online bots and rankings ...')
             self.types.extend(self.suspended_types)
             self.suspended_types.clear()
-            self.online_bots = self._get_online_bots()
+            self.online_bots = await self._get_online_bots()
             return True
 
         return False
 
-    def _get_online_bots(self) -> list[Bot]:
-        user_ratings = self._get_user_ratings()
+    async def _get_online_bots(self) -> list[Bot]:
+        user_ratings = await self._get_user_ratings()
 
         online_bots: list[Bot] = []
         bot_counts: defaultdict[str, int] = defaultdict(int)
-        for bot in self.api.get_online_bots_stream():
+        async for bot in self.api.get_online_bots_stream():
             bot_counts['online'] += 1
 
             tos_violation = False
@@ -176,8 +164,8 @@ class Matchmaking:
         self.next_update = datetime.now() + timedelta(minutes=30.0)
         return online_bots
 
-    def _get_user_ratings(self) -> dict[Perf_Type, int]:
-        user = self.api.get_account()
+    async def _get_user_ratings(self) -> dict[Perf_Type, int]:
+        user = await self.api.get_account()
 
         performances: dict[Perf_Type, int] = {}
         for perf_type in Perf_Type:
@@ -210,8 +198,8 @@ class Matchmaking:
 
         return Variant(perf_type.value)
 
-    def _get_busy_reason(self, bot: Bot) -> Busy_Reason | None:
-        bot_status = self.api.get_user_status(bot.username)
+    async def _get_busy_reason(self, bot: Bot) -> Busy_Reason | None:
+        bot_status = await self.api.get_user_status(bot.username)
         if 'online' not in bot_status:
             return Busy_Reason.OFFLINE
 

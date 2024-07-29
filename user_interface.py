@@ -2,8 +2,11 @@ import argparse
 import logging
 import os
 import sys
+from asyncio import Task, create_task, run, set_event_loop_policy, to_thread
 from enum import Enum
 from typing import TypeVar
+
+from chess.engine import EventLoopPolicy
 
 from api import API
 from botli_dataclasses import Challenge_Request
@@ -44,22 +47,26 @@ class UserInterface:
         self.api = API(self.config)
         self.is_running = True
 
-    def main(self) -> None:
+    async def main(self) -> None:
         print(f'{LOGO} {self.config.version}\n')
 
-        self._post_init()
-        self._test_engines()
+        await self._post_init()
+        await self._test_engines()
 
         game_manager = Game_Manager(self.api, self.config)
         event_handler = Event_Handler(self.api, self.config, game_manager)
-        game_manager.start()
-        event_handler.start()
+        game_manager_task = create_task(game_manager.run())
+        event_handler_task = create_task(event_handler.run())
+        game_manager.is_running = True
+        event_handler.last_challenge_event = None
         print('Handling challenges ...')
 
         if self.start_matchmaking:
             self._matchmaking(game_manager)
 
         if not sys.stdin.isatty():
+            await game_manager_task
+            await event_handler_task
             return
 
         if readline and not os.name == 'nt':
@@ -68,7 +75,7 @@ class UserInterface:
             readline.parse_and_bind('tab: complete')
 
         while self.is_running:
-            command = input().split()
+            command = (await to_thread(input)).split()
             if len(command) == 0:
                 continue
 
@@ -80,12 +87,10 @@ class UserInterface:
                 self._create(command, game_manager)
             elif command[0] == 'clear':
                 self._clear(game_manager)
-            elif command[0] == 'exit':
-                self._quit(game_manager, event_handler)
+            elif command[0] in ['exit', 'quit']:
+                await self._quit(game_manager, game_manager_task, event_handler_task)
             elif command[0] == 'matchmaking':
                 self._matchmaking(game_manager)
-            elif command[0] == 'quit':
-                self._quit(game_manager, event_handler)
             elif command[0] == 'rechallenge':
                 self._rechallenge(game_manager, event_handler)
             elif command[0] == 'reset':
@@ -97,14 +102,14 @@ class UserInterface:
             else:
                 self._help()
 
-    def _post_init(self) -> None:
-        account = self.api.get_account()
+    async def _post_init(self) -> None:
+        account = await self.api.get_account()
         self.config.username = account['username']
         self.api.set_user_agent()
-        self._handle_bot_status(account)
+        await self._handle_bot_status(account)
 
-    def _handle_bot_status(self, account: dict) -> None:
-        if 'bot:play' not in self.api.get_token_scopes(self.config.token):
+    async def _handle_bot_status(self, account: dict) -> None:
+        if 'bot:play' not in await self.api.get_token_scopes(self.config.token):
             print('Your token is missing the bot:play scope. This is mandatory to use BotLi.\n'
                   'You can create such a token by following this link:\n'
                   'https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
@@ -134,10 +139,10 @@ class UserInterface:
             print('Upgrade failed.')
             sys.exit(1)
 
-    def _test_engines(self) -> None:
+    async def _test_engines(self) -> None:
         for engine_name, engine_config in self.config.engines.items():
             print(f'Testing engine "{engine_name}" ... ', end='')
-            Engine.test(engine_config, self.config.syzygy)
+            await Engine.test(engine_config, self.config.syzygy)
             print('OK')
 
     def _blacklist(self, command: list[str]) -> None:
@@ -208,13 +213,12 @@ class UserInterface:
         print('Starting matchmaking ...')
         game_manager.start_matchmaking()
 
-    def _quit(self, game_manager: Game_Manager, event_handler: Event_Handler) -> None:
+    async def _quit(self, game_manager: Game_Manager, game_manager_task: Task, event_handler_task: Task) -> None:
         self.is_running = False
         game_manager.stop()
         print('Terminating program ...')
-        game_manager.join()
-        event_handler.stop()
-        event_handler.join()
+        event_handler_task.cancel()
+        await game_manager_task
 
     def _rechallenge(self, game_manager: Game_Manager, event_handler: Event_Handler) -> None:
         last_challenge_event = event_handler.last_challenge_event
@@ -315,4 +319,5 @@ if __name__ == '__main__':
     logging.basicConfig(level=args.debug)
 
     ui = UserInterface(args.config, args.matchmaking, args.upgrade)
-    ui.main()
+    set_event_loop_policy(EventLoopPolicy())
+    run(ui.main())

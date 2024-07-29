@@ -1,6 +1,6 @@
+from asyncio import Event
 from datetime import datetime, timedelta
-from queue import Queue
-from threading import Event, Thread
+from typing import Any, AsyncIterator
 
 from api import API
 from botli_dataclasses import Game_Information
@@ -9,50 +9,64 @@ from config import Config
 from lichess_game import Lichess_Game
 
 
-class Game(Thread):
-    def __init__(self, api: API, config: Config, game_id: str, game_finished_event: Event, game_queue: Queue) -> None:
-        Thread.__init__(self)
+class Game:
+    def __init__(self,
+                 api: API,
+                 game_id: str,
+                 game_finished_event: Event,
+                 game_stream: AsyncIterator[dict[str, Any]],
+                 game_information: Game_Information,
+                 lichess_game: Lichess_Game,
+                 chatter: Chatter) -> None:
         self.api = api
         self.game_id = game_id
         self.game_finished_event = game_finished_event
-        self.game_queue = game_queue
-
-        self.game_info = Game_Information.from_gameFull_event(game_queue.get())
-        self.lichess_game = Lichess_Game(api, config, self.game_info)
-        self.chatter = Chatter(api, config, self.game_info, self.lichess_game)
-
+        self.game_stream = game_stream
+        self.info = game_information
+        self.lichess_game = lichess_game
+        self.chatter = chatter
         self.has_timed_out = False
 
-    def start(self):
-        Thread.start(self)
+    @classmethod
+    async def create(cls, api: API, config: Config, game_id: str, game_finished_event: Event) -> 'Game':
+        game_stream = api.get_game_stream(game_id)
+        info = Game_Information.from_gameFull_event(await anext(game_stream))
+        lichess_game = Lichess_Game(api, config, info)
+        await lichess_game.init_engine()
+        game = cls(api,
+                   game_id,
+                   game_finished_event,
+                   game_stream,
+                   info,
+                   lichess_game,
+                   Chatter(api, config, info, lichess_game))
+        return game
 
-    def run(self) -> None:
+    async def run(self) -> None:
         self._print_game_information()
-        self.chatter.send_greetings()
+        await self.chatter.send_greetings()
 
-        if self.game_info.state['status'] != 'started':
-            self._print_result_message(self.game_info.state)
-            self.chatter.send_goodbyes()
-            self.lichess_game.end_game()
+        if self.info.state['status'] != 'started':
+            self._print_result_message(self.info.state)
+            await self.chatter.send_goodbyes()
+            await self.lichess_game.end_game()
             return
 
         if self.lichess_game.is_our_turn:
-            self._make_move()
+            await self._make_move()
         else:
-            self.lichess_game.start_pondering()
+            await self.lichess_game.start_pondering()
 
-        opponent_title = self.game_info.black_title if self.lichess_game.is_white else self.game_info.white_title
+        opponent_title = self.info.black_title if self.lichess_game.is_white else self.info.white_title
         abortion_seconds = 30.0 if opponent_title == 'BOT' else 60.0
         abortion_time = datetime.now() + timedelta(seconds=abortion_seconds)
 
-        while True:
-            event = self.game_queue.get()
-
+        async for event in self.game_stream:
             if event['type'] not in ['gameFull', 'gameState']:
                 if self.lichess_game.is_abortable and datetime.now() >= abortion_time:
                     print('Aborting game ...')
-                    self.api.abort_game(self.game_id)
-                    self.chatter.send_abortion_message()
+                    await self.api.abort_game(self.game_id)
+                    await self.chatter.send_abortion_message()
                     self.has_timed_out = True
 
             if event['type'] == 'gameFull':
@@ -60,25 +74,25 @@ class Game(Thread):
 
                 if event['state']['status'] != 'started':
                     self._print_result_message(event['state'])
-                    self.chatter.send_goodbyes()
+                    await self.chatter.send_goodbyes()
                     break
 
                 if self.lichess_game.is_our_turn:
-                    self._make_move()
+                    await self._make_move()
                 else:
-                    self.lichess_game.start_pondering()
+                    await self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
                 self.lichess_game.update(event)
 
                 if event['status'] != 'started':
                     self._print_result_message(event)
-                    self.chatter.send_goodbyes()
+                    await self.chatter.send_goodbyes()
                     break
 
                 if self.lichess_game.is_our_turn and not self.lichess_game.board.is_repetition():
-                    self._make_move()
+                    await self._make_move()
             elif event['type'] == 'chatLine':
-                self.chatter.handle_chat_message(event)
+                await self.chatter.handle_chat_message(event)
             elif event['type'] == 'opponentGone':
                 continue
             elif event['type'] == 'ping':
@@ -86,34 +100,34 @@ class Game(Thread):
             else:
                 print(event)
 
-        self.lichess_game.end_game()
+        await self.lichess_game.end_game()
         self.game_finished_event.set()
 
-    def _make_move(self) -> None:
-        lichess_move = self.lichess_game.make_move()
+    async def _make_move(self) -> None:
+        lichess_move = await self.lichess_game.make_move()
         if lichess_move.resign:
-            self.api.resign_game(self.game_id)
+            await self.api.resign_game(self.game_id)
         else:
-            self.api.send_move(self.game_id, lichess_move.uci_move, lichess_move.offer_draw)
-            self.chatter.print_eval()
+            await self.api.send_move(self.game_id, lichess_move.uci_move, lichess_move.offer_draw)
+            await self.chatter.print_eval()
 
     def _print_game_information(self) -> None:
-        opponents_str = f'{self.game_info.white_str}   -   {self.game_info.black_str}'
-        message = (5 * ' ').join([self.game_info.id_str, opponents_str, self.game_info.tc_str,
-                                  self.game_info.rated_str, self.game_info.variant_str])
+        opponents_str = f'{self.info.white_str}   -   {self.info.black_str}'
+        message = (5 * ' ').join([self.info.id_str, opponents_str, self.info.tc_str,
+                                  self.info.rated_str, self.info.variant_str])
 
         print(f'\n{message}\n{128 * "‾"}')
 
     def _print_result_message(self, game_state: dict) -> None:
         if winner := game_state.get('winner'):
             if winner == 'white':
-                message = f'{self.game_info.white_name} won'
-                loser = self.game_info.black_name
+                message = f'{self.info.white_name} won'
+                loser = self.info.black_name
                 white_result = '1'
                 black_result = '0'
             else:
-                message = f'{self.game_info.black_name} won'
-                loser = self.game_info.white_name
+                message = f'{self.info.black_name} won'
+                loser = self.info.white_name
                 white_result = '0'
                 black_result = '1'
 
@@ -148,7 +162,7 @@ class Game(Thread):
                 white_result = 'X'
                 black_result = 'X'
 
-        opponents_str = f'{self.game_info.white_str} {white_result} - {black_result} {self.game_info.black_str}'
-        message = (5 * ' ').join([self.game_info.id_str, opponents_str, message])
+        opponents_str = f'{self.info.white_str} {white_result} - {black_result} {self.info.black_str}'
+        message = (5 * ' ').join([self.info.id_str, opponents_str, message])
 
         print(f'{message}\n{128 * "‾"}')

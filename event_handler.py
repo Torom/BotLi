@@ -1,6 +1,3 @@
-import queue
-from queue import Queue
-from threading import Thread
 from typing import Any
 
 from api import API
@@ -10,33 +7,16 @@ from config import Config
 from game_manager import Game_Manager
 
 
-class Event_Handler(Thread):
+class Event_Handler:
     def __init__(self, api: API, config: Config, game_manager: Game_Manager) -> None:
-        Thread.__init__(self)
         self.api = api
         self.config = config
-        self.is_running = True
         self.game_manager = game_manager
         self.challenge_validator = Challenge_Validator(config)
         self.last_challenge_event: dict[str, Any] | None = None
 
-    def start(self):
-        Thread.start(self)
-
-    def stop(self):
-        self.is_running = False
-
-    def run(self) -> None:
-        challenge_queue: Queue[dict[str, Any]] = Queue()
-        challenge_queue_thread = Thread(target=self.api.get_event_stream, args=(challenge_queue,), daemon=True)
-        challenge_queue_thread.start()
-
-        while self.is_running:
-            try:
-                event = challenge_queue.get(timeout=2)
-            except queue.Empty:
-                continue
-
+    async def run(self) -> None:
+        async for event in self.api.get_event_stream():
             if event['type'] == 'challenge':
                 if event['challenge']['challenger']['name'] == self.config.username:
                     continue
@@ -46,7 +26,7 @@ class Event_Handler(Thread):
 
                 if decline_reason := self.challenge_validator.get_decline_reason(event['challenge']):
                     print(128 * '‾')
-                    self.api.decline_challenge(event['challenge']['id'], decline_reason)
+                    await self.api.decline_challenge(event['challenge']['id'], decline_reason)
                     continue
 
                 self.game_manager.add_challenge(Challenge(event['challenge']['id'],

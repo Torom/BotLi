@@ -1,41 +1,53 @@
 import os
 import subprocess
+from asyncio import SubprocessTransport
 
 import chess
-from chess.engine import INFO_ALL, InfoDict, Limit, Opponent, Option, SimpleEngine
+from chess.engine import INFO_ALL, InfoDict, Limit, Opponent, Option, UciProtocol, popen_uci
 
 from configs import Engine_Config, Syzygy_Config
 
 
 class Engine:
-    def __init__(self, engine: SimpleEngine, ponder: bool, opponent: Opponent) -> None:
+    def __init__(self,
+                 transport: SubprocessTransport,
+                 engine: UciProtocol,
+                 ponder: bool,
+                 opponent: Opponent) -> None:
+        self.transport = transport
         self.engine = engine
         self.ponder = ponder
         self.opponent = opponent
 
     @classmethod
-    def from_config(cls, engine_config: Engine_Config, syzygy_config: Syzygy_Config, opponent: Opponent) -> 'Engine':
+    async def from_config(cls,
+                          engine_config: Engine_Config,
+                          syzygy_config: Syzygy_Config,
+                          opponent: Opponent) -> 'Engine':
         uci_options = cls._get_uci_options(engine_config, syzygy_config)
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
-        engine = SimpleEngine.popen_uci(engine_config.path, stderr=stderr)
+        transport, engine = await popen_uci(engine_config.path, stderr=stderr)
 
-        cls._configure_engine(engine, uci_options)
-        engine.send_opponent_information(opponent=opponent)
+        await cls._configure_engine(engine, uci_options)
+        await engine.send_opponent_information(opponent=opponent)
 
-        return cls(engine, engine_config.ponder, opponent)
+        return cls(transport, engine, engine_config.ponder, opponent)
 
     @classmethod
-    def test(cls, engine_config: Engine_Config, syzygy_config: Syzygy_Config) -> None:
+    async def test(cls, engine_config: Engine_Config, syzygy_config: Syzygy_Config) -> None:
         uci_options = cls._get_uci_options(engine_config, syzygy_config)
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
-        with SimpleEngine.popen_uci(engine_config.path, stderr=stderr) as engine:
-            cls._configure_engine(engine, uci_options)
-            result = engine.play(chess.Board(), Limit(time=0.1), info=INFO_ALL)
+        transport, engine = await popen_uci(engine_config.path, stderr=stderr)
+        await cls._configure_engine(engine, uci_options)
+        result = await engine.play(chess.Board(), Limit(time=0.1), info=INFO_ALL)
 
-            if not result.move:
-                raise RuntimeError('Engine could not make a move!')
+        if not result.move:
+            raise RuntimeError('Engine could not make a move!')
+
+        await engine.quit()
+        transport.close()
 
     @staticmethod
     def _get_uci_options(engine_config: Engine_Config, syzygy_config: Syzygy_Config) -> dict:
@@ -48,12 +60,12 @@ class Engine:
         return engine_config.uci_options
 
     @staticmethod
-    def _configure_engine(engine: SimpleEngine, uci_options: dict) -> None:
+    async def _configure_engine(engine: UciProtocol, uci_options: dict) -> None:
         for name, value in uci_options.items():
             if Option(name, '', None, None, None, None).is_managed():
                 print(f'UCI option "{name}" ignored as it is managed by the bot.')
             elif name in engine.options:
-                engine.configure({name: value})
+                await engine.configure({name: value})
             elif name == 'SyzygyProbeLimit':
                 continue
             else:
@@ -63,12 +75,12 @@ class Engine:
     def name(self) -> str:
         return self.engine.id['name']
 
-    def make_move(self,
-                  board: chess.Board,
-                  white_time: float,
-                  black_time: float,
-                  increment: float
-                  ) -> tuple[chess.Move, InfoDict]:
+    async def make_move(self,
+                        board: chess.Board,
+                        white_time: float,
+                        black_time: float,
+                        increment: float
+                        ) -> tuple[chess.Move, InfoDict]:
         if len(board.move_stack) < 2:
             limit = Limit(time=15.0) if self.opponent.is_engine else Limit(time=5.0)
             ponder = False
@@ -77,26 +89,26 @@ class Engine:
                           black_clock=black_time, black_inc=increment)
             ponder = self.ponder
 
-        result = self.engine.play(board, limit, info=INFO_ALL, ponder=ponder)
+        result = await self.engine.play(board, limit, info=INFO_ALL, ponder=ponder)
 
         if not result.move:
             raise RuntimeError('Engine could not make a move!')
 
         return result.move, result.info
 
-    def start_pondering(self, board: chess.Board) -> None:
+    async def start_pondering(self, board: chess.Board) -> None:
         if self.ponder:
-            self.engine.analysis(board)
+            await self.engine.analysis(board)
 
-    def stop_pondering(self) -> None:
+    async def stop_pondering(self) -> None:
         if self.ponder:
             self.ponder = False
-            self.engine.analysis(chess.Board(), Limit(time=0.001))
+            await self.engine.analysis(chess.Board(), Limit(time=0.001))
 
-    def close(self) -> None:
+    async def close(self) -> None:
         try:
-            self.engine.quit()
+            await self.engine.quit()
         except TimeoutError:
             print('Engine could not be terminated cleanly.')
 
-        self.engine.close()
+        self.transport.close()
