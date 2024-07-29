@@ -204,13 +204,11 @@ class API:
             response = self.lichess_client.post(f'/api/bot/game/{game_id}/move/{uci_move}',
                                                 params={'offeringDraw': str(offer_draw).lower()}, timeout=1.0)
 
-            if response.status_code == httpx.codes.BAD_REQUEST:
-                return False
-
             response.raise_for_status()
             return True
         except httpx.HTTPStatusError as e:
-            print(e)
+            if e.response.status_code != httpx.codes.BAD_REQUEST:
+                print(e)
             return False
 
     @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
