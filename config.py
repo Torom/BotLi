@@ -29,7 +29,6 @@ class Config:
     whitelist: list[str]
     blacklist: list[str]
     version: str
-    username: str
 
     @classmethod
     def from_yaml(cls, yaml_path: str) -> 'Config':
@@ -72,8 +71,7 @@ class Config:
                    messages_config,
                    whitelist,
                    blacklist,
-                   cls._get_version(),
-                   username='')
+                   cls._get_version())
 
     @staticmethod
     def _check_sections(config: dict) -> None:

@@ -14,15 +14,17 @@ class Chatter:
     def __init__(self,
                  api: API,
                  config: Config,
+                 username: str,
                  game_information: Game_Information,
                  lichess_game: Lichess_Game
                  ) -> None:
         self.api = api
-        self.config = config
+        self.username = username
         self.game_info = game_information
         self.lichess_game = lichess_game
         self.cpu_message = self._get_cpu()
-        self.draw_message = self._get_draw_message()
+        self.draw_message = self._get_draw_message(config)
+        self.name_message = self._get_name_message(config.version)
         self.ram_message = self._get_ram()
         self.player_greeting = self._format_message(config.messages.greeting)
         self.player_goodbye = self._format_message(config.messages.goodbye)
@@ -38,7 +40,7 @@ class Chatter:
                 print(chat_message.text)
             return
 
-        if chat_message.username != self.config.username:
+        if chat_message.username != self.username:
             prefix = f'{chat_message.username} ({chat_message.room}): '
             output = prefix + chat_message.text
             if len(output) > 128:
@@ -89,10 +91,7 @@ class Chatter:
         elif command == 'motor':
             await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.lichess_game.engine.name)
         elif command == 'name':
-            await self.api.send_chat_message(self.game_info.id_,
-                                             chat_message.room,
-                                             (f'{self.config.username} running {self.lichess_game.engine.name} '
-                                              f'(BotLi {self.config.version})'))
+            await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.name_message)
         elif command == 'printeval':
             if not self.game_info.increment_ms and self.game_info.initial_time_ms < 180_000:
                 await self._send_last_message(chat_message.room)
@@ -164,22 +163,25 @@ class Chatter:
 
         return f'{mem_gib:.1f} GiB'
 
-    def _get_draw_message(self) -> str:
-        if not self.config.offer_draw.enabled:
+    def _get_draw_message(self, config: Config) -> str:
+        if not config.offer_draw.enabled:
             return 'This bot will neither accept nor offer draws.'
 
-        max_score = self.config.offer_draw.score / 100
+        max_score = config.offer_draw.score / 100
 
-        return (f'The bot offers draw at move {self.config.offer_draw.min_game_length} or later '
+        return (f'The bot offers draw at move {config.offer_draw.min_game_length} or later '
                 f'if the eval is within +{max_score:.2f} to -{max_score:.2f} for the last '
-                f'{self.config.offer_draw.consecutive_moves} moves.')
+                f'{config.offer_draw.consecutive_moves} moves.')
+
+    def _get_name_message(self, version: str) -> str:
+        return (f'{self.username} running {self.lichess_game.engine.name} (BotLi {version})')
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:
             return
 
         opponent_username = self.game_info.black_name if self.lichess_game.is_white else self.game_info.white_name
-        mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.config.username,
+        mapping = defaultdict(str, {'opponent': opponent_username, 'me': self.username,
                                     'engine': self.lichess_game.engine.name, 'cpu': self.cpu_message,
                                     'ram': self.ram_message})
         return message.format_map(mapping)

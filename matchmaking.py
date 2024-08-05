@@ -11,14 +11,15 @@ from opponents import NoOpponentException, Opponents
 
 
 class Matchmaking:
-    def __init__(self, api: API, config: Config) -> None:
+    def __init__(self, api: API, config: Config, username: str) -> None:
         self.api = api
         self.config = config
+        self.username = username
         self.next_update = datetime.now()
         self.timeout = max(config.matchmaking.timeout, 1)
         self.types = self._get_types()
         self.suspended_types: list[Matchmaking_Type] = []
-        self.opponents = Opponents(config.matchmaking.delay, config.username)
+        self.opponents = Opponents(config.matchmaking.delay, username)
         self.challenger = Challenger(api)
 
         self.game_start_time: datetime = datetime.now()
@@ -139,7 +140,7 @@ class Matchmaking:
                 tos_violation = True
                 bot_counts['with tosViolation'] += 1
 
-            if bot['username'] == self.config.username:
+            if bot['username'] == self.username:
                 continue
 
             if 'disabled' in bot:
