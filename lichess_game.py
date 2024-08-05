@@ -68,7 +68,7 @@ class Lichess_Game:
 
         self.board.push(move_response.move)
         if not move_response.is_engine_move:
-            self.engine.start_pondering(self.board)
+            await self.engine.start_pondering(self.board)
 
         print(f'{move_response.public_message} {move_response.private_message}'.strip())
         self.last_message = move_response.public_message
@@ -120,8 +120,8 @@ class Lichess_Game:
 
         return self.white_time, black_time, self.increment
 
-    def start_pondering(self) -> None:
-        self.engine.start_pondering(self.board)
+    async def start_pondering(self) -> None:
+        await self.engine.start_pondering(self.board)
 
     async def end_game(self) -> None:
         await self.engine.close()
@@ -492,7 +492,7 @@ class Lichess_Game:
         else:
             return
 
-        self.engine.stop_pondering()
+        await self.engine.stop_pondering()
         move = random.choice(best_moves)
         message = f'Gaviota: {self._format_move(move):14} {egtb_info}'
         return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
@@ -565,7 +565,7 @@ class Lichess_Game:
             offer_draw = False
             resign = True
 
-        self.engine.stop_pondering()
+        await self.engine.stop_pondering()
         move = random.choice(best_moves)
         message = f'Syzygy:  {self._format_move(move):14} {egtb_info}'
         return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)

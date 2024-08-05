@@ -1,6 +1,6 @@
 import os
 import subprocess
-from asyncio import SubprocessTransport, Task, create_task
+from asyncio import SubprocessTransport
 
 import chess
 from chess.engine import INFO_ALL, InfoDict, Limit, Opponent, Option, UciProtocol, popen_uci
@@ -13,13 +13,11 @@ class Engine:
                  transport: SubprocessTransport,
                  engine: UciProtocol,
                  ponder: bool,
-                 opponent: Opponent,
-                 ponder_task: Task | None) -> None:
+                 opponent: Opponent) -> None:
         self.transport = transport
         self.engine = engine
         self.ponder = ponder
         self.opponent = opponent
-        self.ponder_task = ponder_task
 
     @classmethod
     async def from_config(cls,
@@ -34,7 +32,7 @@ class Engine:
         await cls._configure_engine(engine, uci_options)
         await engine.send_opponent_information(opponent=opponent)
 
-        return cls(transport, engine, engine_config.ponder, opponent, None)
+        return cls(transport, engine, engine_config.ponder, opponent)
 
     @classmethod
     async def test(cls, engine_config: Engine_Config, syzygy_config: Syzygy_Config) -> None:
@@ -98,14 +96,14 @@ class Engine:
 
         return result.move, result.info
 
-    def start_pondering(self, board: chess.Board) -> None:
+    async def start_pondering(self, board: chess.Board) -> None:
         if self.ponder:
-            self.ponder_task = create_task(self.engine.analysis(board))
+            await self.engine.analysis(board)
 
-    def stop_pondering(self) -> None:
+    async def stop_pondering(self) -> None:
         if self.ponder:
             self.ponder = False
-            self.ponder_task = create_task(self.engine.analysis(chess.Board(), Limit(time=0.001)))
+            await self.engine.analysis(chess.Board(), Limit(time=0.001))
 
     async def close(self) -> None:
         try:

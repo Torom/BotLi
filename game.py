@@ -55,7 +55,7 @@ class Game:
         if self.lichess_game.is_our_turn:
             await self._make_move()
         else:
-            self.lichess_game.start_pondering()
+            await self.lichess_game.start_pondering()
 
         opponent_title = self.info.black_title if self.lichess_game.is_white else self.info.white_title
         abortion_seconds = 30.0 if opponent_title == 'BOT' else 60.0
@@ -80,7 +80,7 @@ class Game:
                 if self.lichess_game.is_our_turn:
                     await self._make_move()
                 else:
-                    self.lichess_game.start_pondering()
+                    await self.lichess_game.start_pondering()
             elif event['type'] == 'gameState':
                 self.lichess_game.update(event)
 
