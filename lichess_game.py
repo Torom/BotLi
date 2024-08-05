@@ -19,7 +19,7 @@ from enums import Variant
 
 
 class Lichess_Game:
-    def __init__(self, api: API, config: Config, game_information: Game_Information) -> None:
+    def __init__(self, api: API, config: Config, username: str, game_information: Game_Information) -> None:
         self.api = api
         self.config = config
         self.game_info = game_information
@@ -27,7 +27,7 @@ class Lichess_Game:
         self.white_time: float = self.game_info.state['wtime'] / 1000
         self.black_time: float = self.game_info.state['btime'] / 1000
         self.increment = self.game_info.increment_ms / 1000
-        self.is_white: bool = self.game_info.white_name == config.username
+        self.is_white: bool = self.game_info.white_name == username
         self.book_settings = self._get_book_settings()
         self.syzygy_tablebase = self._get_syzygy_tablebase()
         self.gaviota_tablebase = self._get_gaviota_tablebase()

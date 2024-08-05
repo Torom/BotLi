@@ -12,8 +12,9 @@ from matchmaking import Matchmaking
 
 
 class Game_Manager:
-    def __init__(self, api: API, config: Config) -> None:
+    def __init__(self, api: API, config: Config, username: str) -> None:
         self.config = config
+        self.username = username
         self.api = api
         self.is_running = True
         self.games: dict[Game, Task[None]] = {}
@@ -22,7 +23,7 @@ class Game_Manager:
         self.started_game_ids: deque[str] = deque()
         self.challenge_requests: deque[Challenge_Request] = deque()
         self.changed_event = Event()
-        self.matchmaking = Matchmaking(api, config)
+        self.matchmaking = Matchmaking(api, config, username)
         self.current_matchmaking_game_id: str | None = None
         self.challenger = Challenger(api)
         self.is_rate_limited = False
@@ -131,7 +132,7 @@ class Game_Manager:
             await self.api.abort_game(game_id)
             return
 
-        game = await Game.create(self.api, self.config, game_id, self.changed_event)
+        game = await Game.create(self.api, self.config, self.username, game_id, self.changed_event)
         self.games[game] = create_task(game.run())
 
     def _get_next_challenge(self) -> Challenge | None:

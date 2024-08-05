@@ -14,14 +14,13 @@ logger = logging.getLogger(__name__)
 
 class API:
     def __init__(self, config: Config) -> None:
-        self.config = config
         self.lichess_client = httpx.AsyncClient(base_url=config.url, headers={'Authorization': f'Bearer {config.token}',
                                                                               'User-Agent': f'BotLi/{config.version}'})
         self.external_client = httpx.AsyncClient(headers={'User-Agent': f'BotLi/{config.version}'})
 
-    def set_user_agent(self) -> None:
-        self.lichess_client.headers.update({'User-Agent': f'BotLi/{self.config.version} user:{self.config.username}'})
-        self.external_client.headers.update({'User-Agent': f'BotLi/{self.config.version} user:{self.config.username}'})
+    def set_user_agent(self, version: str, username: str) -> None:
+        self.lichess_client.headers.update({'User-Agent': f'BotLi/{version} user:{username}'})
+        self.external_client.headers.update({'User-Agent': f'BotLi/{version} user:{username}'})
 
     @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
     async def abort_game(self, game_id: str) -> bool:

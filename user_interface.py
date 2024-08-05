@@ -50,11 +50,14 @@ class UserInterface:
     async def main(self) -> None:
         print(f'{LOGO} {self.config.version}\n')
 
-        await self._post_init()
+        account = await self.api.get_account()
+        username: str = account['username']
+        self.api.set_user_agent(self.config.version, username)
+        await self._handle_bot_status(account.get('title'))
         await self._test_engines()
 
-        game_manager = Game_Manager(self.api, self.config)
-        event_handler = Event_Handler(self.api, self.config, game_manager)
+        game_manager = Game_Manager(self.api, self.config, username)
+        event_handler = Event_Handler(self.api, self.config, username, game_manager)
         game_manager_task = create_task(game_manager.run())
         event_handler_task = create_task(event_handler.run())
         game_manager.is_running = True
@@ -102,20 +105,14 @@ class UserInterface:
             else:
                 self._help()
 
-    async def _post_init(self) -> None:
-        account = await self.api.get_account()
-        self.config.username = account['username']
-        self.api.set_user_agent()
-        await self._handle_bot_status(account)
-
-    async def _handle_bot_status(self, account: dict) -> None:
+    async def _handle_bot_status(self, title: str | None) -> None:
         if 'bot:play' not in await self.api.get_token_scopes(self.config.token):
             print('Your token is missing the bot:play scope. This is mandatory to use BotLi.\n'
                   'You can create such a token by following this link:\n'
                   'https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
             sys.exit(1)
 
-        if account.get('title') == 'BOT':
+        if title == 'BOT':
             return
 
         print('\nBotLi can only be used by BOT accounts!\n')
@@ -133,7 +130,7 @@ class UserInterface:
                 print('Upgrade aborted.')
                 sys.exit()
 
-        if self.api.upgrade_account():
+        if await self.api.upgrade_account():
             print('Upgrade successful.')
         else:
             print('Upgrade failed.')
@@ -320,4 +317,4 @@ if __name__ == '__main__':
 
     ui = UserInterface(args.config, args.matchmaking, args.upgrade)
     set_event_loop_policy(EventLoopPolicy())
-    run(ui.main())
+    run(ui.main(), debug=True)

@@ -28,10 +28,10 @@ class Game:
         self.has_timed_out = False
 
     @classmethod
-    async def create(cls, api: API, config: Config, game_id: str, game_finished_event: Event) -> 'Game':
+    async def create(cls, api: API, config: Config, username: str, game_id: str, game_finished_event: Event) -> 'Game':
         game_stream = api.get_game_stream(game_id)
         info = Game_Information.from_gameFull_event(await anext(game_stream))
-        lichess_game = Lichess_Game(api, config, info)
+        lichess_game = Lichess_Game(api, config, username, info)
         await lichess_game.init_engine()
         game = cls(api,
                    game_id,
@@ -39,7 +39,7 @@ class Game:
                    game_stream,
                    info,
                    lichess_game,
-                   Chatter(api, config, info, lichess_game))
+                   Chatter(api, config, username, info, lichess_game))
         return game
 
     async def run(self) -> None:
