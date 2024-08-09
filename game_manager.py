@@ -78,8 +78,6 @@ class Game_Manager:
 
     def on_game_started(self, game_id: str) -> None:
         self.started_game_ids.append(game_id)
-        if game_id == self.current_matchmaking_game_id:
-            self.matchmaking.on_game_started()
         self.changed_event.set()
 
     def start_matchmaking(self) -> None:
