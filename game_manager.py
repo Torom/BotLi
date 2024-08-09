@@ -132,7 +132,7 @@ class Game_Manager:
             await self.api.abort_game(game_id)
             return
 
-        game = await Game.create(self.api, self.config, self.username, game_id, self.changed_event)
+        game = await Game.acreate(self.api, self.config, self.username, game_id, self.changed_event)
         self.games[game] = create_task(game.run())
 
     def _get_next_challenge(self) -> Challenge | None:

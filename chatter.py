@@ -126,7 +126,7 @@ class Chatter:
             await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
 
     async def _send_last_message(self, room: str) -> None:
-        last_message = self.lichess_game.last_message.replace('Engine', 'Eval')
+        last_message = self.lichess_game.last_message.replace('Engine', 'Evaluation')
         last_message = ' '.join(last_message.split())
 
         if room == 'spectator':

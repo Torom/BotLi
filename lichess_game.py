@@ -19,15 +19,22 @@ from enums import Variant
 
 
 class Lichess_Game:
-    def __init__(self, api: API, config: Config, username: str, game_information: Game_Information) -> None:
+    def __init__(self,
+                 api: API,
+                 config: Config,
+                 username: str,
+                 game_info: Game_Information,
+                 board: chess.Board,
+                 engine_key: str,
+                 engine: Engine) -> None:
         self.api = api
         self.config = config
-        self.game_info = game_information
-        self.board = self._setup_board()
+        self.game_info = game_info
+        self.board = board
         self.white_time: float = self.game_info.state['wtime'] / 1000
         self.black_time: float = self.game_info.state['btime'] / 1000
         self.increment = self.game_info.increment_ms / 1000
-        self.is_white: bool = self.game_info.white_name == username
+        self.is_white = self.game_info.white_name == username
         self.book_settings = self._get_book_settings()
         self.syzygy_tablebase = self._get_syzygy_tablebase()
         self.gaviota_tablebase = self._get_gaviota_tablebase()
@@ -39,17 +46,77 @@ class Lichess_Game:
         self.out_of_cloud_counter = 0
         self.chessdb_counter = 0
         self.out_of_chessdb_counter = 0
-        engine_config = config.engines[self._get_engine_key()]
-        self.move_overhead = self._get_move_overhead(engine_config)
-        self.engine: Engine
+        self.move_overhead = self._get_move_overhead(config.engines[engine_key])
+        self.engine = engine
         self.scores: list[chess.engine.PovScore | None] = []
         self.last_message = 'No eval available yet.'
         self.last_pv: list[chess.Move] = []
 
-    async def init_engine(self) -> None:
-        engine_config = self.config.engines[self._get_engine_key()]
-        opponent = self.game_info.black_opponent if self.is_white else self.game_info.white_opponent
-        self.engine = await Engine.from_config(engine_config, self.config.syzygy, opponent)
+    @classmethod
+    async def acreate(cls, api: API, config: Config, username: str, game_info: Game_Information) -> 'Lichess_Game':
+        board = cls._get_board(game_info)
+        is_white = game_info.white_name == username
+        engine_key = cls._get_engine_key(config, board, is_white, game_info)
+        engine = await Engine.from_config(config.engines[engine_key],
+                                          config.syzygy,
+                                          game_info.black_opponent if is_white else game_info.white_opponent)
+        return cls(api, config, username, game_info, board, engine_key, engine)
+
+    @staticmethod
+    def _get_board(game_info: Game_Information) -> chess.Board:
+        if game_info.variant == Variant.CHESS960:
+            board = chess.Board(game_info.initial_fen, chess960=True)
+        elif game_info.variant == Variant.FROM_POSITION:
+            board = chess.Board(game_info.initial_fen)
+        else:
+            VariantBoard = find_variant(game_info.variant_name)
+            board = VariantBoard()
+
+        for uci_move in game_info.state['moves'].split():
+            board.push_uci(uci_move)
+
+        return board
+
+    @staticmethod
+    def _get_engine_key(config: Config, board: chess.Board, is_white: bool, game_info: Game_Information) -> str:
+        color = 'white' if is_white else 'black'
+
+        if board.uci_variant == 'chess':
+            if board.chess960:
+                if f'chess960_{color}' in config.engines:
+                    return f'chess960_{color}'
+
+                if 'chess960' in config.engines:
+                    return 'chess960'
+
+            else:
+                if f'{game_info.speed}_{color}' in config.engines:
+                    return f'{game_info.speed}_{color}'
+
+                if game_info.speed in config.engines:
+                    return game_info.speed
+
+        else:
+            for alias in [alias.lower() for alias in board.aliases]:
+                if f'{alias}_{color}' in config.engines:
+                    return f'{alias}_{color}'
+
+                if alias in config.engines:
+                    return alias
+
+            if f'variants_{color}' in config.engines:
+                return f'variants_{color}'
+
+            if 'variants' in config.engines:
+                return 'variants'
+
+        if f'standard_{color}' in config.engines:
+            return f'standard_{color}'
+
+        if 'standard' in config.engines:
+            return 'standard'
+
+        raise RuntimeError(f'No suitable engine for "{board.uci_variant}" configured.')
 
     async def make_move(self) -> Lichess_Move:
         for move_source in self.move_sources:
@@ -714,60 +781,6 @@ class Lichess_Game:
             output += f'     WDL: {win:5.1f} % {draw:5.1f} % {loss:5.1f} %'
 
         return output
-
-    def _get_engine_key(self) -> str:
-        color = 'white' if self.is_white else 'black'
-
-        if self.board.uci_variant == 'chess':
-            if self.board.chess960:
-                if f'chess960_{color}' in self.config.engines:
-                    return f'chess960_{color}'
-
-                if 'chess960' in self.config.engines:
-                    return 'chess960'
-
-            else:
-                if f'{self.game_info.speed}_{color}' in self.config.engines:
-                    return f'{self.game_info.speed}_{color}'
-
-                if self.game_info.speed in self.config.engines:
-                    return self.game_info.speed
-
-        else:
-            for alias in [alias.lower() for alias in self.board.aliases]:
-                if f'{alias}_{color}' in self.config.engines:
-                    return f'{alias}_{color}'
-
-                if alias in self.config.engines:
-                    return alias
-
-            if f'variants_{color}' in self.config.engines:
-                return f'variants_{color}'
-
-            if 'variants' in self.config.engines:
-                return 'variants'
-
-        if f'standard_{color}' in self.config.engines:
-            return f'standard_{color}'
-
-        if 'standard' in self.config.engines:
-            return 'standard'
-
-        raise RuntimeError(f'No suitable engine for "{self.board.uci_variant}" configured.')
-
-    def _setup_board(self) -> chess.Board:
-        if self.game_info.variant == Variant.CHESS960:
-            board = chess.Board(self.game_info.initial_fen, chess960=True)
-        elif self.game_info.variant == Variant.FROM_POSITION:
-            board = chess.Board(self.game_info.initial_fen)
-        else:
-            VariantBoard = find_variant(self.game_info.variant_name)
-            board = VariantBoard()
-
-        for uci_move in self.game_info.state['moves'].split():
-            board.push_uci(uci_move)
-
-        return board
 
     def _get_move_sources(self) -> list[Callable[[], Awaitable[Move_Response | None]]]:
         move_sources: list[Callable[[], Awaitable[Move_Response | None]]] = []
