@@ -40,7 +40,8 @@ class API:
             response.raise_for_status()
             return True
         except httpx.HTTPStatusError as e:
-            print(e)
+            if e.response.status_code != httpx.codes.BAD_REQUEST:
+                print(e)
             return False
 
     @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
