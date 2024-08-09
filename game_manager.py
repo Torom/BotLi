@@ -78,8 +78,6 @@ class Game_Manager:
 
     def on_game_started(self, game_id: str) -> None:
         self.started_game_ids.append(game_id)
-        if game_id == self.current_matchmaking_game_id:
-            self.matchmaking.on_game_started()
         self.changed_event.set()
 
     def start_matchmaking(self) -> None:
@@ -132,7 +130,7 @@ class Game_Manager:
             await self.api.abort_game(game_id)
             return
 
-        game = await Game.create(self.api, self.config, self.username, game_id, self.changed_event)
+        game = await Game.acreate(self.api, self.config, self.username, game_id, self.changed_event)
         self.games[game] = create_task(game.run())
 
     def _get_next_challenge(self) -> Challenge | None:
