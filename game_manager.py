@@ -1,34 +1,35 @@
-from asyncio import Event, Task, create_task, timeout
+import asyncio
+from asyncio import Event, Task
 from collections import deque
-from datetime import datetime, timedelta
 
 from api import API
 from botli_dataclasses import Challenge, Challenge_Request
 from challenger import Challenger
 from config import Config
-from enums import Decline_Reason
 from game import Game
 from matchmaking import Matchmaking
 
 
 class Game_Manager:
     def __init__(self, api: API, config: Config, username: str) -> None:
+        self.api = api
         self.config = config
         self.username = username
-        self.api = api
+
+        self.challenger = Challenger(api)
+        self.changed_event = Event()
+        self.matchmaking = Matchmaking(api, config, username)
+
+        self.challenge_requests: deque[Challenge_Request] = deque()
+        self.current_matchmaking_game_id: str | None = None
+        self.is_rate_limited = False
         self.is_running = True
-        self.games: dict[Game, Task[None]] = {}
+        self.matchmaking_enabled = False
+        self.next_matchmaking: float | None = None
         self.open_challenges: deque[Challenge] = deque()
         self.reserved_game_spots = 0
         self.started_game_ids: deque[str] = deque()
-        self.challenge_requests: deque[Challenge_Request] = deque()
-        self.changed_event = Event()
-        self.matchmaking = Matchmaking(api, config, username)
-        self.current_matchmaking_game_id: str | None = None
-        self.challenger = Challenger(api)
-        self.is_rate_limited = False
-        self.next_matchmaking = datetime.max
-        self.matchmaking_delay = timedelta(seconds=config.matchmaking.delay)
+        self.tasks: dict[Task[None], Game] = {}
 
     def stop(self):
         self.is_running = False
@@ -37,15 +38,13 @@ class Game_Manager:
     async def run(self) -> None:
         while self.is_running:
             try:
-                async with timeout(1.0):
+                async with asyncio.timeout_at(self.next_matchmaking):
                     await self.changed_event.wait()
             except TimeoutError:
                 await self._check_matchmaking()
                 continue
 
             self.changed_event.clear()
-
-            await self._check_for_finished_games()
 
             while self.started_game_ids:
                 await self._start_game(self.started_game_ids.popleft())
@@ -56,11 +55,8 @@ class Game_Manager:
             while challenge := self._get_next_challenge():
                 await self._accept_challenge(challenge)
 
-        for game, task in self.games.items():
+        for task in list(self.tasks):
             await task
-
-            if game.game_id == self.current_matchmaking_game_id:
-                self.matchmaking.on_game_finished(game.lichess_game.is_abortable)
 
     def add_challenge(self, challenge: Challenge) -> None:
         if challenge not in self.open_challenges:
@@ -81,114 +77,106 @@ class Game_Manager:
         self.changed_event.set()
 
     def start_matchmaking(self) -> None:
-        self.next_matchmaking = datetime.now()
+        self.matchmaking_enabled = True
+        self._set_next_matchmaking(1)
+        self.changed_event.set()
 
     def stop_matchmaking(self) -> bool:
-        if self.next_matchmaking != datetime.max:
-            self.next_matchmaking = datetime.max
-            return True
+        if not self.matchmaking_enabled:
+            return False
 
-        return False
+        self.matchmaking_enabled = False
+        self.next_matchmaking = None
+        self.changed_event.set()
+        return True
 
-    def _delay_matchmaking(self, delay: timedelta) -> None:
-        if self.next_matchmaking == datetime.max:
+    def _set_next_matchmaking(self, delay: int) -> None:
+        if not self.matchmaking_enabled:
             return
 
         if self.is_rate_limited:
             return
 
-        self.next_matchmaking = datetime.now() + delay
+        self.next_matchmaking = asyncio.get_running_loop().time() + delay
 
-    async def _check_for_finished_games(self) -> None:
-        for game, task in list(self.games.items()):
-            if not task.done():
-                continue
+    def _task_callback(self, task: Task[None]) -> None:
+        game = self.tasks.pop(task)
 
-            if game.game_id == self.current_matchmaking_game_id:
-                self.matchmaking.on_game_finished(game.lichess_game.is_abortable)
-                self.current_matchmaking_game_id = None
+        if game.game_id == self.current_matchmaking_game_id:
+            self.matchmaking.on_game_finished(game.was_aborted)
+            self.current_matchmaking_game_id = None
 
-            if game.has_timed_out:
-                await self._decline_challenges(game.info.black_name
-                                               if game.lichess_game.is_white
-                                               else game.info.white_name)
-
-            self._delay_matchmaking(self.matchmaking_delay)
-
-            del self.games[game]
+        self._set_next_matchmaking(self.config.matchmaking.delay)
+        self.changed_event.set()
 
     async def _start_game(self, game_id: str) -> None:
-        if game_id in {game.game_id for game in self.games}:
+        if game_id in {game.game_id for game in self.tasks.values()}:
             return
 
         if self.reserved_game_spots > 0:
-            # Remove reserved spot, if it exists:
             self.reserved_game_spots -= 1
 
-        if len(self.games) >= self.config.challenge.concurrency:
+        if len(self.tasks) >= self.config.challenge.concurrency:
             print(f'Max number of concurrent games exceeded. Aborting already started game {game_id}.')
             await self.api.abort_game(game_id)
             return
 
-        game = await Game.acreate(self.api, self.config, self.username, game_id, self.changed_event)
-        self.games[game] = create_task(game.run())
+        game = Game(self.api, self.config, self.username, game_id)
+        task = asyncio.create_task(game.run())
+        task.add_done_callback(self._task_callback)
+        self.tasks[task] = game
 
     def _get_next_challenge(self) -> Challenge | None:
         if not self.open_challenges:
             return
 
-        if len(self.games) + self.reserved_game_spots >= self.config.challenge.concurrency:
+        if len(self.tasks) + self.reserved_game_spots >= self.config.challenge.concurrency:
             return
 
         return self.open_challenges.popleft()
 
     async def _accept_challenge(self, challenge: Challenge) -> None:
         if await self.api.accept_challenge(challenge.challenge_id):
-            # Reserve a spot for this game
             self.reserved_game_spots += 1
         else:
             print(f'Challenge "{challenge.challenge_id}" could not be accepted!')
 
     async def _check_matchmaking(self) -> None:
+        self.next_matchmaking = None
         if self.current_matchmaking_game_id:
-            # There is already a matchmaking game running
             return
 
-        if len(self.games) + self.reserved_game_spots >= self.config.challenge.concurrency:
-            return
-
-        if self.next_matchmaking > datetime.now():
+        if len(self.tasks) + self.reserved_game_spots >= self.config.challenge.concurrency:
             return
 
         challenge_response = await self.matchmaking.create_challenge()
         if challenge_response is None:
+            self._set_next_matchmaking(1)
             return
 
         self.is_rate_limited = False
         if challenge_response.success:
-            # Reserve a spot for this game
             self.reserved_game_spots += 1
             self.current_matchmaking_game_id = challenge_response.challenge_id
             return
 
         if challenge_response.no_opponent:
-            self._delay_matchmaking(self.matchmaking_delay)
-
-        if challenge_response.has_reached_rate_limit:
-            self._delay_matchmaking(timedelta(hours=1.0))
-            next_matchmaking_str = self.next_matchmaking.isoformat(sep=' ', timespec='seconds')
-            print(f'Matchmaking has reached rate limit, next attempt at {next_matchmaking_str}.')
+            self._set_next_matchmaking(self.config.matchmaking.delay)
+        elif challenge_response.has_reached_rate_limit:
+            self._set_next_matchmaking(3600)
+            print('Matchmaking has reached rate limit, next attempt in one hour.')
             self.is_rate_limited = True
-
-        if challenge_response.is_misconfigured:
+        elif challenge_response.is_misconfigured:
             print('Matchmaking stopped due to misconfiguration.')
             self.stop_matchmaking()
+        else:
+            self._set_next_matchmaking(1)
 
     def _get_next_challenge_request(self) -> Challenge_Request | None:
         if not self.challenge_requests:
             return
 
-        if len(self.games) + self.reserved_game_spots >= self.config.challenge.concurrency:
+        if len(self.tasks) + self.reserved_game_spots >= self.config.challenge.concurrency:
             return
 
         return self.challenge_requests.popleft()
@@ -198,7 +186,6 @@ class Game_Manager:
         response = await self.challenger.create(challenge_request)
 
         if response.success:
-            # Reserve a spot for this game
             self.reserved_game_spots += 1
         elif response.has_reached_rate_limit and self.challenge_requests:
             print('Challenge queue cleared due to rate limiting.')
@@ -207,10 +194,3 @@ class Game_Manager:
             print(f'Challenges against {challenge_request.opponent_username} removed from queue.')
             while challenge_request in self.challenge_requests:
                 self.challenge_requests.remove(challenge_request)
-
-    async def _decline_challenges(self, opponent_username: str) -> None:
-        for challenge in list(self.open_challenges):
-            if opponent_username == challenge.opponent_username:
-                print(f'Declining challenge "{challenge.challenge_id}" due to inactivity ...')
-                await self.api.decline_challenge(challenge.challenge_id, Decline_Reason.GENERIC)
-                self.open_challenges.remove(challenge)
