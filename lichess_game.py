@@ -1,7 +1,7 @@
 import random
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from itertools import islice
-from typing import Any, Awaitable
+from typing import Any
 
 import chess
 import chess.engine
