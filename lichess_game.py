@@ -1,7 +1,7 @@
 import random
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from itertools import islice
-from typing import Any, Awaitable
+from typing import Any
 
 import chess
 import chess.engine
@@ -559,7 +559,7 @@ class Lichess_Game:
         else:
             return
 
-        await self.engine.stop_pondering()
+        await self.engine.stop_pondering(self.board)
         move = random.choice(best_moves)
         message = f'Gaviota: {self._format_move(move):14} {egtb_info}'
         return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
@@ -632,7 +632,7 @@ class Lichess_Game:
             offer_draw = False
             resign = True
 
-        await self.engine.stop_pondering()
+        await self.engine.stop_pondering(self.board)
         move = random.choice(best_moves)
         message = f'Syzygy:  {self._format_move(move):14} {egtb_info}'
         return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)

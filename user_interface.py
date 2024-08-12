@@ -1,8 +1,9 @@
 import argparse
+import asyncio
 import logging
 import os
 import sys
-from asyncio import Task, create_task, run, set_event_loop_policy, to_thread
+from asyncio import Task
 from enum import Enum
 from typing import TypeVar
 
@@ -58,8 +59,8 @@ class UserInterface:
 
         game_manager = Game_Manager(self.api, self.config, username)
         event_handler = Event_Handler(self.api, self.config, username, game_manager)
-        game_manager_task = create_task(game_manager.run())
-        event_handler_task = create_task(event_handler.run())
+        game_manager_task = asyncio.create_task(game_manager.run())
+        event_handler_task = asyncio.create_task(event_handler.run())
         game_manager.is_running = True
         event_handler.last_challenge_event = None
         print('Handling challenges ...')
@@ -78,7 +79,7 @@ class UserInterface:
             readline.parse_and_bind('tab: complete')
 
         while self.is_running:
-            command = (await to_thread(input)).split()
+            command = (await asyncio.to_thread(input)).split()
             if len(command) == 0:
                 continue
 
@@ -316,5 +317,5 @@ if __name__ == '__main__':
     logging.basicConfig(level=args.debug)
 
     ui = UserInterface(args.config, args.matchmaking, args.upgrade)
-    set_event_loop_policy(EventLoopPolicy())
-    run(ui.main(), debug=True)
+    asyncio.set_event_loop_policy(EventLoopPolicy())
+    asyncio.run(ui.main(), debug=True)

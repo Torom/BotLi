@@ -1,7 +1,8 @@
 import asyncio
 import json
 import logging
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 import httpx
 from tenacity import after_log, retry, retry_if_exception_type
