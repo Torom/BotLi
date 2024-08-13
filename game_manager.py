@@ -38,6 +38,7 @@ class Game_Manager:
     async def run(self) -> None:
         while self.is_running:
             try:
+                print(f'timeout at {self.next_matchmaking}')
                 async with asyncio.timeout_at(self.next_matchmaking):
                     await self.changed_event.wait()
             except TimeoutError:
@@ -97,6 +98,7 @@ class Game_Manager:
         if self.is_rate_limited:
             return
 
+        print(f'matchmaking delayed for {delay} seconds.')
         self.next_matchmaking = asyncio.get_running_loop().time() + delay
 
     def _task_callback(self, task: Task[None]) -> None:
