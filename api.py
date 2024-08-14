@@ -5,26 +5,36 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
-from tenacity import after_log, retry, retry_if_exception_type
+from tenacity import after_log, retry, retry_if_exception_type, wait_fixed
 
 from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
 from config import Config
 from enums import Decline_Reason, Variant
 
 logger = logging.getLogger(__name__)
+BASIC_RETRY_CONDITIONS = {'retry': retry_if_exception_type(httpx.RequestError),
+                          'wait': wait_fixed(5),
+                          'after': after_log(logger, logging.DEBUG)}
+JSON_RETRY_CONDITIONS = {'retry': retry_if_exception_type((httpx.RequestError, json.JSONDecodeError)),
+                         'wait': wait_fixed(5),
+                         'after': after_log(logger, logging.DEBUG)}
+MOVE_RETRY_CONDITIONS = {'retry': retry_if_exception_type(httpx.HTTPError),
+                         'wait': wait_fixed(1),
+                         'after': after_log(logger, logging.DEBUG)}
 
 
 class API:
     def __init__(self, config: Config) -> None:
-        self.lichess_client = httpx.AsyncClient(base_url=config.url, headers={'Authorization': f'Bearer {config.token}',
-                                                                              'User-Agent': f'BotLi/{config.version}'})
+        self.lichess_client = httpx.AsyncClient(base_url=config.url,
+                                                headers={'Authorization': f'Bearer {config.token}',
+                                                         'User-Agent': f'BotLi/{config.version}'})
         self.external_client = httpx.AsyncClient(headers={'User-Agent': f'BotLi/{config.version}'})
 
     def set_user_agent(self, version: str, username: str) -> None:
         self.lichess_client.headers.update({'User-Agent': f'BotLi/{version} user:{username}'})
         self.external_client.headers.update({'User-Agent': f'BotLi/{version} user:{username}'})
 
-    @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
+    @retry(**BASIC_RETRY_CONDITIONS)
     async def abort_game(self, game_id: str) -> bool:
         try:
             response = await self.lichess_client.post(f'/api/bot/game/{game_id}/abort')
@@ -34,7 +44,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
+    @retry(**BASIC_RETRY_CONDITIONS)
     async def accept_challenge(self, challenge_id: str) -> bool:
         try:
             response = await self.lichess_client.post(f'/api/challenge/{challenge_id}/accept')
@@ -45,7 +55,7 @@ class API:
                 print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
+    @retry(**BASIC_RETRY_CONDITIONS)
     async def cancel_challenge(self, challenge_id: str) -> bool:
         try:
             response = await self.lichess_client.post(f'/api/challenge/{challenge_id}/cancel')
@@ -86,7 +96,7 @@ class API:
         except (httpx.RequestError, json.JSONDecodeError) as e:
             yield API_Challenge_Reponse(error=str(e))
 
-    @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
+    @retry(**BASIC_RETRY_CONDITIONS)
     async def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:
             response = await self.lichess_client.post(f'/api/challenge/{challenge_id}/decline',
@@ -97,8 +107,7 @@ class API:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type((httpx.RequestError, json.JSONDecodeError)),
-           after=after_log(logger, logging.DEBUG))
+    @retry(**JSON_RETRY_CONDITIONS)
     async def get_account(self) -> dict[str, Any]:
         response = await self.lichess_client.get('/api/account')
         json_response = response.json()
@@ -200,19 +209,17 @@ class API:
         except (httpx.HTTPError, json.JSONDecodeError, TimeoutError) as e:
             print(e)
 
-    @retry(retry=retry_if_exception_type((httpx.RequestError, json.JSONDecodeError)),
-           after=after_log(logger, logging.DEBUG))
+    @retry(**JSON_RETRY_CONDITIONS)
     async def get_token_scopes(self, token: str) -> str:
         response = await self.lichess_client.post('/api/token/test', content=token)
         return response.json()[token]['scopes']
 
-    @retry(retry=retry_if_exception_type((httpx.RequestError, json.JSONDecodeError)),
-           after=after_log(logger, logging.DEBUG))
+    @retry(**JSON_RETRY_CONDITIONS)
     async def get_user_status(self, username: str) -> dict[str, Any]:
         response = await self.lichess_client.get('/api/users/status', params={'ids': username})
         return response.json()[0]
 
-    @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
+    @retry(**BASIC_RETRY_CONDITIONS)
     async def resign_game(self, game_id: str) -> bool:
         try:
             response = await self.lichess_client.post(f'/api/bot/game/{game_id}/resign')
@@ -225,27 +232,30 @@ class API:
     async def send_chat_message(self, game_id: str, room: str, text: str) -> bool:
         try:
             response = await self.lichess_client.post(f'/api/bot/game/{game_id}/chat',
-                                                      data={'room': room, 'text': text}, timeout=1.0)
+                                                      data={'room': room, 'text': text},
+                                                      timeout=1.0)
             response.raise_for_status()
             return True
         except httpx.HTTPError as e:
             print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
+    @retry(**MOVE_RETRY_CONDITIONS)
     async def send_move(self, game_id: str, uci_move: str, offer_draw: bool) -> bool:
         try:
             response = await self.lichess_client.post(f'/api/bot/game/{game_id}/move/{uci_move}',
-                                                      params={'offeringDraw': str(offer_draw).lower()}, timeout=1.0)
-
+                                                      params={'offeringDraw': str(offer_draw).lower()},
+                                                      timeout=1.0)
             response.raise_for_status()
             return True
         except httpx.HTTPStatusError as e:
+            if e.response.is_server_error:
+                raise
             if e.response.status_code != httpx.codes.BAD_REQUEST:
                 print(e)
             return False
 
-    @retry(retry=retry_if_exception_type(httpx.RequestError), after=after_log(logger, logging.DEBUG))
+    @retry(**BASIC_RETRY_CONDITIONS)
     async def upgrade_account(self) -> bool:
         try:
             response = await self.lichess_client.post('/api/bot/account/upgrade')
