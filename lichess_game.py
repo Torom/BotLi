@@ -374,6 +374,7 @@ class Lichess_Game:
                                                        speeds,
                                                        self.config.online_moves.opening_explorer.timeout)
         if response is None:
+            self.out_of_opening_explorer_counter += 1
             self._reduce_own_time(self.config.online_moves.opening_explorer.timeout)
             return
 
@@ -436,6 +437,7 @@ class Lichess_Game:
                                                  self.game_info.variant,
                                                  self.config.online_moves.lichess_cloud.timeout)
         if response is None:
+            self.out_of_cloud_counter += 1
             self._reduce_own_time(self.config.online_moves.lichess_cloud.timeout)
             return
 
@@ -483,6 +485,7 @@ class Lichess_Game:
                                                    self.config.online_moves.chessdb.best_move,
                                                    self.config.online_moves.chessdb.timeout)
         if response is None:
+            self.out_of_chessdb_counter += 1
             self._reduce_own_time(self.config.online_moves.chessdb.timeout)
             return
 
@@ -833,6 +836,9 @@ class Lichess_Game:
         return self.own_time >= min_time
 
     def _reduce_own_time(self, seconds: float) -> None:
+        if len(self.board.move_stack) < 2:
+            return
+
         if self.is_white:
             self.white_time -= seconds
         else:
