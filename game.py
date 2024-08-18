@@ -46,36 +46,23 @@ class Game:
                     await self.api.abort_game(self.game_id)
                     await chatter.send_abortion_message()
 
+                if event['type'] == 'chatLine':
+                    await chatter.handle_chat_message(event)
+
+                continue
+
             if event['type'] == 'gameFull':
-                lichess_game.update(event['state'])
+                event = event['state']
 
-                if event['state']['status'] != 'started':
-                    self._print_result_message(event['state'], lichess_game, info)
-                    await chatter.send_goodbyes()
-                    break
+            lichess_game.update(event)
 
-                if lichess_game.is_our_turn:
-                    await self._make_move(lichess_game, chatter)
-                else:
-                    await lichess_game.start_pondering()
-            elif event['type'] == 'gameState':
-                lichess_game.update(event)
+            if event['status'] != 'started':
+                self._print_result_message(event, lichess_game, info)
+                await chatter.send_goodbyes()
+                break
 
-                if event['status'] != 'started':
-                    self._print_result_message(event, lichess_game, info)
-                    await chatter.send_goodbyes()
-                    break
-
-                if lichess_game.is_our_turn and not lichess_game.board.is_repetition():
-                    await self._make_move(lichess_game, chatter)
-            elif event['type'] == 'chatLine':
-                await chatter.handle_chat_message(event)
-            elif event['type'] == 'opponentGone':
-                continue
-            elif event['type'] == 'ping':
-                continue
-            else:
-                print(event)
+            if lichess_game.is_our_turn and not lichess_game.board.is_repetition():
+                await self._make_move(lichess_game, chatter)
 
         self.was_aborted = lichess_game.is_abortable
         await lichess_game.end_game()
