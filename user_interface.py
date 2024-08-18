@@ -311,12 +311,12 @@ if __name__ == '__main__':
     parser.add_argument('--config', '-c', default='config.yml', type=str, help='Path to config.yml.')
     parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
     parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
-    parser.add_argument('--debug', '-d', action='store_const', const=logging.DEBUG,
-                        default=logging.WARNING, help='Enable debug logging.')
+    parser.add_argument('--debug', '-d', action='store_true', help='Enable debug logging.')
     args = parser.parse_args()
 
-    logging.basicConfig(level=args.debug)
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
 
     ui = UserInterface(args.config, args.matchmaking, args.upgrade)
     asyncio.set_event_loop_policy(EventLoopPolicy())
-    asyncio.run(ui.main(), debug=True)
+    asyncio.run(ui.main(), debug=args.debug)
