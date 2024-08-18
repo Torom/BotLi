@@ -108,14 +108,15 @@ class Game:
                 white_result = '0'
                 black_result = '1'
 
-            if game_state['status'] == 'mate':
-                message += ' by checkmate!'
-            elif game_state['status'] == 'outoftime':
-                message += f'! {loser} ran out of time.'
-            elif game_state['status'] == 'resign':
-                message += f'! {loser} resigned.'
-            elif game_state['status'] == 'variantEnd':
-                message += ' by variant rules!'
+            match game_state['status']:
+                case 'mate':
+                    message += ' by checkmate!'
+                case 'outoftime':
+                    message += f'! {loser} ran out of time.'
+                case 'resign':
+                    message += f'! {loser} resigned.'
+                case 'variantEnd':
+                    message += ' by variant rules!'
         else:
             white_result = '½'
             black_result = '½'

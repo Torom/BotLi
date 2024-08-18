@@ -83,28 +83,29 @@ class UserInterface:
             if len(command) == 0:
                 continue
 
-            if command[0] == 'blacklist':
-                self._blacklist(command)
-            elif command[0] == 'challenge':
-                self._challenge(command, game_manager)
-            elif command[0] == 'create':
-                self._create(command, game_manager)
-            elif command[0] == 'clear':
-                self._clear(game_manager)
-            elif command[0] in ['exit', 'quit']:
-                await self._quit(game_manager, game_manager_task, event_handler_task)
-            elif command[0] == 'matchmaking':
-                self._matchmaking(game_manager)
-            elif command[0] == 'rechallenge':
-                self._rechallenge(game_manager, event_handler)
-            elif command[0] == 'reset':
-                self._reset(command, game_manager)
-            elif command[0] == 'stop':
-                self._stop(game_manager)
-            elif command[0] == 'whitelist':
-                self._whitelist(command)
-            else:
-                self._help()
+            match command[0]:
+                case 'blacklist':
+                    self._blacklist(command)
+                case 'challenge':
+                    self._challenge(command, game_manager)
+                case 'create':
+                    self._create(command, game_manager)
+                case 'clear':
+                    self._clear(game_manager)
+                case 'exit' | 'quit':
+                    await self._quit(game_manager, game_manager_task, event_handler_task)
+                case 'matchmaking':
+                    self._matchmaking(game_manager)
+                case 'rechallenge':
+                    self._rechallenge(game_manager, event_handler)
+                case 'reset':
+                    self._reset(command, game_manager)
+                case 'stop':
+                    self._stop(game_manager)
+                case 'whitelist':
+                    self._whitelist(command)
+                case _:
+                    self._help()
 
     async def _handle_bot_status(self, title: str | None) -> None:
         if 'bot:play' not in await self.api.get_token_scopes(self.config.token):

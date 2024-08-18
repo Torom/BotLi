@@ -17,44 +17,45 @@ class Event_Handler:
 
     async def run(self) -> None:
         async for event in self.api.get_event_stream():
-            if event['type'] == 'challenge':
-                if event['challenge']['challenger']['name'] == self.username:
-                    continue
+            match event['type']:
+                case 'challenge':
+                    if event['challenge']['challenger']['name'] == self.username:
+                        continue
 
-                self.last_challenge_event = event['challenge']
-                self._print_challenge_event(event['challenge'])
+                    self.last_challenge_event = event['challenge']
+                    self._print_challenge_event(event['challenge'])
 
-                if decline_reason := self.challenge_validator.get_decline_reason(event['challenge']):
+                    if decline_reason := self.challenge_validator.get_decline_reason(event['challenge']):
+                        print(128 * '‾')
+                        await self.api.decline_challenge(event['challenge']['id'], decline_reason)
+                        continue
+
+                    self.game_manager.add_challenge(Challenge(event['challenge']['id'],
+                                                              event['challenge']['challenger']['name']))
+                    print('Challenge added to queue.')
                     print(128 * '‾')
-                    await self.api.decline_challenge(event['challenge']['id'], decline_reason)
+                case 'gameStart':
+                    self.game_manager.on_game_started(event['game']['id'])
+                case 'gameFinish':
                     continue
+                case 'challengeDeclined':
+                    opponent_name = event['challenge']['destUser']['name']
 
-                self.game_manager.add_challenge(Challenge(event['challenge']['id'],
-                                                          event['challenge']['challenger']['name']))
-                print('Challenge added to queue.')
-                print(128 * '‾')
-            elif event['type'] == 'gameStart':
-                self.game_manager.on_game_started(event['game']['id'])
-            elif event['type'] == 'gameFinish':
-                continue
-            elif event['type'] == 'challengeDeclined':
-                opponent_name = event['challenge']['destUser']['name']
+                    if opponent_name == self.username:
+                        continue
 
-                if opponent_name == self.username:
-                    continue
+                    print(f'{opponent_name} declined challenge: {event["challenge"]["declineReason"]}')
+                case 'challengeCanceled':
+                    if event['challenge']['challenger']['name'] == self.username:
+                        continue
 
-                print(f'{opponent_name} declined challenge: {event["challenge"]["declineReason"]}')
-            elif event['type'] == 'challengeCanceled':
-                if event['challenge']['challenger']['name'] == self.username:
-                    continue
-
-                self.game_manager.remove_challenge(Challenge(event['challenge']['id'],
-                                                             event['challenge']['challenger']['name']))
-                self._print_challenge_event(event['challenge'])
-                print('Challenge has been canceled.')
-                print(128 * '‾')
-            else:
-                print(event)
+                    self.game_manager.remove_challenge(Challenge(event['challenge']['id'],
+                                                                 event['challenge']['challenger']['name']))
+                    self._print_challenge_event(event['challenge'])
+                    print('Challenge has been canceled.')
+                    print(128 * '‾')
+                case _:
+                    print(event)
 
     def _print_challenge_event(self, challenge_event: dict[str, Any]) -> None:
         id_str = f'ID: {challenge_event["id"]}'
