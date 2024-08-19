@@ -27,10 +27,8 @@ class API:
     def __init__(self, config: Config) -> None:
         self.lichess_client = httpx.AsyncClient(base_url=config.url,
                                                 headers={'Authorization': f'Bearer {config.token}',
-                                                         'User-Agent': f'BotLi/{config.version}'},
-                                                http2=True)
-        self.external_client = httpx.AsyncClient(headers={'User-Agent': f'BotLi/{config.version}'},
-                                                 http2=True)
+                                                         'User-Agent': f'BotLi/{config.version}'})
+        self.external_client = httpx.AsyncClient(headers={'User-Agent': f'BotLi/{config.version}'})
 
     def set_user_agent(self, version: str, username: str) -> None:
         self.lichess_client.headers.update({'User-Agent': f'BotLi/{version} user:{username}'})
