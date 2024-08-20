@@ -159,6 +159,7 @@ class API:
                         if line:
                             yield json.loads(line)
             except (httpx.RequestError, json.JSONDecodeError):
+                print('Event stream lost connection. Next connection attempt in 5 seconds.')
                 await asyncio.sleep(5.0)
 
     async def get_game_stream(self, game_id: str) -> AsyncIterator[dict[str, Any]]:
@@ -170,6 +171,7 @@ class API:
                     async for line in response.aiter_lines():
                         yield json.loads(line) if line else {'type': 'ping'}
             except (httpx.RequestError, json.JSONDecodeError):
+                print(f'Game stream {game_id} lost connection. Next connection attempt in 1 second.')
                 await asyncio.sleep(1.0)
 
     async def get_online_bots_stream(self) -> AsyncIterator[dict[str, Any]]:
