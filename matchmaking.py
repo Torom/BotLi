@@ -113,7 +113,7 @@ class Matchmaking:
                 matchmaking_type.multiplier *= perf_type_count
 
             if type_config.weight is None:
-                matchmaking_type.weight /= matchmaking_type.estimated_game_duration.seconds
+                matchmaking_type.weight /= matchmaking_type.estimated_game_duration.total_seconds()
 
         return matchmaking_types
 
