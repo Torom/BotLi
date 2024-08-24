@@ -51,7 +51,7 @@ class API:
             response.raise_for_status()
             return True
         except httpx.HTTPStatusError as e:
-            if e.response.status_code != httpx.codes.BAD_REQUEST:
+            if not e.response.is_client_error:
                 print(e)
             return False
 
