@@ -409,9 +409,13 @@ class Lichess_Game:
 
     def _get_opening_explorer_top_move(self, moves: list[dict[str, Any]]) -> dict[str, Any]:
         if self.config.online_moves.opening_explorer.selection == 'win_rate':
+            def win_rate(move: dict[str, Any]) -> float:
+                return move['wins'] / (move['white'] + move['draws'] + move['black'])
+
             def win_performance(move: dict[str, Any]) -> float:
                 return (move['wins'] - move['losses']) / (move['white'] + move['draws'] + move['black'])
 
+            moves.sort(key=win_rate, reverse=True)
             return max(moves, key=win_performance)
 
         if self.config.online_moves.opening_explorer.anti:
