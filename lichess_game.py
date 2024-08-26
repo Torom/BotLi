@@ -516,13 +516,21 @@ class Lichess_Game:
     async def _make_gaviota_move(self) -> Move_Response | None:
         assert self.gaviota_tablebase
 
-        if chess.popcount(self.board.occupied) > self.config.gaviota.max_pieces:
-            return
+        match chess.popcount(self.board.occupied):
+            case pieces if pieces > self.config.gaviota.max_pieces + 1:
+                return
+            case pieces if pieces == self.config.gaviota.max_pieces + 1:
+                only_wins = True
+            case _:
+                only_wins = False
 
         best_moves: list[chess.Move] = []
         best_wdl = -2
         best_dtm = 1_000_000
         for move in self.board.legal_moves:
+            if only_wins and not self.board.is_capture(move):
+                continue
+
             board_copy = self.board.copy(stack=False)
             board_copy.push(move)
 
@@ -552,20 +560,24 @@ class Lichess_Game:
                 best_wdl = wdl
                 best_dtm = dtm
 
-        if best_wdl == 2:
-            egtb_info = self._format_egtb_info('win', dtm=best_dtm)
-            offer_draw = False
-            resign = False
-        elif best_wdl == 0:
-            egtb_info = self._format_egtb_info('draw', dtm=0)
-            offer_draw = True
-            resign = False
-        elif best_wdl == -2:
-            egtb_info = self._format_egtb_info('loss', dtm=best_dtm)
-            offer_draw = False
-            resign = True
-        else:
+        if only_wins and best_wdl < 2:
             return
+
+        match best_wdl:
+            case 2:
+                egtb_info = self._format_egtb_info('win', dtm=best_dtm)
+                offer_draw = False
+                resign = False
+            case 0:
+                egtb_info = self._format_egtb_info('draw', dtm=0)
+                offer_draw = True
+                resign = False
+            case -2:
+                egtb_info = self._format_egtb_info('loss', dtm=best_dtm)
+                offer_draw = False
+                resign = True
+            case _:
+                return
 
         await self.engine.stop_pondering(self.board)
         move = random.choice(best_moves)
@@ -575,7 +587,15 @@ class Lichess_Game:
     async def _make_syzygy_move(self) -> Move_Response | None:
         assert self.syzygy_tablebase
 
-        if chess.popcount(self.board.occupied) > self.config.syzygy.max_pieces or self._has_mate_score():
+        match chess.popcount(self.board.occupied):
+            case pieces if pieces > self.config.syzygy.max_pieces + 1:
+                return
+            case pieces if pieces == self.config.syzygy.max_pieces + 1:
+                only_wins = True
+            case _:
+                only_wins = False
+
+        if self._has_mate_score():
             return
 
         best_moves: list[chess.Move] = []
@@ -583,6 +603,9 @@ class Lichess_Game:
         best_dtz = 1_000_000
         best_real_dtz = best_dtz
         for move in self.board.legal_moves:
+            if only_wins and not self.board.is_capture(move):
+                continue
+
             board_copy = self.board.copy(stack=False)
             board_copy.push(move)
 
@@ -619,26 +642,30 @@ class Lichess_Game:
                 best_dtz = dtz
                 best_real_dtz = real_dtz
 
-        if best_wdl == 2:
-            egtb_info = self._format_egtb_info('win', dtz=best_real_dtz)
-            offer_draw = False
-            resign = False
-        elif best_wdl == 1:
-            egtb_info = self._format_egtb_info('cursed win', dtz=best_real_dtz)
-            offer_draw = False
-            resign = False
-        elif best_wdl == 0:
-            egtb_info = self._format_egtb_info('draw', dtz=0)
-            offer_draw = True
-            resign = False
-        elif best_wdl == -1:
-            egtb_info = self._format_egtb_info('blessed loss', dtz=best_real_dtz)
-            offer_draw = True
-            resign = False
-        else:
-            egtb_info = self._format_egtb_info('loss', dtz=best_real_dtz)
-            offer_draw = False
-            resign = True
+        if only_wins and best_wdl < 2:
+            return
+
+        match best_wdl:
+            case 2:
+                egtb_info = self._format_egtb_info('win', dtz=best_real_dtz)
+                offer_draw = False
+                resign = False
+            case 1:
+                egtb_info = self._format_egtb_info('cursed win', dtz=best_real_dtz)
+                offer_draw = False
+                resign = False
+            case 0:
+                egtb_info = self._format_egtb_info('draw', dtz=0)
+                offer_draw = True
+                resign = False
+            case -1:
+                egtb_info = self._format_egtb_info('blessed loss', dtz=best_real_dtz)
+                offer_draw = True
+                resign = False
+            case _:
+                egtb_info = self._format_egtb_info('loss', dtz=best_real_dtz)
+                offer_draw = False
+                resign = True
 
         await self.engine.stop_pondering(self.board)
         move = random.choice(best_moves)
@@ -683,7 +710,7 @@ class Lichess_Game:
         return tablebase
 
     async def _make_egtb_move(self) -> Move_Response | None:
-        max_pieces = 7 if self.board.uci_variant == 'chess' else 6
+        max_pieces = 8 if self.board.uci_variant == 'chess' else 7
         is_endgame = chess.popcount(self.board.occupied) <= max_pieces
         has_time = self._has_time(self.config.online_moves.online_egtb.min_time)
 
@@ -698,8 +725,11 @@ class Lichess_Game:
             self._reduce_own_time(self.config.online_moves.online_egtb.timeout)
             return
 
-        uci_move: str = response['moves'][0]['uci']
         outcome: str = response['category']
+        if outcome == 'unknown':
+            return
+
+        uci_move: str = response['moves'][0]['uci']
         dtz: int = -response['moves'][0]['dtz']
         dtm: int | None = response['dtm']
         offer_draw = outcome in ['draw', 'blessed loss']
