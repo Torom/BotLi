@@ -347,12 +347,13 @@ class Lichess_Game:
         too_deep = (False
                     if self.config.online_moves.opening_explorer.max_depth is None
                     else self.board.ply() >= self.config.online_moves.opening_explorer.max_depth)
+        out_of_range = self.board.fullmove_number > 25
         too_many_moves = (False
                           if self.config.online_moves.opening_explorer.max_moves is None
                           else self.opening_explorer_counter >= self.config.online_moves.opening_explorer.max_moves)
         has_time = self._has_time(self.config.online_moves.opening_explorer.min_time)
 
-        if out_of_book or too_deep or too_many_moves or not has_time:
+        if out_of_book or too_deep or out_of_range or too_many_moves or not has_time:
             return
 
         if self.config.online_moves.opening_explorer.anti:
