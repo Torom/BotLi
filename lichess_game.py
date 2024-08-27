@@ -1,7 +1,7 @@
 import random
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterable
 from itertools import islice
-from typing import Any
+from typing import Any, Literal
 
 import chess
 import chess.engine
@@ -11,7 +11,8 @@ import chess.syzygy
 from chess.variant import find_variant
 
 from api import API
-from botli_dataclasses import Book_Settings, Game_Information, Lichess_Move, Move_Response
+from botli_dataclasses import (Book_Settings, Game_Information, Gaviota_Result, Lichess_Move, Move_Response,
+                               Syzygy_Result)
 from config import Config
 from configs import Engine_Config
 from engine import Engine
@@ -509,24 +510,13 @@ class Lichess_Game:
                    f'Depth: {response["depth"]}')
         return Move_Response(pv[0], message, pv=pv)
 
-    async def _make_gaviota_move(self) -> Move_Response | None:
+    def _probe_gaviota(self, moves: Iterable[chess.Move]) -> Gaviota_Result:
         assert self.gaviota_tablebase
-
-        match chess.popcount(self.board.occupied):
-            case pieces if pieces > self.config.gaviota.max_pieces + 1:
-                return
-            case pieces if pieces == self.config.gaviota.max_pieces + 1:
-                only_wins = True
-            case _:
-                only_wins = False
 
         best_moves: list[chess.Move] = []
         best_wdl = -2
         best_dtm = 1_000_000
-        for move in self.board.legal_moves:
-            if only_wins and not self.board.is_capture(move):
-                continue
-
+        for move in moves:
             board_copy = self.board.copy(stack=False)
             board_copy.push(move)
 
@@ -534,11 +524,8 @@ class Lichess_Game:
                 wdl = 2
                 dtm = 0
             else:
-                try:
-                    dtm = -self.gaviota_tablebase.probe_dtm(board_copy)
-                    wdl = self._value_to_wdl(dtm, board_copy.halfmove_clock)
-                except chess.gaviota.MissingTableError:
-                    return
+                dtm = -self.gaviota_tablebase.probe_dtm(board_copy)
+                wdl = self._value_to_wdl(dtm, board_copy.halfmove_clock)
 
             if best_moves:
                 if wdl > best_wdl:
@@ -556,12 +543,29 @@ class Lichess_Game:
                 best_wdl = wdl
                 best_dtm = dtm
 
-        if only_wins and best_wdl < 2:
-            return
+        return Gaviota_Result(best_moves, best_wdl, best_dtm)
 
-        match best_wdl:
+    async def _make_gaviota_move(self) -> Move_Response | None:
+        match chess.popcount(self.board.occupied):
+            case pieces if pieces > self.config.gaviota.max_pieces + 1:
+                return
+            case pieces if pieces == self.config.gaviota.max_pieces + 1:
+                try:
+                    result = self._probe_gaviota(self.board.generate_legal_captures())
+                except chess.gaviota.MissingTableError:
+                    return
+
+                if result.wdl < 2:
+                    return
+            case _:
+                try:
+                    result = self._probe_gaviota(self.board.generate_legal_moves())
+                except chess.gaviota.MissingTableError:
+                    return
+
+        match result.wdl:
             case 2:
-                egtb_info = self._format_egtb_info('win', dtm=best_dtm)
+                egtb_info = self._format_egtb_info('win', dtm=result.dtm)
                 offer_draw = False
                 resign = False
             case 0:
@@ -569,47 +573,29 @@ class Lichess_Game:
                 offer_draw = True
                 resign = False
             case -2:
-                egtb_info = self._format_egtb_info('loss', dtm=best_dtm)
+                egtb_info = self._format_egtb_info('loss', dtm=result.dtm)
                 offer_draw = False
                 resign = True
             case _:
                 return
 
         await self.engine.stop_pondering(self.board)
-        move = random.choice(best_moves)
+        move = random.choice(result.moves)
         message = f'Gaviota: {self._format_move(move):14} {egtb_info}'
         return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
 
-    async def _make_syzygy_move(self) -> Move_Response | None:
+    def _probe_syzygy(self, moves: Iterable[chess.Move]) -> Syzygy_Result:
         assert self.syzygy_tablebase
-
-        match chess.popcount(self.board.occupied):
-            case pieces if pieces > self.config.syzygy.max_pieces + 1:
-                return
-            case pieces if pieces == self.config.syzygy.max_pieces + 1:
-                only_wins = True
-            case _:
-                only_wins = False
-
-        if self._has_mate_score():
-            return
 
         best_moves: list[chess.Move] = []
         best_wdl = -2
         best_dtz = 1_000_000
         best_real_dtz = best_dtz
-        for move in self.board.legal_moves:
-            if only_wins and not self.board.is_capture(move):
-                continue
-
+        for move in moves:
             board_copy = self.board.copy(stack=False)
             board_copy.push(move)
 
-            try:
-                dtz = -self.syzygy_tablebase.probe_dtz(board_copy)
-            except chess.syzygy.MissingTableError:
-                return
-
+            dtz = -self.syzygy_tablebase.probe_dtz(board_copy)
             wdl = self._value_to_wdl(dtz, board_copy.halfmove_clock)
 
             real_dtz = dtz
@@ -638,16 +624,35 @@ class Lichess_Game:
                 best_dtz = dtz
                 best_real_dtz = real_dtz
 
-        if only_wins and best_wdl < 2:
-            return
+        return Syzygy_Result(best_moves, best_wdl, best_real_dtz)
 
-        match best_wdl:
+    async def _make_syzygy_move(self) -> Move_Response | None:
+        match chess.popcount(self.board.occupied):
+            case pieces if pieces > self.config.syzygy.max_pieces + 1:
+                return
+            case pieces if pieces == self.config.syzygy.max_pieces + 1 and not self._has_mate_score():
+                try:
+                    result = self._probe_syzygy(self.board.generate_legal_captures())
+                except chess.syzygy.MissingTableError:
+                    return
+
+                if result.wdl < 2:
+                    return
+            case pieces if pieces <= self.config.syzygy.max_pieces and not self._has_mate_score():
+                try:
+                    result = self._probe_syzygy(self.board.generate_legal_moves())
+                except chess.syzygy.MissingTableError:
+                    return
+            case _:
+                return
+
+        match result.wdl:
             case 2:
-                egtb_info = self._format_egtb_info('win', dtz=best_real_dtz)
+                egtb_info = self._format_egtb_info('win', dtz=result.dtz)
                 offer_draw = False
                 resign = False
             case 1:
-                egtb_info = self._format_egtb_info('cursed win', dtz=best_real_dtz)
+                egtb_info = self._format_egtb_info('cursed win', dtz=result.dtz)
                 offer_draw = False
                 resign = False
             case 0:
@@ -655,20 +660,20 @@ class Lichess_Game:
                 offer_draw = True
                 resign = False
             case -1:
-                egtb_info = self._format_egtb_info('blessed loss', dtz=best_real_dtz)
+                egtb_info = self._format_egtb_info('blessed loss', dtz=result.dtz)
                 offer_draw = True
                 resign = False
-            case _:
-                egtb_info = self._format_egtb_info('loss', dtz=best_real_dtz)
+            case -2:
+                egtb_info = self._format_egtb_info('loss', dtz=result.dtz)
                 offer_draw = False
                 resign = True
 
         await self.engine.stop_pondering(self.board)
-        move = random.choice(best_moves)
+        move = random.choice(result.moves)
         message = f'Syzygy:  {self._format_move(move):14} {egtb_info}'
         return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
 
-    def _value_to_wdl(self, value: int, halfmove_clock: int) -> int:
+    def _value_to_wdl(self, value: int, halfmove_clock: int) -> Literal[-2, -1, 0, 1, 2]:
         if value > 0:
             if value + halfmove_clock <= 100:
                 return 2

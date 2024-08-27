@@ -203,6 +203,13 @@ class Game_Information:
 
 
 @dataclass
+class Gaviota_Result:
+    moves: list[chess.Move]
+    wdl: Literal[-2, -1, 0, 1, 2]
+    dtm: int
+
+
+@dataclass
 class Lichess_Move:
     uci_move: str
     offer_draw: bool
@@ -254,3 +261,10 @@ class Move_Response:
     is_drawish: bool = field(default=False, kw_only=True)
     is_resignable: bool = field(default=False, kw_only=True)
     is_engine_move: bool = field(default=False, kw_only=True)
+
+
+@dataclass
+class Syzygy_Result:
+    moves: list[chess.Move]
+    wdl: Literal[-2, -1, 0, 1, 2]
+    dtz: int
