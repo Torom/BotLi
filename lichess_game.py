@@ -425,14 +425,12 @@ class Lichess_Game:
 
     async def _make_cloud_move(self) -> Move_Response | None:
         out_of_book = self.out_of_cloud_counter >= 5
-        max_depth = (600
-                     if self.config.online_moves.lichess_cloud.max_depth is None
-                     else self.config.online_moves.lichess_cloud.max_depth)
-        too_deep = self.board.ply() >= max_depth
-        max_moves = (600
-                     if self.config.online_moves.lichess_cloud.max_moves is None
-                     else self.config.online_moves.lichess_cloud.max_moves)
-        too_many_moves = self.cloud_counter >= max_moves
+        too_deep = (False
+                    if self.config.online_moves.lichess_cloud.max_depth is None
+                    else self.board.ply() >= self.config.online_moves.lichess_cloud.max_depth)
+        too_many_moves = (False
+                          if self.config.online_moves.lichess_cloud.max_moves is None
+                          else self.cloud_counter >= self.config.online_moves.lichess_cloud.max_moves)
         has_time = self._has_time(self.config.online_moves.lichess_cloud.min_time)
 
         if out_of_book or too_deep or too_many_moves or not has_time:
@@ -472,14 +470,12 @@ class Lichess_Game:
 
     async def _make_chessdb_move(self) -> Move_Response | None:
         out_of_book = self.out_of_chessdb_counter >= 5
-        max_depth = (600
-                     if self.config.online_moves.chessdb.max_depth is None
-                     else self.config.online_moves.chessdb.max_depth)
-        too_deep = self.board.ply() >= max_depth
-        max_moves = (600
-                     if self.config.online_moves.chessdb.max_moves is None
-                     else self.config.online_moves.chessdb.max_moves)
-        too_many_moves = self.chessdb_counter >= max_moves
+        too_deep = (False
+                    if self.config.online_moves.chessdb.max_depth is None
+                    else self.board.ply() >= self.config.online_moves.chessdb.max_depth)
+        too_many_moves = (False
+                          if self.config.online_moves.chessdb.max_moves is None
+                          else self.chessdb_counter >= self.config.online_moves.chessdb.max_moves)
         has_time = self._has_time(self.config.online_moves.chessdb.min_time)
         is_endgame = chess.popcount(self.board.occupied) <= 7
 
