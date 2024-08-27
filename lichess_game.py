@@ -710,11 +710,15 @@ class Lichess_Game:
         return tablebase
 
     async def _make_egtb_move(self) -> Move_Response | None:
-        max_pieces = 8 if self.board.uci_variant == 'chess' else 7
-        is_endgame = chess.popcount(self.board.occupied) <= max_pieces
-        has_time = self._has_time(self.config.online_moves.online_egtb.min_time)
+        max_pieces = 7 if self.board.uci_variant == 'chess' else 6
+        match chess.popcount(self.board.occupied):
+            case pieces if pieces > max_pieces + 1:
+                return
+            case pieces if pieces == max_pieces + 1:
+                if not any(self.board.generate_legal_captures()):
+                    return
 
-        if not is_endgame or not has_time or self._has_mate_score():
+        if not self._has_time(self.config.online_moves.online_egtb.min_time) or self._has_mate_score():
             return
 
         variant = 'standard' if self.board.uci_variant == 'chess' else self.board.uci_variant
