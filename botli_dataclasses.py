@@ -251,6 +251,12 @@ class Matchmaking_Type:
 
         return delimiter.join([self.name, tc_str, rated_str, variant_str])
 
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, Matchmaking_Type):
+            return __o.name == self.name
+
+        return NotImplemented
+
 
 @dataclass
 class Move_Response:

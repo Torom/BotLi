@@ -143,6 +143,7 @@ class Matchmaking_Type_Config:
 class Matchmaking_Config:
     delay: int
     timeout: int
+    selection: Literal['weighted_random', 'sequential']
     types: dict[str, Matchmaking_Type_Config]
 
 

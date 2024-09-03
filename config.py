@@ -432,6 +432,7 @@ class Config:
         matchmaking_sections = [
             ['delay', int, '"delay" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.'],
+            ['selection', str, '"selection" must be "weighted_random" or "sequential".'],
             ['types', dict, '"types" must be a dictionary with indented keys followed by colons.']]
 
         for subsection in matchmaking_sections:
@@ -464,6 +465,7 @@ class Config:
 
         return Matchmaking_Config(matchmaking_section['delay'],
                                   matchmaking_section['timeout'],
+                                  matchmaking_section['selection'],
                                   types)
 
     @staticmethod

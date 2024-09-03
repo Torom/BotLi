@@ -145,7 +145,8 @@ challenge:                                # Incoming challenges. (Commenting all
 matchmaking:
   delay: 10                               # Time in seconds the bot must be idle before a new challenge is started.
   timeout: 30                             # Time until a challenge is canceled.
-  types:                                  # Matchmaking types of which one is randomly selected before each game.
+  selection: weighted_random              # Matchmkaing type selection is "weighted_random" or "sequential".
+  types:                                  # Matchmaking types of which one is selected before each game.
     bullet:                               # Arbitrary name of the matchmaking type. Names must be unique.
       tc: 1+1                             # Time control in initial_minutes+increment_seconds format.
 #   casual_chess960:
@@ -155,7 +156,7 @@ matchmaking:
 #   optional_settings:
 #     rated: true                         # Whether matchmaking should play rated games. Default: true
 #     variant: standard                   # Chess variant (https://lichess.org/variant) to challenge. Default: standard
-#     weight: 100                         # Weight with which this type is selected. Default: Types are played evenly according to their time control.
+#     weight: 100                         # Weight with which this type is selected. Default: Types are played according to their time control.
 #     multiplier: 15                      # Multiplier for calculating timeouts in matchmaking. Default: 15 * number of configured performance types.
 #     min_rating_diff: 0                  # Minimum rating distance to opponent. Default: 0
 #     max_rating_diff: 300                # Maximum rating distance to opponent. Default: 10000

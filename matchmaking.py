@@ -17,7 +17,7 @@ class Matchmaking:
         self.username = username
         self.next_update = datetime.now()
         self.timeout = max(config.matchmaking.timeout, 1)
-        self.types = self._get_types()
+        self.types = self._get_init_types()
         self.suspended_types: list[Matchmaking_Type] = []
         self.opponents = Opponents(config.matchmaking.delay, username)
         self.challenger = Challenger(api)
@@ -30,8 +30,12 @@ class Matchmaking:
         if await self._call_update():
             return
 
-        if not self.current_type:
-            self.current_type, = random.choices(self.types, [type.weight for type in self.types])
+        if self.current_type is None:
+            if self.config.matchmaking.selection == 'weighted_random':
+                self.current_type, = random.choices(self.types, [type.weight for type in self.types])
+            else:
+                self.current_type = self.types[0]
+
             print(f'Matchmaking type: {self.current_type}')
 
         try:
@@ -47,23 +51,27 @@ class Matchmaking:
 
             return Challenge_Response(no_opponent=True)
 
-        if next_opponent:
-            opponent, color = next_opponent
-        else:
+        if next_opponent is None:
             print(f'No opponent available for matchmaking type {self.current_type.name}.')
-            self.current_type = None
-            return Challenge_Response(no_opponent=True)
+            self.current_type = self._get_type()
+            if self.current_type is None:
+                return Challenge_Response(no_opponent=True)
 
-        if busy_reason := await self._get_busy_reason(opponent):
-            if busy_reason == Busy_Reason.PLAYING:
+            return
+
+        opponent, color = next_opponent
+
+        match await self._get_busy_reason(opponent):
+            case Busy_Reason.PLAYING:
                 rating_diff = opponent.rating_diffs[self.current_type.perf_type]
                 print(f'Skipping {opponent.username} ({rating_diff:+}) as {color.value} ...')
                 self.opponents.skip_bot()
-            elif busy_reason == Busy_Reason.OFFLINE:
-                print(f'Removing {opponent.username} from online bots because it is offline ...')
-                self.online_bots.remove(opponent)
+                return
 
-            return
+            case Busy_Reason.OFFLINE:
+                print(f'Removing {opponent.username} from online bots ...')
+                self.online_bots.remove(opponent)
+                return
 
         rating_diff = opponent.rating_diffs[self.current_type.perf_type]
         print(f'Challenging {opponent.username} ({rating_diff:+}) as {color.value} to {self.current_type.name} ...')
@@ -90,7 +98,20 @@ class Matchmaking:
         self.opponents.add_timeout(not was_aborted, game_duration, self.current_type)
         self.current_type = None
 
-    def _get_types(self) -> list[Matchmaking_Type]:
+    def _get_type(self) -> Matchmaking_Type | None:
+        if self.config.matchmaking.selection == 'weighted_random':
+            return
+
+        last_type = self.types[-1]
+        for i, matchmaking_type in enumerate(self.types):
+            if matchmaking_type == last_type:
+                return
+
+            if matchmaking_type == self.current_type:
+                print(f'Matchmaking type: {self.types[i + 1]}')
+                return self.types[i + 1]
+
+    def _get_init_types(self) -> list[Matchmaking_Type]:
         matchmaking_types: list[Matchmaking_Type] = []
         for name, type_config in self.config.matchmaking.types.items():
             initial_time, increment = type_config.tc.split('+')
@@ -114,6 +135,8 @@ class Matchmaking:
 
             if type_config.weight is None:
                 matchmaking_type.weight /= matchmaking_type.estimated_game_duration.total_seconds()
+
+        matchmaking_types.sort(key=lambda matchmaking_type: matchmaking_type.weight, reverse=True)
 
         return matchmaking_types
 
