@@ -143,6 +143,8 @@ class Game_Manager:
 
     async def _check_matchmaking(self) -> None:
         self.next_matchmaking = None
+        self.is_rate_limited = False
+
         if self.current_matchmaking_game_id:
             return
 
@@ -154,7 +156,6 @@ class Game_Manager:
             self._set_next_matchmaking(1)
             return
 
-        self.is_rate_limited = False
         if challenge_response.success:
             self.reserved_game_spots += 1
             self.current_matchmaking_game_id = challenge_response.challenge_id
