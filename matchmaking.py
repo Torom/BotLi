@@ -80,11 +80,12 @@ class Matchmaking:
                                               self.current_type.variant, self.timeout)
 
         response = await self.challenger.create(challenge_request)
-        if not response.success and not (response.has_reached_rate_limit or response.is_misconfigured):
-            self.opponents.add_timeout(False, self.current_type.estimated_game_duration, self.current_type)
-
         if response.success:
             self.game_start_time = datetime.now()
+        elif not (response.has_reached_rate_limit or response.is_misconfigured):
+            self.opponents.add_timeout(False, self.current_type.estimated_game_duration, self.current_type)
+        else:
+            self.current_type = None
 
         return response
 
