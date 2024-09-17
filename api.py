@@ -128,7 +128,7 @@ class API:
             response.raise_for_status()
             return response.json()
         except (httpx.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-            print(e)
+            print(f'ChessDB: {e}')
 
     async def get_cloud_eval(self, fen: str, variant: Variant, timeout: int) -> dict[str, Any] | None:
         try:
@@ -138,7 +138,7 @@ class API:
                                                          timeout=None)
             return response.json()
         except (httpx.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-            print(e)
+            print(f'Cloud: {e}')
 
     async def get_egtb(self, fen: str, variant: str, timeout: int) -> dict[str, Any] | None:
         try:
@@ -149,7 +149,7 @@ class API:
             response.raise_for_status()
             return response.json()
         except (httpx.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-            print(e)
+            print(f'EGTB: {e}')
 
     async def get_event_stream(self) -> AsyncIterator[dict[str, Any]]:
         while True:
@@ -206,7 +206,7 @@ class API:
                             return json.loads(line)
 
         except (httpx.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-            print(e)
+            print(f'Explore: {e}')
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_token_scopes(self, token: str) -> str:
