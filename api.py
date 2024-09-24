@@ -127,8 +127,10 @@ class API:
                                                           timeout=None)
             response.raise_for_status()
             return response.json()
-        except (httpx.HTTPError, json.JSONDecodeError, TimeoutError) as e:
+        except (httpx.HTTPError, json.JSONDecodeError) as e:
             print(f'ChessDB: {e}')
+        except TimeoutError:
+            print(f'ChessDB: Timed out after {timeout} second(s).')
 
     async def get_cloud_eval(self, fen: str, variant: Variant, timeout: int) -> dict[str, Any] | None:
         try:
@@ -137,8 +139,10 @@ class API:
                                                                                     'variant': variant.value},
                                                          timeout=None)
             return response.json()
-        except (httpx.HTTPError, json.JSONDecodeError, TimeoutError) as e:
+        except (httpx.HTTPError, json.JSONDecodeError) as e:
             print(f'Cloud: {e}')
+        except TimeoutError:
+            print(f'Cloud: Timed out after {timeout} second(s).')
 
     async def get_egtb(self, fen: str, variant: str, timeout: int) -> dict[str, Any] | None:
         try:
@@ -148,8 +152,10 @@ class API:
                                                           timeout=None)
             response.raise_for_status()
             return response.json()
-        except (httpx.HTTPError, json.JSONDecodeError, TimeoutError) as e:
+        except (httpx.HTTPError, json.JSONDecodeError) as e:
             print(f'EGTB: {e}')
+        except TimeoutError:
+            print(f'EGTB: Timed out after {timeout} second(s).')
 
     async def get_event_stream(self) -> AsyncIterator[dict[str, Any]]:
         while True:
@@ -204,9 +210,10 @@ class API:
                     async for line in response.aiter_lines():
                         if line:
                             return json.loads(line)
-
-        except (httpx.HTTPError, json.JSONDecodeError, TimeoutError) as e:
+        except (httpx.HTTPError, json.JSONDecodeError) as e:
             print(f'Explore: {e}')
+        except TimeoutError:
+            print(f'Explore: Timed out after {timeout} second(s).')
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_token_scopes(self, token: str) -> str:
