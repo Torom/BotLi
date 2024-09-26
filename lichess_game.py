@@ -550,6 +550,9 @@ class Lichess_Game:
             case pieces if pieces > self.config.gaviota.max_pieces + 1:
                 return
             case pieces if pieces == self.config.gaviota.max_pieces + 1:
+                if self._has_mate_score():
+                    return
+
                 try:
                     result = self._probe_gaviota(self.board.generate_legal_captures())
                 except chess.gaviota.MissingTableError:
@@ -628,9 +631,9 @@ class Lichess_Game:
 
     async def _make_syzygy_move(self) -> Move_Response | None:
         match chess.popcount(self.board.occupied):
-            case pieces if pieces > self.config.syzygy.max_pieces + 1:
+            case pieces if pieces > self.config.syzygy.max_pieces + 1 or self._has_mate_score():
                 return
-            case pieces if pieces == self.config.syzygy.max_pieces + 1 and not self._has_mate_score():
+            case pieces if pieces == self.config.syzygy.max_pieces + 1:
                 try:
                     result = self._probe_syzygy(self.board.generate_legal_captures())
                 except chess.syzygy.MissingTableError:
@@ -638,13 +641,11 @@ class Lichess_Game:
 
                 if result.wdl < 2:
                     return
-            case pieces if pieces <= self.config.syzygy.max_pieces and not self._has_mate_score():
+            case _:
                 try:
                     result = self._probe_syzygy(self.board.generate_legal_moves())
                 except chess.syzygy.MissingTableError:
                     return
-            case _:
-                return
 
         match result.wdl:
             case 2:
