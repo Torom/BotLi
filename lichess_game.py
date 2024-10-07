@@ -277,14 +277,18 @@ class Lichess_Game:
             if not entries:
                 continue
 
-            if self.book_settings.selection == 'weighted_random':
-                entry, = random.choices(entries, [entry.weight for entry in entries])
-            elif self.book_settings.selection == 'uniform_random':
-                entry = random.choice(entries)
-            else:
-                entry = max(entries, key=lambda entry: entry.weight)
+            match self.book_settings.selection:
+                case 'weighted_random':
+                    entries.sort(key=lambda entry: random.random() ** (1.0 / entry.weight), reverse=True)
+                case 'uniform_random':
+                    random.shuffle(entries)
+                case 'best_move':
+                    entries.sort(key=lambda entry: entry.weight, reverse=True)
 
-            if self._is_repetition(entry.move):
+            for entry in entries:
+                if not self._is_repetition(entry.move):
+                    break
+            else:
                 continue
 
             weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
