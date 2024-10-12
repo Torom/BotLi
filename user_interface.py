@@ -7,8 +7,6 @@ from asyncio import Task
 from enum import Enum
 from typing import TypeVar
 
-from chess.engine import EventLoopPolicy
-
 from api import API
 from botli_dataclasses import Challenge_Request
 from config import Config
