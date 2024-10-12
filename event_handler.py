@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from api import API
@@ -16,7 +17,9 @@ class Event_Handler:
         self.last_challenge_event: dict[str, Any] | None = None
 
     async def run(self) -> None:
-        async for event in self.api.get_event_stream():
+        event_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+        asyncio.create_task(self.api.get_event_stream(event_queue))
+        while event := await event_queue.get():
             match event['type']:
                 case 'challenge':
                     if event['challenge']['challenger']['name'] == self.username:

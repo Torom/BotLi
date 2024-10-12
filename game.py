@@ -1,4 +1,6 @@
+import asyncio
 from datetime import datetime, timedelta
+from typing import Any
 
 from api import API
 from botli_dataclasses import Game_Information
@@ -16,8 +18,9 @@ class Game:
         self.was_aborted = False
 
     async def run(self) -> None:
-        game_stream = self.api.get_game_stream(self.game_id)
-        info = Game_Information.from_gameFull_event(await anext(game_stream))
+        game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+        asyncio.create_task(self.api.get_game_stream(self.game_id, game_stream_queue))
+        info = Game_Information.from_gameFull_event(await game_stream_queue.get())
         lichess_game = await Lichess_Game.acreate(self.api, self.config, self.username, info)
         chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
 
@@ -39,7 +42,7 @@ class Game:
         abortion_seconds = 30.0 if opponent_title == 'BOT' else 60.0
         abortion_time = datetime.now() + timedelta(seconds=abortion_seconds)
 
-        async for event in game_stream:
+        while event := await game_stream_queue.get():
             if event['type'] not in ['gameFull', 'gameState']:
                 if lichess_game.is_abortable and datetime.now() >= abortion_time:
                     print('Aborting game ...')

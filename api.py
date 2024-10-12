@@ -18,6 +18,9 @@ BASIC_RETRY_CONDITIONS = {'retry': retry_if_exception_type(httpx.RequestError),
 JSON_RETRY_CONDITIONS = {'retry': retry_if_exception_type((httpx.RequestError, json.JSONDecodeError)),
                          'wait': wait_fixed(5),
                          'after': after_log(logger, logging.DEBUG)}
+GAME_STREAM_RETRY_CONDITIONS = {'retry': retry_if_exception_type((httpx.RequestError, json.JSONDecodeError)),
+                                'wait': wait_fixed(1),
+                                'after': after_log(logger, logging.DEBUG)}
 MOVE_RETRY_CONDITIONS = {'retry': retry_if_exception_type(httpx.HTTPError),
                          'wait': wait_fixed(1),
                          'after': after_log(logger, logging.DEBUG)}
@@ -157,39 +160,27 @@ class API:
         except TimeoutError:
             print(f'EGTB: Timed out after {timeout} second(s).')
 
-    async def get_event_stream(self) -> AsyncIterator[dict[str, Any]]:
-        while True:
-            try:
-                async with self.lichess_client.stream('GET', '/api/stream/event', timeout=9.0) as response:
-                    async for line in response.aiter_lines():
-                        if line:
-                            yield json.loads(line)
-            except (httpx.RequestError, json.JSONDecodeError):
-                print('Event stream lost connection. Next connection attempt in 5 seconds.')
-                await asyncio.sleep(5.0)
+    @retry(**JSON_RETRY_CONDITIONS)
+    async def get_event_stream(self, queue: asyncio.Queue[dict[str, Any]]) -> None:
+        async with self.lichess_client.stream('GET', '/api/stream/event', timeout=9.0) as response:
+            async for line in response.aiter_lines():
+                if line:
+                    await queue.put(json.loads(line))
 
-    async def get_game_stream(self, game_id: str) -> AsyncIterator[dict[str, Any]]:
-        while True:
-            try:
-                async with self.lichess_client.stream('GET',
-                                                      f'/api/bot/game/stream/{game_id}',
-                                                      timeout=9.0) as response:
-                    async for line in response.aiter_lines():
-                        yield json.loads(line) if line else {'type': 'ping'}
-            except (httpx.RequestError, json.JSONDecodeError):
-                print(f'Game stream {game_id} lost connection. Next connection attempt in 1 second.')
-                await asyncio.sleep(1.0)
+    @retry(**GAME_STREAM_RETRY_CONDITIONS)
+    async def get_game_stream(self, game_id: str, queue: asyncio.Queue[dict[str, Any]]) -> None:
+        async with self.lichess_client.stream('GET', f'/api/bot/game/stream/{game_id}', timeout=9.0) as response:
+            async for line in response.aiter_lines():
+                await queue.put(json.loads(line) if line else {'type': 'ping'})
 
     async def get_online_bots_stream(self) -> AsyncIterator[dict[str, Any]]:
-        while True:
-            try:
-                async with self.lichess_client.stream('GET', '/api/bot/online', timeout=9.0) as response:
-                    async for line in response.aiter_lines():
-                        if line:
-                            yield json.loads(line)
-                    return
-            except (httpx.RequestError, json.JSONDecodeError):
-                await asyncio.sleep(5.0)
+        try:
+            async with self.lichess_client.stream('GET', '/api/bot/online', timeout=9.0) as response:
+                async for line in response.aiter_lines():
+                    if line:
+                        yield json.loads(line)
+        except (httpx.RequestError, json.JSONDecodeError):
+            pass
 
     async def get_opening_explorer(self,
                                    username: str,
