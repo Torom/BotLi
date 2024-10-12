@@ -318,5 +318,4 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.DEBUG)
 
     ui = UserInterface(args.config, args.matchmaking, args.upgrade)
-    asyncio.set_event_loop_policy(EventLoopPolicy())
     asyncio.run(ui.main(), debug=args.debug)
