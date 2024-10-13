@@ -143,7 +143,7 @@ The project comes with a Dockerfile, this uses python:3.12, installs all depende
 
 If Docker is used, all configurations must be done in `config.yml.default`. This is automatically renamed to `config.yml` in the build process.
 
-The Dockerfile also contains all commands to download Fairy-Stockfish and all NNUEs needed for the Lichess chess variants. These commands must be uncommented if desired. In addition, the variants engine must be enabled in the `config.yml.default`. To use NNUE for the Lichess chess variants the following UCI option for Fairy-Stockfish must be set in the config: `EvalFile: "3check-313cc226a173.nnue:antichess-689c016df8e0.nnue:atomic-2cf13ff256cc.nnue:crazyhouse-8ebf84784ad2.nnue:horde-28173ddccabe.nnue:kingofthehill-978b86d0e6a4.nnue:racingkings-636b95f085e3.nnue"`
+The Dockerfile also contains all commands to download Fairy-Stockfish and all NNUEs needed for the Lichess chess variants. These commands must be uncommented if desired. In addition, the variants engine must be enabled in the `config.yml.default`. To use NNUE for the Lichess chess variants the following UCI option for Fairy-Stockfish must be set in the config: `EvalFile: "3check-cb5f517c228b.nnue:antichess-dd3cbe53cd4e.nnue:atomic-2cf13ff256cc.nnue:crazyhouse-8ebf84784ad2.nnue:horde-28173ddccabe.nnue:kingofthehill-978b86d0e6a4.nnue:racingkings-636b95f085e3.nnue"`
 
 ## Running as a service
 
