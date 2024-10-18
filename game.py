@@ -68,6 +68,7 @@ class Game:
                 await self._make_move(lichess_game, chatter)
 
         self.was_aborted = lichess_game.is_abortable
+        print('ending lichess_game ...')
         await lichess_game.end_game()
 
     async def _make_move(self, lichess_game: Lichess_Game, chatter: Chatter) -> None:

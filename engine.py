@@ -107,8 +107,10 @@ class Engine:
 
     async def close(self) -> None:
         try:
+            print('quitting engine ...')
             await self.engine.quit()
         except TimeoutError:
             print('Engine could not be terminated cleanly.')
 
+        print('closing transport ...')
         self.transport.close()

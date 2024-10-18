@@ -192,15 +192,19 @@ class Lichess_Game:
         await self.engine.start_pondering(self.board)
 
     async def end_game(self) -> None:
+        print('closing engine ...')
         await self.engine.close()
 
         for book_reader in self.book_settings.readers.values():
+            print('closing book_reader ...')
             book_reader.close()
 
         if self.syzygy_tablebase:
+            print('closing syzygy ...')
             self.syzygy_tablebase.close()
 
         if self.gaviota_tablebase:
+            print('closing gaviota ...')
             self.gaviota_tablebase.close()
 
     def _is_draw_eval(self) -> bool:
