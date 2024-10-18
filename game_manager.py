@@ -143,8 +143,8 @@ class Game_Manager:
 
     async def _accept_challenge(self, challenge: Challenge) -> None:
         if await self.api.accept_challenge(challenge.challenge_id):
-            self.reserved_game_spots += 1
             print(f'reserved_game_spots {self.reserved_game_spots} + 1')
+            self.reserved_game_spots += 1
         else:
             print(f'Challenge "{challenge.challenge_id}" could not be accepted!')
 
@@ -164,8 +164,8 @@ class Game_Manager:
             return
 
         if challenge_response.success:
-            self.reserved_game_spots += 1
             print(f'reserved_game_spots {self.reserved_game_spots} + 1')
+            self.reserved_game_spots += 1
             self.current_matchmaking_game_id = challenge_response.challenge_id
             return
 
@@ -195,8 +195,8 @@ class Game_Manager:
         response = await self.challenger.create(challenge_request)
 
         if response.success:
-            self.reserved_game_spots += 1
             print(f'reserved_game_spots {self.reserved_game_spots} + 1')
+            self.reserved_game_spots += 1
         elif response.has_reached_rate_limit and self.challenge_requests:
             print('Challenge queue cleared due to rate limiting.')
             self.challenge_requests.clear()
