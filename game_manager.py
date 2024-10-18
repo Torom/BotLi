@@ -101,6 +101,7 @@ class Game_Manager:
 
     def _task_callback(self, task: Task[None]) -> None:
         game = self.tasks.pop(task)
+        print('tasks', len(self.tasks))
 
         if game.game_id == self.current_matchmaking_game_id:
             self.matchmaking.on_game_finished(game.was_aborted)
@@ -114,7 +115,10 @@ class Game_Manager:
             return
 
         if self.reserved_game_spots > 0:
+            print(f'reserved_game_spots {self.reserved_game_spots} - 1')
             self.reserved_game_spots -= 1
+        else:
+            print('reserved_game_spots already 0')
 
         if len(self.tasks) >= self.config.challenge.concurrency:
             print(f'Max number of concurrent games exceeded. Aborting already started game {game_id}.')
@@ -128,9 +132,11 @@ class Game_Manager:
 
     def _get_next_challenge(self) -> Challenge | None:
         if not self.open_challenges:
+            print('no open_challenges')
             return
 
         if len(self.tasks) + self.reserved_game_spots >= self.config.challenge.concurrency:
+            print(f'{len(self.tasks)} + {self.reserved_game_spots} >= {self.config.challenge.concurrency}')
             return
 
         return self.open_challenges.popleft()
@@ -138,6 +144,7 @@ class Game_Manager:
     async def _accept_challenge(self, challenge: Challenge) -> None:
         if await self.api.accept_challenge(challenge.challenge_id):
             self.reserved_game_spots += 1
+            print(f'reserved_game_spots {self.reserved_game_spots} + 1')
         else:
             print(f'Challenge "{challenge.challenge_id}" could not be accepted!')
 
@@ -158,6 +165,7 @@ class Game_Manager:
 
         if challenge_response.success:
             self.reserved_game_spots += 1
+            print(f'reserved_game_spots {self.reserved_game_spots} + 1')
             self.current_matchmaking_game_id = challenge_response.challenge_id
             return
 
@@ -188,6 +196,7 @@ class Game_Manager:
 
         if response.success:
             self.reserved_game_spots += 1
+            print(f'reserved_game_spots {self.reserved_game_spots} + 1')
         elif response.has_reached_rate_limit and self.challenge_requests:
             print('Challenge queue cleared due to rate limiting.')
             self.challenge_requests.clear()
