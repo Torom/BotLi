@@ -744,7 +744,7 @@ class Lichess_Game:
             return
 
         uci_move: str = response['moves'][0]['uci']
-        dtz: int = -response['moves'][0]['dtz']
+        dtz: int = response['dtz']
         dtm: int | None = response['dtm']
         offer_draw = outcome in ['draw', 'blessed loss']
         resign = outcome == 'loss'
