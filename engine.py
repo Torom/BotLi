@@ -1,6 +1,6 @@
+import asyncio
 import os
 import subprocess
-from asyncio import SubprocessTransport
 
 import chess
 from chess.engine import INFO_ALL, InfoDict, Limit, Opponent, Option, UciProtocol, popen_uci
@@ -10,7 +10,7 @@ from configs import Engine_Config, Syzygy_Config
 
 class Engine:
     def __init__(self,
-                 transport: SubprocessTransport,
+                 transport: asyncio.SubprocessTransport,
                  engine: UciProtocol,
                  ponder: bool,
                  opponent: Opponent) -> None:
@@ -107,7 +107,7 @@ class Engine:
 
     async def close(self) -> None:
         try:
-            await self.engine.quit()
+            await asyncio.wait_for(self.engine.quit(), 5.0)
         except TimeoutError:
             print('Engine could not be terminated cleanly.')
 
