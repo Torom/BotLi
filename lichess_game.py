@@ -878,6 +878,9 @@ class Lichess_Game:
         if len(self.board.move_stack) < 2:
             return True
 
+        if not self.increment:
+            min_time += 10.0
+
         return self.own_time >= min_time
 
     def _reduce_own_time(self, seconds: float) -> None:
