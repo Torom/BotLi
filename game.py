@@ -85,7 +85,10 @@ class Game:
 
         print(f'\n{message}\n{128 * "‾"}')
 
-    def _print_result_message(self, game_state: dict, lichess_game: Lichess_Game, info: Game_Information) -> None:
+    def _print_result_message(self,
+                              game_state: dict[str, Any],
+                              lichess_game: Lichess_Game,
+                              info: Game_Information) -> None:
         if winner := game_state.get('winner'):
             if winner == 'white':
                 message = f'{info.white_name} won'
@@ -124,6 +127,9 @@ class Game:
                     message = 'Game drawn by agreement.'
             elif game_state['status'] == 'stalemate':
                 message = 'Game drawn by stalemate.'
+            elif game_state['status'] == 'outoftime':
+                out_of_time_player = info.black_name if game_state['wtime'] else info.white_name
+                message = f'Game drawn. {out_of_time_player} ran out of time.'
             else:
                 message = 'Game aborted.'
 
