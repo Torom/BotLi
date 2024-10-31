@@ -156,7 +156,7 @@ class Matchmaking:
 
         online_bots: list[Bot] = []
         bot_counts: defaultdict[str, int] = defaultdict(int)
-        async for bot in self.api.get_online_bots_stream():
+        for bot in await self.api.get_online_bots():
             bot_counts['online'] += 1
 
             tos_violation = False
