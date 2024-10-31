@@ -266,7 +266,8 @@ defining-attr-methods=__init__,
                       __new__,
                       setUp,
                       asyncSetUp,
-                      __post_init__
+                      __post_init__,
+                      main
 
 # List of member names, which should be excluded from the protected access
 # warning.
