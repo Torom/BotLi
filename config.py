@@ -198,6 +198,9 @@ class Config:
             if not isinstance(config['opening_books'][subsection[0]], subsection[1]):
                 raise TypeError(f'`opening_books` subsection {subsection[2]}')
 
+        if not config['opening_books']['enabled']:
+            return Opening_Books_Config(False, 0, None, {})
+
         opening_book_types_sections = [
             ['selection', str, '"selection" must be one of "weighted_random", "uniform_random" or "best_move".'],
             ['names', list, '"names" must be a list of book names.']]
