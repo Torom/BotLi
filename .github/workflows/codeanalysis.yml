@@ -1,4 +1,4 @@
-name: Pylint
+name: Code analysis
 
 on:
   push:
@@ -15,17 +15,23 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [Darwin, Linux, Windows]
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.12
+    - name: Set up Python 3.13
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.13'
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pylint
+        pip install pylint pyright
         pip install -r requirements.txt
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
+    - name: Analysing the code with pyright for ${{ matrix.platform }}
+      run: |
+        pyright --pythonplatform ${{ matrix.platform }} --pythonversion 3.11
