@@ -3,11 +3,13 @@ name: Code analysis
 on:
   push:
     paths:
+      - '.github/workflows/codeanalysis.yml'
       - '.pylintrc'
       - 'requirements.txt'
       - '**.py'
   pull_request:
     paths:
+      - '.github/workflows/codeanalysis.yml'
       - '.pylintrc'
       - 'requirements.txt'
       - '**.py'
