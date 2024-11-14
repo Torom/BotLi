@@ -1,4 +1,4 @@
-aiohttp[speedups] == 3.10.10
+aiohttp[speedups] == 3.11.1
 chess == 1.11.1
 psutil == 6.1.0
 PyYAML == 6.0.2
