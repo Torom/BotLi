@@ -559,7 +559,7 @@ class Lichess_Game:
 
                 try:
                     result = self._probe_gaviota(self.board.generate_legal_captures())
-                except chess.gaviota.MissingTableError:
+                except KeyError:
                     return
 
                 if result.wdl < 2:
@@ -567,7 +567,7 @@ class Lichess_Game:
             case _:
                 try:
                     result = self._probe_gaviota(self.board.generate_legal_moves())
-                except chess.gaviota.MissingTableError:
+                except KeyError:
                     return
 
         match result.wdl:
@@ -640,7 +640,7 @@ class Lichess_Game:
             case pieces if pieces == self.config.syzygy.max_pieces + 1:
                 try:
                     result = self._probe_syzygy(self.board.generate_legal_captures())
-                except chess.syzygy.MissingTableError:
+                except KeyError:
                     return
 
                 if result.wdl < 2:
@@ -648,7 +648,7 @@ class Lichess_Game:
             case _:
                 try:
                     result = self._probe_syzygy(self.board.generate_legal_moves())
-                except chess.syzygy.MissingTableError:
+                except KeyError:
                     return
 
         match result.wdl:
