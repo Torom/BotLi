@@ -6,7 +6,6 @@ from typing import Any, Literal
 class Engine_Config:
     path: str
     ponder: bool
-    use_syzygy: bool
     silence_stderr: bool
     move_overhead_multiplier: float | None
     uci_options: dict[str, Any]

@@ -136,7 +136,7 @@ class User_Interface:
     async def _test_engines(self) -> None:
         for engine_name, engine_config in self.config.engines.items():
             print(f'Testing engine "{engine_name}" ... ', end='')
-            await Engine.test(engine_config, self.config.syzygy)
+            await Engine.test(engine_config)
             print('OK')
 
     def _blacklist(self, command: list[str]) -> None:

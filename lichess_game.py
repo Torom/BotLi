@@ -14,7 +14,7 @@ from api import API
 from botli_dataclasses import (Book_Settings, Game_Information, Gaviota_Result, Lichess_Move, Move_Response,
                                Syzygy_Result)
 from config import Config
-from configs import Engine_Config
+from configs import Engine_Config, Syzygy_Config
 from engine import Engine
 from enums import Variant
 
@@ -26,12 +26,14 @@ class Lichess_Game:
                  username: str,
                  game_info: Game_Information,
                  board: chess.Board,
+                 syzygy_config: Syzygy_Config,
                  engine_key: str,
                  engine: Engine) -> None:
         self.api = api
         self.config = config
         self.game_info = game_info
         self.board = board
+        self.syzygy_config = syzygy_config
         self.white_time: float = self.game_info.state['wtime'] / 1000
         self.black_time: float = self.game_info.state['btime'] / 1000
         self.increment = self.game_info.increment_ms / 1000
@@ -58,10 +60,11 @@ class Lichess_Game:
         board = cls._get_board(game_info)
         is_white = game_info.white_name == username
         engine_key = cls._get_engine_key(config, board, is_white, game_info)
+        syzygy_config = cls._get_syzygy_config(config, board)
         engine = await Engine.from_config(config.engines[engine_key],
-                                          config.syzygy,
+                                          syzygy_config,
                                           game_info.black_opponent if is_white else game_info.white_opponent)
-        return cls(api, config, username, game_info, board, engine_key, engine)
+        return cls(api, config, username, game_info, board, syzygy_config, engine_key, engine)
 
     @staticmethod
     def _get_board(game_info: Game_Information) -> chess.Board:
@@ -118,6 +121,18 @@ class Lichess_Game:
             return 'standard'
 
         raise RuntimeError(f'No suitable engine for "{board.uci_variant}" configured.')
+
+    @classmethod
+    def _get_syzygy_config(cls, config: Config, board: chess.Board) -> Syzygy_Config:
+        match board.uci_variant:
+            case 'chess':
+                return config.syzygy['standard']
+            case 'antichess':
+                return config.syzygy['antichess']
+            case 'atomic':
+                return config.syzygy['atomic']
+            case _:
+                return Syzygy_Config(False, [], 0, False)
 
     async def make_move(self) -> Lichess_Move:
         for move_source in self.move_sources:
@@ -635,9 +650,9 @@ class Lichess_Game:
 
     async def _make_syzygy_move(self) -> Move_Response | None:
         match chess.popcount(self.board.occupied):
-            case pieces if pieces > self.config.syzygy.max_pieces + 1 or self._has_mate_score():
+            case pieces if pieces > self.syzygy_config.max_pieces + 1 or self._has_mate_score():
                 return
-            case pieces if pieces == self.config.syzygy.max_pieces + 1:
+            case pieces if pieces == self.syzygy_config.max_pieces + 1:
                 try:
                     result = self._probe_syzygy(self.board.generate_legal_captures())
                 except KeyError:
@@ -694,12 +709,12 @@ class Lichess_Game:
         return 0
 
     def _get_syzygy_tablebase(self) -> chess.syzygy.Tablebase | None:
-        if not (self.config.syzygy.enabled and self.config.syzygy.instant_play):
+        if not (self.syzygy_config.enabled and self.syzygy_config.instant_play):
             return
 
-        tablebase = chess.syzygy.open_tablebase(self.config.syzygy.paths[0], VariantBoard=type(self.board))
+        tablebase = chess.syzygy.open_tablebase(self.syzygy_config.paths[0], VariantBoard=type(self.board))
 
-        for path in self.config.syzygy.paths[1:]:
+        for path in self.syzygy_config.paths[1:]:
             tablebase.add_directory(path)
 
         return tablebase
@@ -837,9 +852,8 @@ class Lichess_Game:
             if self.board.uci_variant == 'chess':
                 move_sources.append(self._make_gaviota_move)
 
-        if self.config.syzygy.enabled and self.config.syzygy.instant_play:
-            if self.board.uci_variant in ['chess', 'antichess', 'atomic']:
-                move_sources.append(self._make_syzygy_move)
+        if self.syzygy_config.enabled and self.syzygy_config.instant_play:
+            move_sources.append(self._make_syzygy_move)
 
         if self.config.online_moves.online_egtb.enabled:
             if self.board.uci_variant in ['chess', 'antichess', 'atomic']:

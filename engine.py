@@ -3,7 +3,7 @@ import os
 import subprocess
 
 import chess
-from chess.engine import INFO_ALL, InfoDict, Limit, Opponent, Option, UciProtocol, popen_uci
+import chess.engine
 
 from configs import Engine_Config, Syzygy_Config
 
@@ -11,9 +11,9 @@ from configs import Engine_Config, Syzygy_Config
 class Engine:
     def __init__(self,
                  transport: asyncio.SubprocessTransport,
-                 engine: UciProtocol,
+                 engine: chess.engine.UciProtocol,
                  ponder: bool,
-                 opponent: Opponent) -> None:
+                 opponent: chess.engine.Opponent) -> None:
         self.transport = transport
         self.engine = engine
         self.ponder = ponder
@@ -23,25 +23,23 @@ class Engine:
     async def from_config(cls,
                           engine_config: Engine_Config,
                           syzygy_config: Syzygy_Config,
-                          opponent: Opponent) -> 'Engine':
-        uci_options = cls._get_uci_options(engine_config, syzygy_config)
+                          opponent: chess.engine.Opponent) -> 'Engine':
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
-        transport, engine = await popen_uci(engine_config.path, stderr=stderr)
+        transport, engine = await chess.engine.popen_uci(engine_config.path, stderr=stderr)
 
-        await cls._configure_engine(engine, uci_options)
+        await cls._configure_engine(engine, engine_config, syzygy_config)
         await engine.send_opponent_information(opponent=opponent)
 
         return cls(transport, engine, engine_config.ponder, opponent)
 
     @classmethod
-    async def test(cls, engine_config: Engine_Config, syzygy_config: Syzygy_Config) -> None:
-        uci_options = cls._get_uci_options(engine_config, syzygy_config)
+    async def test(cls, engine_config: Engine_Config) -> None:
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
-        transport, engine = await popen_uci(engine_config.path, stderr=stderr)
-        await cls._configure_engine(engine, uci_options)
-        result = await engine.play(chess.Board(), Limit(time=0.1), info=INFO_ALL)
+        transport, engine = await chess.engine.popen_uci(engine_config.path, stderr=stderr)
+        await cls._configure_engine(engine, engine_config, Syzygy_Config(False, [], 0, False))
+        result = await engine.play(chess.Board(), chess.engine.Limit(time=0.1), info=chess.engine.INFO_ALL)
 
         if not result.move:
             raise RuntimeError('Engine could not make a move!')
@@ -50,26 +48,26 @@ class Engine:
         transport.close()
 
     @staticmethod
-    def _get_uci_options(engine_config: Engine_Config, syzygy_config: Syzygy_Config) -> dict:
-        if syzygy_config.enabled and engine_config.use_syzygy:
-            delimiter = ';' if os.name == 'nt' else ':'
-            syzygy_path = delimiter.join(syzygy_config.paths)
-            engine_config.uci_options['SyzygyPath'] = syzygy_path
-            engine_config.uci_options['SyzygyProbeLimit'] = syzygy_config.max_pieces
-
-        return engine_config.uci_options
-
-    @staticmethod
-    async def _configure_engine(engine: UciProtocol, uci_options: dict) -> None:
-        for name, value in uci_options.items():
-            if Option(name, '', None, None, None, None).is_managed():
+    async def _configure_engine(engine: chess.engine.UciProtocol,
+                                engine_config: Engine_Config,
+                                syzygy_config: Syzygy_Config) -> None:
+        for name, value in engine_config.uci_options.items():
+            if chess.engine.Option(name, '', None, None, None, None).is_managed():
                 print(f'UCI option "{name}" ignored as it is managed by the bot.')
             elif name in engine.options:
                 await engine.configure({name: value})
-            elif name == 'SyzygyProbeLimit':
-                continue
             else:
                 print(f'UCI option "{name}" ignored as it is not supported by the engine.')
+
+        if not syzygy_config.enabled:
+            return
+
+        if 'SyzygyPath' in engine.options and 'SyzygyPath' not in engine_config.uci_options:
+            delimiter = ';' if os.name == 'nt' else ':'
+            await engine.configure({'SyzygyPath': delimiter.join(syzygy_config.paths)})
+
+        if 'SyzygyProbeLimit' in engine.options and 'SyzygyProbeLimit' not in engine_config.uci_options:
+            await engine.configure({'SyzygyProbeLimit': syzygy_config.max_pieces})
 
     @property
     def name(self) -> str:
@@ -80,16 +78,16 @@ class Engine:
                         white_time: float,
                         black_time: float,
                         increment: float
-                        ) -> tuple[chess.Move, InfoDict]:
+                        ) -> tuple[chess.Move, chess.engine.InfoDict]:
         if len(board.move_stack) < 2:
-            limit = Limit(time=15.0) if self.opponent.is_engine else Limit(time=5.0)
+            limit = chess.engine.Limit(time=15.0) if self.opponent.is_engine else chess.engine.Limit(time=5.0)
             ponder = False
         else:
-            limit = Limit(white_clock=white_time, white_inc=increment,
-                          black_clock=black_time, black_inc=increment)
+            limit = chess.engine.Limit(white_clock=white_time, white_inc=increment,
+                                       black_clock=black_time, black_inc=increment)
             ponder = self.ponder
 
-        result = await self.engine.play(board, limit, info=INFO_ALL, ponder=ponder)
+        result = await self.engine.play(board, limit, info=chess.engine.INFO_ALL, ponder=ponder)
 
         if not result.move:
             raise RuntimeError('Engine could not make a move!')
@@ -103,7 +101,7 @@ class Engine:
     async def stop_pondering(self, board: chess.Board) -> None:
         if self.ponder:
             self.ponder = False
-            await self.engine.analysis(board, Limit(time=0.001))
+            await self.engine.analysis(board, chess.engine.Limit(time=0.001))
 
     async def close(self) -> None:
         try:

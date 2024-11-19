@@ -3,6 +3,7 @@ import os.path
 import subprocess
 import sys
 from dataclasses import dataclass
+from typing import Any
 
 import yaml
 
@@ -17,7 +18,7 @@ class Config:
     url: str
     token: str
     engines: dict[str, Engine_Config]
-    syzygy: Syzygy_Config
+    syzygy: dict[str, Syzygy_Config]
     gaviota: Gaviota_Config
     opening_books: Opening_Books_Config
     online_moves: Online_Moves_Config
@@ -45,7 +46,7 @@ class Config:
         cls._check_sections(yaml_config)
 
         engine_configs = cls._get_engine_configs(yaml_config['engines'])
-        syzygy_config = cls._get_syzygy_config(yaml_config['syzygy'])
+        syzygy_config = cls._get_syzygy_configs(yaml_config['syzygy'])
         gaviota_config = cls._get_gaviota_config(yaml_config['gaviota'])
         opening_books_config = cls._get_opening_books_config(yaml_config)
         online_moves_config = cls._get_online_moves_config(yaml_config['online_moves'])
@@ -74,7 +75,7 @@ class Config:
                    cls._get_version())
 
     @staticmethod
-    def _check_sections(config: dict) -> None:
+    def _check_sections(config: dict[str, Any]) -> None:
         # [section, type, error message]
         sections = [
             ['token', str, 'Section `token` must be a string wrapped in quotes.'],
@@ -99,12 +100,11 @@ class Config:
                 raise TypeError(section[2])
 
     @staticmethod
-    def _get_engine_configs(engines_section: dict) -> dict[str, Engine_Config]:
+    def _get_engine_configs(engines_section: dict[str, dict[str, Any]]) -> dict[str, Engine_Config]:
         engines_sections = [
             ['dir', str, '"dir" must be a string wrapped in quotes.'],
             ['name', str, '"name" must be a string wrapped in quotes.'],
             ['ponder', bool, '"ponder" must be a bool.'],
-            ['use_syzygy', bool, '"use_syzygy" must be a bool.'],
             ['silence_stderr', bool, '"silence_stderr" must be a bool.'],
             ['uci_options', dict | None, '"uci_options" must be a dictionary with indented keys followed by colons.']]
 
@@ -118,7 +118,7 @@ class Config:
                     raise TypeError(f'`engines` `{key}` subsection {subsection[2]}')
 
             if not os.path.isdir(settings['dir']):
-                raise RuntimeError(f'Your engine directory "{settings["dir"]}" is not a directory.')
+                raise RuntimeError(f'Your engine dir "{settings["dir"]}" is not a directory.')
 
             settings['path'] = os.path.join(settings['dir'], settings['name'])
 
@@ -131,7 +131,6 @@ class Config:
 
             engine_configs[key] = Engine_Config(settings['path'],
                                                 settings['ponder'],
-                                                settings['use_syzygy'],
                                                 settings['silence_stderr'],
                                                 settings.get('move_overhead_multiplier'),
                                                 settings['uci_options'] or {})
@@ -139,32 +138,40 @@ class Config:
         return engine_configs
 
     @staticmethod
-    def _get_syzygy_config(syzygy_section: dict) -> Syzygy_Config:
+    def _get_syzygy_configs(syzygy_section: dict[str, dict[str, Any]]) -> dict[str, Syzygy_Config]:
         syzygy_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['paths', list, '"paths" must be a list.'],
             ['max_pieces', int, '"max_pieces" must be an integer.'],
             ['instant_play', bool, '"instant_play" must be a bool.']]
 
-        for subsection in syzygy_sections:
-            if subsection[0] not in syzygy_section:
-                raise RuntimeError(f'Your config does not have required `syzygy` subsection `{subsection[0]}`.')
+        syzygy_configs: dict[str, Syzygy_Config] = {}
+        for key, settings in syzygy_section.items():
+            for subsection in syzygy_sections:
+                if subsection[0] not in settings:
+                    raise RuntimeError('Your config does not have required '
+                                       f'`syzygy` `{key}` subsection `{subsection[0]}`.')
 
-            if not isinstance(syzygy_section[subsection[0]], subsection[1]):
-                raise TypeError(f'`syzygy` subsection {subsection[2]}')
+                if not isinstance(settings[subsection[0]], subsection[1]):
+                    raise TypeError(f'`syzygy` `{key}` subsection {subsection[2]}')
 
-        if syzygy_section['enabled']:
-            for path in syzygy_section['paths']:
+            if not settings['enabled']:
+                syzygy_configs[key] = Syzygy_Config(False, [], 0, False)
+                continue
+
+            for path in settings['paths']:
                 if not os.path.isdir(path):
-                    raise RuntimeError(f'Your syzygy directory "{path}" is not a directory.')
+                    raise RuntimeError(f'Your {key} syzygy path "{path}" is not a directory.')
 
-        return Syzygy_Config(syzygy_section['enabled'],
-                             syzygy_section['paths'],
-                             syzygy_section['max_pieces'],
-                             syzygy_section['instant_play'])
+            syzygy_configs[key] = Syzygy_Config(settings['enabled'],
+                                                settings['paths'],
+                                                settings['max_pieces'],
+                                                settings['instant_play'])
+
+        return syzygy_configs
 
     @staticmethod
-    def _get_gaviota_config(gaviota_section: dict) -> Gaviota_Config:
+    def _get_gaviota_config(gaviota_section: dict[str, Any]) -> Gaviota_Config:
         gaviota_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['paths', list, '"paths" must be a list.'],
@@ -185,7 +192,7 @@ class Config:
         return Gaviota_Config(gaviota_section['enabled'], gaviota_section['paths'], gaviota_section['max_pieces'])
 
     @staticmethod
-    def _get_opening_books_config(config: dict) -> Opening_Books_Config:
+    def _get_opening_books_config(config: dict[str, Any]) -> Opening_Books_Config:
         opening_books_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['priority', int, '"priority" must be an integer.'],
@@ -233,7 +240,7 @@ class Config:
                                     books)
 
     @staticmethod
-    def _get_opening_explorer_config(opening_explorer_section: dict) -> Opening_Explorer_Config:
+    def _get_opening_explorer_config(opening_explorer_section: dict[str, Any]) -> Opening_Explorer_Config:
         opening_explorer_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['priority', int, '"priority" must be an integer.'],
@@ -266,7 +273,7 @@ class Config:
                                        opening_explorer_section.get('max_moves'))
 
     @staticmethod
-    def _get_lichess_cloud_config(lichess_cloud_section: dict) -> Lichess_Cloud_Config:
+    def _get_lichess_cloud_config(lichess_cloud_section: dict[str, Any]) -> Lichess_Cloud_Config:
         lichess_cloud_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['priority', int, '"priority" must be an integer.'],
@@ -293,7 +300,7 @@ class Config:
                                     lichess_cloud_section.get('max_moves'))
 
     @staticmethod
-    def _get_chessdb_config(chessdb_section: dict) -> ChessDB_Config:
+    def _get_chessdb_config(chessdb_section: dict[str, Any]) -> ChessDB_Config:
         chessdb_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['priority', int, '"priority" must be an integer.'],
@@ -320,7 +327,7 @@ class Config:
                               chessdb_section.get('max_moves'))
 
     @staticmethod
-    def _get_online_egtb_config(online_egtb_section: dict) -> Online_EGTB_Config:
+    def _get_online_egtb_config(online_egtb_section: dict[str, Any]) -> Online_EGTB_Config:
         online_egtb_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['min_time', int, '"min_time" must be an integer.'],
@@ -339,7 +346,7 @@ class Config:
                                   online_egtb_section['timeout'])
 
     @staticmethod
-    def _get_online_moves_config(online_moves_section: dict) -> Online_Moves_Config:
+    def _get_online_moves_config(online_moves_section: dict[str, dict[str, Any]]) -> Online_Moves_Config:
         online_moves_sections = [
             ['opening_explorer', dict, ('"opening_explorer" must be a dictionary '
                                         'with indented keys followed by colons.')],
@@ -361,7 +368,7 @@ class Config:
                                    Config._get_online_egtb_config(online_moves_section['online_egtb']))
 
     @staticmethod
-    def _get_offer_draw_config(offer_draw_section: dict) -> Offer_Draw_Config:
+    def _get_offer_draw_config(offer_draw_section: dict[str, Any]) -> Offer_Draw_Config:
         offer_draw_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['score', int, '"score" must be an integer.'],
@@ -383,7 +390,7 @@ class Config:
                                  offer_draw_section['against_humans'])
 
     @staticmethod
-    def _get_resign_config(resign_section: dict) -> Resign_Config:
+    def _get_resign_config(resign_section: dict[str, Any]) -> Resign_Config:
         resign_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['score', int, '"score" must be an integer.'],
@@ -403,7 +410,7 @@ class Config:
                              resign_section['against_humans'])
 
     @staticmethod
-    def _get_challenge_config(challenge_section: dict) -> Challenge_Config:
+    def _get_challenge_config(challenge_section: dict[str, Any]) -> Challenge_Config:
         challenge_sections = [
             ['concurrency', int, '"concurrency" must be an integer.'],
             ['bullet_with_increment_only', bool, '"bullet_with_increment_only" must be a bool.'],
@@ -431,7 +438,7 @@ class Config:
                                 challenge_section['human_modes'] or [])
 
     @staticmethod
-    def _get_matchmaking_config(matchmaking_section: dict) -> Matchmaking_Config:
+    def _get_matchmaking_config(matchmaking_section: dict[str, Any]) -> Matchmaking_Config:
         matchmaking_sections = [
             ['delay', int, '"delay" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.'],
@@ -472,7 +479,7 @@ class Config:
                                   types)
 
     @staticmethod
-    def _get_messages_config(messages_section: dict) -> Messages_Config:
+    def _get_messages_config(messages_section: dict[str, str]) -> Messages_Config:
         messages_sections = [
             ['greeting', str, '"greeting" must be a string wrapped in quotes.'],
             ['goodbye', str, '"goodbye" must be a string wrapped in quotes.'],
@@ -486,7 +493,7 @@ class Config:
 
                 if messages_section[subsection[0]].strip() == '!printeval':
                     print(f'Ignoring message "{subsection[0]}": "!printeval" is not allowed in messages.')
-                    messages_section[messages_section[subsection[0]]] = None
+                    del messages_section[messages_section[subsection[0]]]
 
         return Messages_Config(messages_section.get('greeting'),
                                messages_section.get('goodbye'),

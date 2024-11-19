@@ -5,7 +5,6 @@ engines:
     dir: "./engines"                      # Directory containing the engine.
     name: "stockfish"                     # Binary name of the engine to use.
     ponder: true                          # Think on opponent's time.
-    use_syzygy: true                      # Whether the engine should be configured to use syzygy.
     silence_stderr: false                 # Suppresses stderr output.
     move_overhead_multiplier: 1.0         # Increase if your bot flags games too often. Default move overhead is 1 second per 1 minute initital time.
     uci_options:                          # Arbitrary UCI options passed to the engine. (Commenting allowed)
@@ -16,7 +15,6 @@ engines:
 #   dir: "./engines"                      # Directory containing the engine.
 #   name: "fairy-stockfish"               # Binary name of the engine to use.
 #   ponder: true                          # Think on opponent's time.
-#   use_syzygy: false                     # Whether the engine should be configured to use syzygy.
 #   silence_stderr: false                 # Suppresses stderr output.
 #   move_overhead_multiplier: 1.0         # Increase if your bot flags games too often. Default move overhead is 1 second per 1 minute initital time.
 #   uci_options:                          # Arbitrary UCI options passed to the engine. (Commenting allowed)
@@ -28,11 +26,24 @@ engines:
 # Append '_white' or '_black' to use the engine only as the specific color.
 
 syzygy:
-  enabled: false                          # Activate local syzygy endgame tablebases.
-  paths:                                  # Paths to local syzygy endgame tablebases.
-    - "/path/to/syzygy"
-  max_pieces: 6                           # Count of max pieces in the local syzygy endgame tablebases.
-  instant_play: true                      # Whether the bot should play directly from syzygy without engine if possible.
+  standard:
+    enabled: false                        # Activate local syzygy endgame tablebases.
+    paths:                                # Paths to local syzygy endgame tablebases.
+      - "/path/to/standard/syzygy"
+    max_pieces: 7                         # Count of max pieces in the local syzygy endgame tablebases.
+    instant_play: true                    # Whether the bot should play directly from syzygy without engine if possible.
+  antichess:
+    enabled: false                        # Activate local syzygy endgame tablebases.
+    paths:                                # Paths to local syzygy endgame tablebases.
+      - "/path/to/antichess/syzygy"
+    max_pieces: 6                         # Count of max pieces in the local syzygy endgame tablebases.
+    instant_play: true                    # Whether the bot should play directly from syzygy without engine if possible.
+  atomic:
+    enabled: false                        # Activate local syzygy endgame tablebases.
+    paths:                                # Paths to local syzygy endgame tablebases.
+      - "/path/to/atomic/syzygy"
+    max_pieces: 6                         # Count of max pieces in the local syzygy endgame tablebases.
+    instant_play: true                    # Whether the bot should play directly from syzygy without engine if possible.
 
 gaviota:
   enabled: false                          # Activate local gaviota endgame tablebases.
