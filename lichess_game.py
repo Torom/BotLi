@@ -206,7 +206,7 @@ class Lichess_Game:
     async def start_pondering(self) -> None:
         await self.engine.start_pondering(self.board)
 
-    async def end_game(self) -> None:
+    async def close(self) -> None:
         await self.engine.close()
 
         for book_reader in self.book_settings.readers.values():

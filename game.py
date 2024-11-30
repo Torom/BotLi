@@ -30,7 +30,7 @@ class Game:
         if info.state['status'] != 'started':
             self._print_result_message(info.state, lichess_game, info)
             await chatter.send_goodbyes()
-            await lichess_game.end_game()
+            await lichess_game.close()
             return
 
         if lichess_game.is_our_turn:
@@ -68,7 +68,7 @@ class Game:
                 await self._make_move(lichess_game, chatter)
 
         self.was_aborted = lichess_game.is_abortable
-        await lichess_game.end_game()
+        await lichess_game.close()
 
     async def _make_move(self, lichess_game: Lichess_Game, chatter: Chatter) -> None:
         lichess_move = await lichess_game.make_move()
