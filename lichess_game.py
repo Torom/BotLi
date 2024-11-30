@@ -793,7 +793,7 @@ class Lichess_Game:
             time = 11 * ' '
 
         info_hashfull = info.get('hashfull')
-        hashfull = f'Hash: {info_hashfull/10:5.1f} %' if info_hashfull else 13 * ' '
+        hashfull = 13 * ' ' if info_hashfull is None else f'Hash: {info_hashfull/10:5.1f} %'
 
         info_tbhits = info.get('tbhits')
         tbhits = f'TB: {self._format_number(info_tbhits)}' if info_tbhits else ''
