@@ -1,5 +1,5 @@
 import random
-from collections.abc import Awaitable, Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable  # pylint: disable=import-error
 from itertools import islice
 from typing import Any, Literal
 

@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator  # pylint: disable=import-error
 from typing import Any
 
 import aiohttp
