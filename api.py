@@ -129,12 +129,11 @@ class API:
 
             return json_response
 
-    async def get_chessdb_eval(self, fen: str, best_move: bool, timeout: int) -> dict[str, Any] | None:
+    async def get_chessdb_eval(self, fen: str, timeout: int) -> dict[str, Any] | None:
         try:
             async with self.external_session.get('http://www.chessdb.cn/cdb.php',
-                                                 params={'action': 'querypv',
+                                                 params={'action': 'queryall',
                                                          'board': fen,
-                                                         'stable': int(best_move),
                                                          'json': 1},
                                                  timeout=aiohttp.ClientTimeout(total=timeout)) as response:
                 response.raise_for_status()

@@ -101,7 +101,7 @@ online_moves:
     min_eval_depth: 10                    # Minimum evaluation depth.
     min_time: 10                          # Time the bot must have at least to use the online move. +10 seconds in games without increment.
     timeout: 5                            # Time the server has to respond.
-    best_move: false                      # Whether only the best move should be played.
+    best_moves: true                      # Whether only one of the best moves should be played.
 #   max_depth: 16                         # Half move max depth. (Comment this line for max depth)
 #   max_moves: 1                          # Max number of moves played from chessdb. (Comment this line for max moves)
   online_egtb:

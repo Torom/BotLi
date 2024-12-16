@@ -72,10 +72,9 @@ class Lichess_Cloud_Config:
 class ChessDB_Config:
     enabled: bool
     priority: int
-    min_eval_depth: int
     min_time: int
     timeout: int
-    best_move: bool
+    best_moves: bool
     max_depth: int | None
     max_moves: int | None
 

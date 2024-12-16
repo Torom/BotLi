@@ -502,9 +502,7 @@ class Lichess_Game:
         if out_of_book or too_deep or too_many_moves or not has_time or is_endgame:
             return
 
-        response = await self.api.get_chessdb_eval(self.board.fen(),
-                                                   self.config.online_moves.chessdb.best_move,
-                                                   self.config.online_moves.chessdb.timeout)
+        response = await self.api.get_chessdb_eval(self.board.fen(), self.config.online_moves.chessdb.timeout)
         if response is None:
             self.out_of_chessdb_counter += 1
             self._reduce_own_time(self.config.online_moves.chessdb.timeout)
@@ -514,20 +512,28 @@ class Lichess_Game:
             self.out_of_chessdb_counter += 1
             return
 
-        if response['depth'] < self.config.online_moves.chessdb.min_eval_depth:
-            self.out_of_chessdb_counter += 1
-            return
-
         self.out_of_chessdb_counter = 0
-        pv = [chess.Move.from_uci(uci_move) for uci_move in response['pv']]
-        if self._is_repetition(pv[0]):
+        if self.config.online_moves.chessdb.best_moves or response['moves'][0]['rank'] == 0:
+            candidate_moves = [chessdb_move for chessdb_move in response['moves']
+                               if chessdb_move['score'] == response['moves'][0]['score']]
+        else:
+            candidate_moves = [chessdb_move for chessdb_move in response['moves']
+                               if chessdb_move['rank'] == response['moves'][0]['rank']]
+
+        random.shuffle(candidate_moves)
+        for chessdb_move in candidate_moves:
+            move = chess.Move.from_uci(chessdb_move['uci'])
+            if not self._is_repetition(move):
+                break
+        else:
             return
 
         self.chessdb_counter += 1
-        pov_score = chess.engine.PovScore(chess.engine.Cp(response['score']), self.board.turn)
-        message = (f'ChessDB: {self._format_move(pv[0]):14} {self._format_score(pov_score)}     '
-                   f'Depth: {response["depth"]}')
-        return Move_Response(pv[0], message, pv=pv)
+        pov_score = chess.engine.PovScore(chess.engine.Cp(chessdb_move['score']), self.board.turn)
+        candidates = (f'Candidates: {", ".join(chessdb_move['san'] for chessdb_move in candidate_moves)}'
+                      if len(candidate_moves) > 1 else '')
+        message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     {candidates}'
+        return Move_Response(move, message)
 
     def _probe_gaviota(self, moves: Iterable[chess.Move]) -> Gaviota_Result:
         assert self.gaviota_tablebase

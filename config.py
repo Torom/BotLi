@@ -304,10 +304,9 @@ class Config:
         chessdb_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['priority', int, '"priority" must be an integer.'],
-            ['min_eval_depth', int, '"min_eval_depth" must be an integer.'],
             ['min_time', int, '"min_time" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.'],
-            ['best_move', bool, '"best_move" must be a bool.']]
+            ['best_moves', bool, '"best_moves" must be a bool.']]
 
         for subsection in chessdb_sections:
             if subsection[0] not in chessdb_section:
@@ -319,10 +318,9 @@ class Config:
 
         return ChessDB_Config(chessdb_section['enabled'],
                               chessdb_section['priority'],
-                              chessdb_section['min_eval_depth'],
                               chessdb_section['min_time'],
                               chessdb_section['timeout'],
-                              chessdb_section['best_move'],
+                              chessdb_section['best_moves'],
                               chessdb_section.get('max_depth'),
                               chessdb_section.get('max_moves'))
 
