@@ -530,7 +530,7 @@ class Lichess_Game:
 
         self.chessdb_counter += 1
         pov_score = chess.engine.PovScore(chess.engine.Cp(chessdb_move['score']), self.board.turn)
-        candidates = (f'Candidates: {", ".join(chessdb_move['san'] for chessdb_move in candidate_moves)}'
+        candidates = (f'Candidates: {", ".join(chessdb_move["san"] for chessdb_move in candidate_moves)}'
                       if len(candidate_moves) > 1 else '')
         message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     {candidates}'
         return Move_Response(move, message)
