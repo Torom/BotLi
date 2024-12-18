@@ -513,12 +513,15 @@ class Lichess_Game:
             return
 
         self.out_of_chessdb_counter = 0
-        if self.config.online_moves.chessdb.best_moves or response['moves'][0]['rank'] == 0:
+        if self.config.online_moves.chessdb.selection == 'optimal' or response['moves'][0]['rank'] == 0:
             candidate_moves = [chessdb_move for chessdb_move in response['moves']
                                if chessdb_move['score'] == response['moves'][0]['score']]
-        else:
+        elif self.config.online_moves.chessdb.selection == 'best':
             candidate_moves = [chessdb_move for chessdb_move in response['moves']
                                if chessdb_move['rank'] == response['moves'][0]['rank']]
+        else:
+            candidate_moves = [chessdb_move for chessdb_move in response['moves']
+                               if chessdb_move['rank'] > 0]
 
         random.shuffle(candidate_moves)
         for chessdb_move in candidate_moves:

@@ -74,7 +74,7 @@ class ChessDB_Config:
     priority: int
     min_time: int
     timeout: int
-    best_moves: bool
+    selection: Literal['optimal', 'best', 'good']
     max_depth: int | None
     max_moves: int | None
 

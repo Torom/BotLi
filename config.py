@@ -306,7 +306,7 @@ class Config:
             ['priority', int, '"priority" must be an integer.'],
             ['min_time', int, '"min_time" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.'],
-            ['best_moves', bool, '"best_moves" must be a bool.']]
+            ['selection', str, '"selection" must be one of "optimal", "best" or "good".']]
 
         for subsection in chessdb_sections:
             if subsection[0] not in chessdb_section:
@@ -320,7 +320,7 @@ class Config:
                               chessdb_section['priority'],
                               chessdb_section['min_time'],
                               chessdb_section['timeout'],
-                              chessdb_section['best_moves'],
+                              chessdb_section['selection'],
                               chessdb_section.get('max_depth'),
                               chessdb_section.get('max_moves'))
 
