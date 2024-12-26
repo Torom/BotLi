@@ -1,5 +1,5 @@
 aiohttp[speedups] == 3.11.10
 chess == 1.11.1
-psutil == 6.1.0
+psutil == 6.1.1
 PyYAML == 6.0.2
 tenacity == 9.0.0
