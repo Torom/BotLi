@@ -802,9 +802,9 @@ class Lichess_Game:
 
         if info_time := info.get('time'):
             minutes, seconds = divmod(info_time, 60)
-            time = f'MT: {minutes:02.0f}:{seconds:004.1f}'
+            time_str = f'MT: {minutes:02.0f}:{seconds:004.1f}'
         else:
-            time = 11 * ' '
+            time_str = 11 * ' '
 
         info_hashfull = info.get('hashfull')
         hashfull = 13 * ' ' if info_hashfull is None else f'Hash: {info_hashfull/10:5.1f} %'
@@ -813,7 +813,7 @@ class Lichess_Game:
         tbhits = f'TB: {self._format_number(info_tbhits)}' if info_tbhits else ''
         delimiter = 5 * ' '
 
-        return delimiter.join((score, depth, nodes, nps, time, hashfull, tbhits))
+        return delimiter.join((score, depth, nodes, nps, time_str, hashfull, tbhits))
 
     def _format_number(self, number: int) -> str:
         if number >= 1_000_000_000_000:
