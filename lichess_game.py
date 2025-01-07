@@ -1,4 +1,5 @@
 import random
+import time
 from collections.abc import Awaitable, Callable, Iterable
 from itertools import islice
 from typing import Any, Literal
@@ -388,6 +389,7 @@ class Lichess_Game:
         else:
             speeds = self.game_info.speed
 
+        start_time = time.perf_counter()
         response = await self.api.get_opening_explorer(username,
                                                        self.board.fen(),
                                                        self.game_info.variant,
@@ -396,7 +398,7 @@ class Lichess_Game:
                                                        self.config.online_moves.opening_explorer.timeout)
         if response is None:
             self.out_of_opening_explorer_counter += 1
-            self._reduce_own_time(self.config.online_moves.opening_explorer.timeout)
+            self._reduce_own_time(time.perf_counter() - start_time)
             return
 
         game_count = response['white'] + response['draws'] + response['black']
@@ -456,12 +458,13 @@ class Lichess_Game:
         if out_of_book or too_deep or too_many_moves or not has_time:
             return
 
+        start_time = time.perf_counter()
         response = await self.api.get_cloud_eval(self.board.fen().replace('[', '/').replace(']', ''),
                                                  self.game_info.variant,
                                                  self.config.online_moves.lichess_cloud.timeout)
         if response is None:
             self.out_of_cloud_counter += 1
-            self._reduce_own_time(self.config.online_moves.lichess_cloud.timeout)
+            self._reduce_own_time(time.perf_counter() - start_time)
             return
 
         if 'error' in response:
@@ -502,10 +505,11 @@ class Lichess_Game:
         if out_of_book or too_deep or too_many_moves or not has_time or is_endgame:
             return
 
+        start_time = time.perf_counter()
         response = await self.api.get_chessdb_eval(self.board.fen(), self.config.online_moves.chessdb.timeout)
         if response is None:
             self.out_of_chessdb_counter += 1
-            self._reduce_own_time(self.config.online_moves.chessdb.timeout)
+            self._reduce_own_time(time.perf_counter() - start_time)
             return
 
         if response['status'] != 'ok':
@@ -754,9 +758,10 @@ class Lichess_Game:
         variant = 'standard' if self.board.uci_variant == 'chess' else self.board.uci_variant
         assert variant
 
+        start_time = time.perf_counter()
         response = await self.api.get_egtb(self.board.fen(), variant, self.config.online_moves.online_egtb.timeout)
         if response is None:
-            self._reduce_own_time(self.config.online_moves.online_egtb.timeout)
+            self._reduce_own_time(time.perf_counter() - start_time)
             return
 
         outcome: str = response['category']
