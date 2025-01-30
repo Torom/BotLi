@@ -85,7 +85,8 @@ class API:
                                                        'color': challenge_request.color.value,
                                                        'variant': challenge_request.variant.value,
                                                        'keepAliveStream': 'true'},
-                                                 timeout=aiohttp.ClientTimeout(sock_read=60.0)) as response:
+                                                 timeout=aiohttp.ClientTimeout(total=challenge_request.timeout)
+                                                 ) as response:
 
                 if response.status == 429:
                     yield API_Challenge_Reponse(has_reached_rate_limit=True)
@@ -96,7 +97,7 @@ class API:
                         continue
 
                     data: dict[str, Any] = json.loads(line)
-                    yield API_Challenge_Reponse(data.get('id', None),
+                    yield API_Challenge_Reponse(data.get('id'),
                                                 data.get('done') == 'accepted',
                                                 data.get('error'),
                                                 data.get('done') == 'declined',
@@ -106,7 +107,7 @@ class API:
         except (aiohttp.ClientError, json.JSONDecodeError) as e:
             yield API_Challenge_Reponse(error=str(e))
         except TimeoutError:
-            yield API_Challenge_Reponse(error='Connection timed out.')
+            yield API_Challenge_Reponse(has_timed_out=True)
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:

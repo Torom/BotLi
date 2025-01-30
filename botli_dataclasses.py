@@ -18,6 +18,7 @@ class API_Challenge_Reponse:
     invalid_initial: bool = False
     invalid_increment: bool = False
     has_reached_rate_limit: bool = False
+    has_timed_out: bool = False
 
 
 @dataclass
