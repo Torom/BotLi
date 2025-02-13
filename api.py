@@ -35,6 +35,12 @@ class API:
                                                      timeout=aiohttp.ClientTimeout(total=5.0))
         self.external_session = aiohttp.ClientSession(headers={'User-Agent': f'BotLi/{config.version}'})
 
+    async def __aenter__(self) -> 'API':
+        return self
+
+    async def __aexit__(self, *_) -> None:
+        await self.close()
+
     def append_user_agent(self, username: str) -> None:
         self.lichess_session.headers['User-Agent'] += f' user:{username}'
         self.external_session.headers['User-Agent'] += f' user:{username}'

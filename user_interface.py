@@ -41,66 +41,65 @@ EnumT = TypeVar('EnumT', bound=Enum)
 class User_Interface:
     async def main(self, config_path: str, start_matchmaking: bool, allow_upgrade: bool) -> None:
         self.config = Config.from_yaml(config_path)
-        self.api = API(self.config)
 
-        print(f'{LOGO} {self.config.version}\n')
+        async with API(self.config) as self.api:
+            print(f'{LOGO} {self.config.version}\n')
 
-        account = await self.api.get_account()
-        username: str = account['username']
-        self.api.append_user_agent(username)
-        await self._handle_bot_status(account.get('title'), allow_upgrade)
-        await self._test_engines()
+            account = await self.api.get_account()
+            username: str = account['username']
+            self.api.append_user_agent(username)
+            await self._handle_bot_status(account.get('title'), allow_upgrade)
+            await self._test_engines()
 
-        self.game_manager = Game_Manager(self.api, self.config, username)
-        self.event_handler = Event_Handler(self.api, self.config, username, self.game_manager)
-        self.game_manager_task = asyncio.create_task(self.game_manager.run())
-        self.event_handler_task = asyncio.create_task(self.event_handler.run())
-        print('Handling challenges ...')
+            self.game_manager = Game_Manager(self.api, self.config, username)
+            self.event_handler = Event_Handler(self.api, self.config, username, self.game_manager)
+            self.game_manager_task = asyncio.create_task(self.game_manager.run())
+            self.event_handler_task = asyncio.create_task(self.event_handler.run())
+            print('Handling challenges ...')
 
-        if start_matchmaking:
-            self._matchmaking()
+            if start_matchmaking:
+                self._matchmaking()
 
-        if not sys.stdin.isatty():
-            signal.signal(signal.SIGINT, self.signal_handler)
-            signal.signal(signal.SIGTERM, self.signal_handler)
-            await self.game_manager_task
-            await self.api.close()
-            return
+            if not sys.stdin.isatty():
+                signal.signal(signal.SIGINT, self.signal_handler)
+                signal.signal(signal.SIGTERM, self.signal_handler)
+                await self.game_manager_task
+                return
 
-        if readline and not os.name == 'nt':
-            completer = Autocompleter(list(COMMANDS.keys()))
-            readline.set_completer(completer.complete)
-            readline.parse_and_bind('tab: complete')
+            if readline and not os.name == 'nt':
+                completer = Autocompleter(list(COMMANDS.keys()))
+                readline.set_completer(completer.complete)
+                readline.parse_and_bind('tab: complete')
 
-        while True:
-            command = (await asyncio.to_thread(input)).split()
-            if len(command) == 0:
-                continue
+            while True:
+                command = (await asyncio.to_thread(input)).split()
+                if len(command) == 0:
+                    continue
 
-            match command[0]:
-                case 'blacklist':
-                    self._blacklist(command)
-                case 'challenge':
-                    self._challenge(command)
-                case 'create':
-                    self._create(command)
-                case 'clear':
-                    self._clear()
-                case 'exit' | 'quit':
-                    await self._quit()
-                    break
-                case 'matchmaking':
-                    self._matchmaking()
-                case 'rechallenge':
-                    self._rechallenge()
-                case 'reset':
-                    self._reset(command)
-                case 'stop':
-                    self._stop()
-                case 'whitelist':
-                    self._whitelist(command)
-                case _:
-                    self._help()
+                match command[0]:
+                    case 'blacklist':
+                        self._blacklist(command)
+                    case 'challenge':
+                        self._challenge(command)
+                    case 'create':
+                        self._create(command)
+                    case 'clear':
+                        self._clear()
+                    case 'exit' | 'quit':
+                        await self._quit()
+                        break
+                    case 'matchmaking':
+                        self._matchmaking()
+                    case 'rechallenge':
+                        self._rechallenge()
+                    case 'reset':
+                        self._reset(command)
+                    case 'stop':
+                        self._stop()
+                    case 'whitelist':
+                        self._whitelist(command)
+                    case _:
+                        self._help()
 
     async def _handle_bot_status(self, title: str | None, allow_upgrade: bool) -> None:
         if 'bot:play' not in await self.api.get_token_scopes(self.config.token):
@@ -212,7 +211,6 @@ class User_Interface:
         print('Terminating program ...')
         self.event_handler_task.cancel()
         await self.game_manager_task
-        await self.api.close()
 
     def _rechallenge(self) -> None:
         last_challenge_event = self.event_handler.last_challenge_event
