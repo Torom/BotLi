@@ -13,7 +13,7 @@ class Event_Handler:
         self.api = api
         self.username = username
         self.game_manager = game_manager
-        self.challenge_validator = Challenge_Validator(config)
+        self.challenge_validator = Challenge_Validator(config, game_manager)
         self.last_challenge_event: dict[str, Any] | None = None
 
     async def run(self) -> None:
@@ -38,7 +38,7 @@ class Event_Handler:
                     print('Challenge added to queue.')
                     print(128 * '‾')
                 case 'gameStart':
-                    self.game_manager.on_game_started(event['game']['id'])
+                    self.game_manager.on_game_started(event['game'])
                 case 'gameFinish':
                     continue
                 case 'challengeDeclined':

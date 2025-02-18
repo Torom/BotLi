@@ -2,11 +2,13 @@ from typing import Any
 
 from config import Config
 from enums import Decline_Reason
+from game_manager import Game_Manager
 
 
 class Challenge_Validator:
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, game_manager: Game_Manager) -> None:
         self.config = config
+        self.game_manager = game_manager
         self.time_controls = self._get_time_controls(self.config.challenge.time_controls)
         self.min_increment = 0 if config.challenge.min_increment is None else config.challenge.min_increment
         self.max_increment = 180 if config.challenge.max_increment is None else config.challenge.max_increment
@@ -23,6 +25,10 @@ class Challenge_Validator:
         if variant not in self.config.challenge.variants:
             print(f'Variant "{variant}" is not allowed according to config.')
             return Decline_Reason.VARIANT
+
+        if len(self.game_manager.tournaments) == self.config.challenge.concurrency:
+            print('Concurrency exhausted due to tournaments.')
+            return Decline_Reason.LATER
 
         if challenge_event['challenger']['id'] in self.config.whitelist:
             return

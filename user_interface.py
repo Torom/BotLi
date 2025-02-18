@@ -27,11 +27,13 @@ COMMANDS = {
     'clear': 'Clears the challenge queue.',
     'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]',
     'help': 'Prints this message.',
+    'leave': 'Leaves tournament. Usage: leave ID',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
     'rechallenge': 'Challenges the opponent to the last received challenge.',
     'reset': 'Resets matchmaking. Usage: reset PERF_TYPE',
     'stop': 'Stops matchmaking mode.',
+    'tournament': 'Joins tournament. Usage: tournament ID [TEAM] [PASSWORD]',
     'whitelist': 'Temporarily whitelists a user. Use config for permanent whitelisting. Usage: whitelist USERNAME'
 }
 
@@ -39,7 +41,13 @@ EnumT = TypeVar('EnumT', bound=Enum)
 
 
 class User_Interface:
-    async def main(self, config_path: str, start_matchmaking: bool, allow_upgrade: bool) -> None:
+    async def main(self,
+                   config_path: str,
+                   start_matchmaking: bool,
+                   tournament_id: str | None,
+                   tournament_team: str | None,
+                   tournament_password: str | None,
+                   allow_upgrade: bool) -> None:
         self.config = Config.from_yaml(config_path)
 
         async with API(self.config) as self.api:
@@ -52,10 +60,13 @@ class User_Interface:
             await self._test_engines()
 
             self.game_manager = Game_Manager(self.api, self.config, username)
-            self.event_handler = Event_Handler(self.api, self.config, username, self.game_manager)
             self.game_manager_task = asyncio.create_task(self.game_manager.run())
+
+            if tournament_id:
+                self.game_manager.request_tournament_joining(tournament_id, tournament_team, tournament_password)
+
+            self.event_handler = Event_Handler(self.api, self.config, username, self.game_manager)
             self.event_handler_task = asyncio.create_task(self.event_handler.run())
-            print('Handling challenges ...')
 
             if start_matchmaking:
                 self._matchmaking()
@@ -83,6 +94,8 @@ class User_Interface:
                         self._challenge(command)
                     case 'create':
                         self._create(command)
+                    case 'leave':
+                        self._leave(command)
                     case 'clear':
                         self._clear()
                     case 'exit' | 'quit':
@@ -96,6 +109,8 @@ class User_Interface:
                         self._reset(command)
                     case 'stop':
                         self._stop()
+                    case 'tournament':
+                        self._tournament(command)
                     case 'whitelist':
                         self._whitelist(command)
                     case _:
@@ -105,7 +120,7 @@ class User_Interface:
         if 'bot:play' not in await self.api.get_token_scopes(self.config.token):
             print('Your token is missing the bot:play scope. This is mandatory to use BotLi.\n'
                   'You can create such a token by following this link:\n'
-                  'https://lichess.org/account/oauth/token/create?scopes%5B%5D=bot:play&description=BotLi')
+                  'https://lichess.org/account/oauth/token/create?scopes[]=bot:play&description=BotLi')
             sys.exit(1)
 
         if title == 'BOT':
@@ -147,20 +162,19 @@ class User_Interface:
         print(f'Added {command[1]} to the blacklist.')
 
     def _challenge(self, command: list[str]) -> None:
-        command_length = len(command)
-        if command_length < 2 or command_length > 6:
+        if len(command) < 2 or len(command) > 6:
             print(COMMANDS['challenge'])
             return
 
         try:
             opponent_username = command[1]
-            time_control = command[2] if command_length > 2 else '1+1'
+            time_control = command[2] if len(command) > 2 else '1+1'
             initial_time_str, increment_str = time_control.split('+')
             initial_time = int(float(initial_time_str) * 60)
             increment = int(increment_str)
-            color = Challenge_Color(command[3].lower()) if command_length > 3 else Challenge_Color.RANDOM
-            rated = command[4].lower() in ['true', 'yes', 'rated'] if command_length > 4 else True
-            variant = self._find_enum(command[5], Variant) if command_length > 5 else Variant.STANDARD
+            color = Challenge_Color(command[3].lower()) if len(command) > 3 else Challenge_Color.RANDOM
+            rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
+            variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
         except ValueError as e:
             print(e)
             return
@@ -170,20 +184,19 @@ class User_Interface:
         print(f'Challenge against {challenge_request.opponent_username} added to the queue.')
 
     def _create(self, command: list[str]) -> None:
-        command_length = len(command)
-        if command_length < 3 or command_length > 6:
+        if len(command) < 3 or len(command) > 6:
             print(COMMANDS['create'])
             return
 
         try:
             count = int(command[1])
             opponent_username = command[2]
-            time_control = command[3] if command_length > 3 else '1+1'
+            time_control = command[3] if len(command) > 3 else '1+1'
             initial_time_str, increment_str = time_control.split('+')
             initial_time = int(float(initial_time_str) * 60)
             increment = int(increment_str)
-            rated = command[4].lower() in ['true', 'yes', 'rated'] if command_length > 4 else True
-            variant = self._find_enum(command[5], Variant) if command_length > 5 else Variant.STANDARD
+            rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
+            variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
         except ValueError as e:
             print(e)
             return
@@ -197,6 +210,13 @@ class User_Interface:
 
         self.game_manager.request_challenge(*challenges)
         print(f'Challenges for {count} game pairs against {opponent_username} added to the queue.')
+
+    def _leave(self, command: list[str]) -> None:
+        if len(command) != 2:
+            print(COMMANDS['leave'])
+            return
+
+        self.game_manager.request_tournament_leaving(command[1])
 
     def _clear(self) -> None:
         self.game_manager.challenge_requests.clear()
@@ -260,6 +280,17 @@ class User_Interface:
         else:
             print('Matchmaking isn\'t currently running ...')
 
+    def _tournament(self, command: list[str]) -> None:
+        if len(command) < 2 or len(command) > 4:
+            print(COMMANDS['tournament'])
+            return
+
+        tournament_id = command[1]
+        tournament_team = command[2] if len(command) > 2 else None
+        tournament_password = command[3] if len(command) > 3 else None
+
+        self.game_manager.request_tournament_joining(tournament_id, tournament_team, tournament_password)
+
     def _whitelist(self, command: list[str]) -> None:
         if len(command) != 2:
             print(COMMANDS['whitelist'])
@@ -306,6 +337,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', '-c', default='config.yml', type=str, help='Path to config.yml.')
     parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
+    parser.add_argument('--tournament', '-t', type=str, help='ID of the tournament to be played.')
+    parser.add_argument('--team', type=str, help='The team to join the tournament with, if one is required.')
+    parser.add_argument('--password', type=str, help='The tournament password, if one is required.')
     parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
     parser.add_argument('--debug', '-d', action='store_true', help='Enable debug logging.')
     args = parser.parse_args()
@@ -313,4 +347,10 @@ if __name__ == '__main__':
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    asyncio.run(User_Interface().main(args.config, args.matchmaking, args.upgrade), debug=args.debug)
+    asyncio.run(User_Interface().main(args.config,
+                                      args.matchmaking,
+                                      args.tournament,
+                                      args.team,
+                                      args.password,
+                                      args.upgrade),
+                debug=args.debug)

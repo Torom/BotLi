@@ -7,7 +7,7 @@ from typing import Any
 import aiohttp
 from tenacity import after_log, retry, retry_if_exception_type, wait_fixed
 
-from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
+from botli_dataclasses import API_Challenge_Reponse, Challenge_Request, Tournament_Request
 from config import Config
 from enums import Decline_Reason, Variant
 
@@ -68,6 +68,16 @@ class API:
         except aiohttp.ClientResponseError as e:
             if not 400 <= e.status <= 499:
                 print(e)
+            return False
+
+    @retry(**BASIC_RETRY_CONDITIONS)
+    async def berserk(self, game_id: str) -> bool:
+        try:
+            async with self.lichess_session.post(f'/api/bot/game/{game_id}/berserk') as response:
+                response.raise_for_status()
+                return True
+        except aiohttp.ClientResponseError as e:
+            print(e)
             return False
 
     @retry(**BASIC_RETRY_CONDITIONS)
@@ -226,10 +236,32 @@ class API:
             return json_response[token]['scopes']
 
     @retry(**JSON_RETRY_CONDITIONS)
+    async def get_tournament_info(self, tournament_id: str) -> dict[str, Any]:
+        async with self.lichess_session.get(f'/api/tournament/{tournament_id}') as response:
+            return await response.json()
+
+    @retry(**JSON_RETRY_CONDITIONS)
     async def get_user_status(self, username: str) -> dict[str, Any]:
         async with self.lichess_session.get('/api/users/status', params={'ids': username}) as response:
             json_response = await response.json()
             return json_response[0]
+
+    @retry(**BASIC_RETRY_CONDITIONS)
+    async def join_tournament(self, tournament_request: Tournament_Request) -> bool:
+        data: dict[str, str] = {}
+        if tournament_request.team:
+            data['team'] = tournament_request.team.lower()
+        if tournament_request.password:
+            data['password'] = tournament_request.password
+
+        try:
+            async with self.lichess_session.post(f'/api/tournament/{tournament_request.id_}/join',
+                                                 data=data) as response:
+                response.raise_for_status()
+                return True
+        except aiohttp.ClientResponseError as e:
+            print(e)
+            return False
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def resign_game(self, game_id: str) -> bool:
@@ -270,6 +302,16 @@ class API:
     async def upgrade_account(self) -> bool:
         try:
             async with self.lichess_session.post('/api/bot/account/upgrade') as response:
+                response.raise_for_status()
+                return True
+        except aiohttp.ClientResponseError as e:
+            print(e)
+            return False
+
+    @retry(**BASIC_RETRY_CONDITIONS)
+    async def withdraw_tournament(self, tournament_id: str) -> bool:
+        try:
+            async with self.lichess_session.post(f'/api/tournament/{tournament_id}/withdraw') as response:
                 response.raise_for_status()
                 return True
         except aiohttp.ClientResponseError as e:

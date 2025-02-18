@@ -275,3 +275,35 @@ class Syzygy_Result:
     moves: list[chess.Move]
     wdl: Literal[-2, -1, 0, 1, 2]
     dtz: int
+
+
+@dataclass
+class Tournament:
+    is_finished: bool
+    created_by: str
+    system: str
+    name: str
+    perf_type: Perf_Type
+    variant: Variant
+    rated: bool
+    berserkable: bool
+    bots_allowed: bool
+
+    @classmethod
+    def from_tournament_info(cls, tournament_info: dict[str, Any]) -> 'Tournament':
+        return cls(tournament_info.get('isFinished', False),
+                   tournament_info.get('createdBy', ''),
+                   tournament_info.get('system', ''),
+                   tournament_info.get('fullName', ''),
+                   Perf_Type(tournament_info['perf']['key']),
+                   Variant(tournament_info['variant']),
+                   tournament_info.get('rated', False),
+                   tournament_info.get('berserkable', False),
+                   tournament_info.get('botsAllowed', False))
+
+
+@dataclass
+class Tournament_Request:
+    id_: str
+    team: str | None
+    password: str | None

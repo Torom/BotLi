@@ -10,11 +10,12 @@ from lichess_game import Lichess_Game
 
 
 class Game:
-    def __init__(self, api: API, config: Config, username: str, game_id: str) -> None:
+    def __init__(self, api: API, config: Config, username: str, game_id: str, berserkable: bool) -> None:
         self.api = api
         self.config = config
         self.username = username
         self.game_id = game_id
+        self.berserkable = berserkable
         self.was_aborted = False
 
     async def run(self) -> None:
@@ -25,13 +26,17 @@ class Game:
         chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
 
         self._print_game_information(info)
-        await chatter.send_greetings()
 
         if info.state['status'] != 'started':
             self._print_result_message(info.state, lichess_game, info)
             await chatter.send_goodbyes()
             await lichess_game.close()
             return
+
+        await chatter.send_greetings()
+
+        if self.berserkable and lichess_game.is_abortable:
+            await self.api.berserk(self.game_id)
 
         if lichess_game.is_our_turn:
             await self._make_move(lichess_game, chatter)

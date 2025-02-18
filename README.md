@@ -103,6 +103,21 @@ Change the settings in `matchmaking` in the config to change how this bot challe
 stop
 ```
 
+### Tournament
+
+BotLi can participate in tournaments, it joins them directly and also leaves them when BotLi is terminated. During participation in a tournament, one game slot is always reserved for each tournament so that the games can be played without disruption.
+To join a tournament, type:
+```
+tournament TOURNAMENT_ID [TEAM] [PASSWORD]
+```
+
+Where TOURNAMENT_ID is replaced by the ID of the tournament, which is easiest to take from the URL of the tournament. TEAM and PASSWORD are optional options that are required for some tournaments. To leave a tournament, type:
+```
+leave TOURNAMENT_ID
+```
+
+### Exiting
+
 To exit the bot completely, type:
 ```
 quit
@@ -123,6 +138,13 @@ python user_interface.py --matchmaking
 ```
 
 **CAUTION**: Lichess will rate limit you if you let matchmaking run too long without adjusting the delay accordingly.
+
+### Tournament
+
+To join a tournament in non interactive mode, start it like this:
+```bash
+python user_interface.py --tournament TOURNAMENT_ID --team TEAM --password PASSWORD
+```
 
 ## Upgrade to Bot account
 
