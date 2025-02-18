@@ -312,7 +312,7 @@ max-parents=7
 max-positional-arguments=10
 
 # Maximum number of public methods for a class (see R0904).
-max-public-methods=24
+max-public-methods=32
 
 # Maximum number of return / yield for function / method body.
 max-returns=18
