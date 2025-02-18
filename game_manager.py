@@ -171,7 +171,7 @@ class Game_Manager:
             self.reserved_game_spots -= 1
 
         if len(self.tasks) >= self.config.challenge.concurrency:
-            print(f'Max number of concurrent games exceeded. Aborting already started game {game_event['id']}.')
+            print(f'Max number of concurrent games exceeded. Aborting already started game {game_event["id"]}.')
             await self.api.abort_game(game_event['id'])
             return
 
