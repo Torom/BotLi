@@ -286,7 +286,6 @@ class Tournament:
     perf_type: Perf_Type
     variant: Variant
     rated: bool
-    berserkable: bool
     bots_allowed: bool
 
     @classmethod
@@ -298,7 +297,6 @@ class Tournament:
                    Perf_Type(tournament_info['perf']['key']),
                    Variant(tournament_info['variant']),
                    tournament_info.get('rated', False),
-                   tournament_info.get('berserkable', False),
                    tournament_info.get('botsAllowed', False))
 
 

@@ -175,16 +175,7 @@ class Game_Manager:
             await self.api.abort_game(game_event['id'])
             return
 
-        if tournament_id := game_event.get('tournamentId'):
-            if tournament_id in self.tournaments:
-                berserkable = self.tournaments[tournament_id].berserkable
-            else:
-                tournament_info = await self.api.get_tournament_info(tournament_id)
-                berserkable = Tournament.from_tournament_info(tournament_info).berserkable
-        else:
-            berserkable = False
-
-        game = Game(self.api, self.config, self.username, game_event['id'], berserkable)
+        game = Game(self.api, self.config, self.username, game_event['id'])
         task = asyncio.create_task(game.run())
         task.add_done_callback(self._task_callback)
         self.tasks[task] = game

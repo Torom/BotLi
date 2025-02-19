@@ -71,16 +71,6 @@ class API:
             return False
 
     @retry(**BASIC_RETRY_CONDITIONS)
-    async def berserk(self, game_id: str) -> bool:
-        try:
-            async with self.lichess_session.post(f'/api/bot/game/{game_id}/berserk') as response:
-                response.raise_for_status()
-                return True
-        except aiohttp.ClientResponseError as e:
-            print(e)
-            return False
-
-    @retry(**BASIC_RETRY_CONDITIONS)
     async def cancel_challenge(self, challenge_id: str) -> bool:
         try:
             async with self.lichess_session.post(f'/api/challenge/{challenge_id}/cancel') as response:
