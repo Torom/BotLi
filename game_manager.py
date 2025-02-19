@@ -50,8 +50,8 @@ class Game_Manager:
 
             self.changed_event.clear()
 
-            while self.started_game_events:
-                await self._start_game(self.started_game_events.popleft())
+            while started_game_event := self._get_next_started_game_event():
+                await self._start_game(started_game_event)
 
             while self.tournament_ids_to_leave:
                 await self._leave_tournament(self.tournament_ids_to_leave.popleft())
@@ -164,15 +164,10 @@ class Game_Manager:
         self.changed_event.set()
 
     async def _start_game(self, game_event: dict[str, Any]) -> None:
-        if game_event['id'] in {game.game_id for game in self.tasks.values()}:
-            return
-
         if self.reserved_game_spots > 0:
             self.reserved_game_spots -= 1
 
-        if len(self.tasks) >= self.config.challenge.concurrency:
-            print(f'Max number of concurrent games exceeded. Aborting already started game {game_event["id"]}.')
-            await self.api.abort_game(game_event['id'])
+        if game_event['id'] in {game.game_id for game in self.tasks.values()}:
             return
 
         game = Game(self.api, self.config, self.username, game_event['id'])
@@ -235,6 +230,16 @@ class Game_Manager:
             return
 
         return self.challenge_requests.popleft()
+
+    def _get_next_started_game_event(self) -> dict[str, Any] | None:
+        if not self.started_game_events:
+            return
+
+        if len(self.tasks) >= self.config.challenge.concurrency:
+            print('Max number of concurrent games exceeded. Ignoring already started game for now.')
+            return
+
+        return self.started_game_events.popleft()
 
     async def _create_challenge(self, challenge_request: Challenge_Request) -> None:
         print(f'Challenging {challenge_request.opponent_username} ...')
