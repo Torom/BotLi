@@ -105,7 +105,7 @@ stop
 
 ### Tournament
 
-BotLi can participate in tournaments, it joins them directly and also leaves them when BotLi is terminated. During participation in a tournament, one game slot is always reserved for each tournament so that the games can be played without disruption.
+BotLi can participate in tournaments, it joins them automatically after the tournament has begun and leaves them when BotLi is terminated or the tournament is over. During participation in a tournament, one game slot is always reserved for each tournament so that the games can be played without disruption.
 To join a tournament, type:
 ```
 tournament TOURNAMENT_ID [TEAM] [PASSWORD]

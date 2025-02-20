@@ -33,6 +33,8 @@ class Game_Manager:
         self.tasks: dict[Task[None], Game] = {}
         self.tournament_requests: deque[Tournament_Request] = deque()
         self.tournament_ids_to_leave: deque[str] = deque()
+        self.unstarted_tournaments: dict[str, Tournament] = {}
+        self.tournaments_to_join: deque[Tournament] = deque()
         self.tournaments: dict[str, Tournament] = {}
 
     def stop(self):
@@ -54,10 +56,14 @@ class Game_Manager:
                 await self._start_game(started_game_event)
 
             while self.tournament_ids_to_leave:
-                await self._leave_tournament(self.tournament_ids_to_leave.popleft())
+                await self._leave_tournament_id(self.tournament_ids_to_leave.popleft())
 
             while self.tournament_requests:
-                await self._join_tournament(self.tournament_requests.popleft())
+                await self._process_tournament_request(self.tournament_requests.popleft())
+
+            while tournament := self._get_next_tournament_to_join():
+                await self._update_seconds_to_finish(tournament)
+                await self._join_tournament(tournament)
 
             while challenge_request := self._get_next_challenge_request():
                 await self._create_challenge(challenge_request)
@@ -65,8 +71,12 @@ class Game_Manager:
             while challenge := self._get_next_challenge():
                 await self._accept_challenge(challenge)
 
-        for tournament_id in list(self.tournaments):
-            await self._leave_tournament(tournament_id)
+        for tournament in self.unstarted_tournaments.values():
+            tournament.cancel()
+
+        for tournament in self.tournaments.values():
+            tournament.cancel()
+            await self.api.withdraw_tournament(tournament.id_)
 
         for task in list(self.tasks):
             await task
@@ -117,32 +127,75 @@ class Game_Manager:
         self.tournament_ids_to_leave.append(tournament_id)
         self.changed_event.set()
 
-    async def _join_tournament(self, tournament_request: Tournament_Request) -> None:
+    async def _process_tournament_request(self, tournament_request: Tournament_Request) -> None:
         if tournament_request.id_ in self.tournaments:
             return
 
         tournament_info = await self.api.get_tournament_info(tournament_request.id_)
-        tournament = Tournament.from_tournament_info(tournament_info)
-
-        if tournament.is_finished:
-            print(f'Tournament "{tournament.name}" is already finished.')
-            return
+        tournament = Tournament.from_tournament_info(tournament_info, tournament_request)
 
         if not tournament.bots_allowed:
             print(f'BOTs are not allowed in tournament "{tournament.name}".')
             return
 
-        if await self.api.join_tournament(tournament_request):
-            self.tournaments[tournament_request.id_] = tournament
-            print(f'Joined tournament "{tournament.name}". Awaiting games ...')
-
-    async def _leave_tournament(self, tournament_id: str) -> None:
-        if not (tournament := self.tournaments.get(tournament_id)):
+        if tournament.seconds_to_start:
+            tournament.start_task = asyncio.create_task(self._tournament_start_task(tournament))
+            self.unstarted_tournaments[tournament.id_] = tournament
+            print(f'Added tournament "{tournament.name}". Waiting for its start time to join.')
             return
 
-        if await self.api.withdraw_tournament(tournament_id):
-            del self.tournaments[tournament_id]
+        if tournament.seconds_to_finish:
+            if not self.is_busy:
+                await self._join_tournament(tournament)
+            else:
+                self.tournaments_to_join.append(tournament)
+            return
+
+        print(f'Tournament "{tournament.name}" is already finished.')
+
+    async def _update_seconds_to_finish(self, tournament: Tournament) -> None:
+        tournament_info = await self.api.get_tournament_info(tournament.id_)
+        tournament.seconds_to_finish = tournament_info['secondsToFinish']
+
+    async def _join_tournament(self, tournament: Tournament) -> None:
+        if await self.api.join_tournament(tournament.id_, tournament.team, tournament.password):
+            tournament.end_task = asyncio.create_task(self._tournament_end_task(tournament))
+            self.tournaments[tournament.id_] = tournament
+            print(f'Joined tournament "{tournament.name}". Awaiting games ...')
+
+    async def _leave_tournament_id(self, tournament_id: str) -> None:
+        if tournament := self.unstarted_tournaments.pop(tournament_id, None):
+            tournament.cancel()
+            print(f'Removed unstarted tournament "{tournament.name}".')
+            return
+
+        if tournament := self.tournaments.pop(tournament_id, None):
+            await self.api.withdraw_tournament(tournament_id)
+            tournament.cancel()
             print(f'Left tournament "{tournament.name}".')
+            return
+
+        for tournament in list(self.tournaments_to_join):
+            if tournament.id_ == tournament_id:
+                self.tournaments_to_join.remove(tournament)
+                print(f'Removed unjoined tournament "{tournament.name}".')
+
+    async def _tournament_start_task(self, tournament: Tournament) -> None:
+        assert tournament.seconds_to_start
+
+        await asyncio.sleep(tournament.seconds_to_start)
+
+        del self.unstarted_tournaments[tournament.id_]
+        self.tournaments_to_join.append(tournament)
+        print(f'Tournament "{tournament.name}" has started.')
+
+    async def _tournament_end_task(self, tournament: Tournament) -> None:
+        assert tournament.seconds_to_finish
+
+        await asyncio.sleep(tournament.seconds_to_finish)
+
+        del self.tournaments[tournament.id_]
+        print(f'Tournament "{tournament.name}" has ended.')
 
     def _set_next_matchmaking(self, delay: int) -> None:
         if not self.matchmaking_enabled:
@@ -240,6 +293,15 @@ class Game_Manager:
             return
 
         return self.started_game_events.popleft()
+
+    def _get_next_tournament_to_join(self) -> Tournament | None:
+        if not self.tournaments_to_join:
+            return
+
+        if self.is_busy:
+            return
+
+        return self.tournaments_to_join.popleft()
 
     async def _create_challenge(self, challenge_request: Challenge_Request) -> None:
         print(f'Challenging {challenge_request.opponent_username} ...')

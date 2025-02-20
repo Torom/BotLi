@@ -26,7 +26,8 @@ class Challenge_Validator:
             print(f'Variant "{variant}" is not allowed according to config.')
             return Decline_Reason.VARIANT
 
-        if len(self.game_manager.tournaments) == self.config.challenge.concurrency:
+        if (len(self.game_manager.tournaments) +
+                len(self.game_manager.tournaments_to_join)) >= self.config.challenge.concurrency:
             print('Concurrency exhausted due to tournaments.')
             return Decline_Reason.LATER
 

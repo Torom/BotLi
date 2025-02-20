@@ -7,7 +7,7 @@ from typing import Any
 import aiohttp
 from tenacity import after_log, retry, retry_if_exception_type, wait_fixed
 
-from botli_dataclasses import API_Challenge_Reponse, Challenge_Request, Tournament_Request
+from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
 from config import Config
 from enums import Decline_Reason, Variant
 
@@ -237,16 +237,15 @@ class API:
             return json_response[0]
 
     @retry(**BASIC_RETRY_CONDITIONS)
-    async def join_tournament(self, tournament_request: Tournament_Request) -> bool:
+    async def join_tournament(self, tournament_id: str, team: str | None, password: str | None) -> bool:
         data: dict[str, str] = {}
-        if tournament_request.team:
-            data['team'] = tournament_request.team.lower()
-        if tournament_request.password:
-            data['password'] = tournament_request.password
+        if team:
+            data['team'] = team.lower()
+        if password:
+            data['password'] = password
 
         try:
-            async with self.lichess_session.post(f'/api/tournament/{tournament_request.id_}/join',
-                                                 data=data) as response:
+            async with self.lichess_session.post(f'/api/tournament/{tournament_id}/join', data=data) as response:
                 response.raise_for_status()
                 return True
         except aiohttp.ClientResponseError as e:

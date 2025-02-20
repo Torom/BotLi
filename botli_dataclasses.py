@@ -1,3 +1,4 @@
+from asyncio import Task
 from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any, Literal
@@ -278,30 +279,39 @@ class Syzygy_Result:
 
 
 @dataclass
-class Tournament:
-    is_finished: bool
-    created_by: str
-    system: str
-    name: str
-    perf_type: Perf_Type
-    variant: Variant
-    rated: bool
-    bots_allowed: bool
-
-    @classmethod
-    def from_tournament_info(cls, tournament_info: dict[str, Any]) -> 'Tournament':
-        return cls(tournament_info.get('isFinished', False),
-                   tournament_info.get('createdBy', ''),
-                   tournament_info.get('system', ''),
-                   tournament_info.get('fullName', ''),
-                   Perf_Type(tournament_info['perf']['key']),
-                   Variant(tournament_info['variant']),
-                   tournament_info.get('rated', False),
-                   tournament_info.get('botsAllowed', False))
-
-
-@dataclass
 class Tournament_Request:
     id_: str
     team: str | None
     password: str | None
+
+
+@dataclass
+class Tournament:
+    id_: str
+    seconds_to_start: int | None
+    seconds_to_finish: int | None
+    name: str
+    bots_allowed: bool
+    team: str | None
+    password: str | None
+    start_task: Task[None] | None = None
+    end_task: Task[None] | None = None
+
+    @classmethod
+    def from_tournament_info(cls,
+                             tournament_info: dict[str, Any],
+                             tournament_request: Tournament_Request) -> 'Tournament':
+        return cls(tournament_info['id'],
+                   tournament_info.get('secondsToStart'),
+                   tournament_info.get('secondsToFinish'),
+                   tournament_info.get('fullName', ''),
+                   tournament_info.get('botsAllowed', False),
+                   tournament_request.team,
+                   tournament_request.password)
+
+    def cancel(self) -> None:
+        if self.start_task:
+            self.start_task.cancel()
+
+        if self.end_task:
+            self.end_task.cancel()
