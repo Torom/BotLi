@@ -188,6 +188,7 @@ class Game_Manager:
         del self.unstarted_tournaments[tournament.id_]
         self.tournaments_to_join.append(tournament)
         print(f'Tournament "{tournament.name}" has started.')
+        self.changed_event.set()
 
     async def _tournament_end_task(self, tournament: Tournament) -> None:
         assert tournament.seconds_to_finish
