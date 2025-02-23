@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import aiohttp
-from tenacity import after_log, retry, retry_if_exception_type, wait_fixed
+from tenacity import before_sleep_log, retry, retry_if_exception_type, wait_fixed
 
 from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
 from config import Config
@@ -14,18 +14,18 @@ from enums import Decline_Reason, Variant
 logger = logging.getLogger(__name__)
 BASIC_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.ClientError, TimeoutError)),
                           'wait': wait_fixed(5.0),
-                          'after': after_log(logger, logging.DEBUG)}
+                          'before_sleep': before_sleep_log(logger, logging.DEBUG)}
 JSON_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.ClientError, json.JSONDecodeError, TimeoutError)),
                          'wait': wait_fixed(5.0),
-                         'after': after_log(logger, logging.DEBUG)}
+                         'before_sleep': before_sleep_log(logger, logging.DEBUG)}
 GAME_STREAM_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.ClientError,
                                                                   json.JSONDecodeError,
                                                                   TimeoutError)),
                                 'wait': wait_fixed(1.0),
-                                'after': after_log(logger, logging.DEBUG)}
+                                'before_sleep': before_sleep_log(logger, logging.DEBUG)}
 MOVE_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.ClientError, TimeoutError)),
                          'wait': wait_fixed(1.0),
-                         'after': after_log(logger, logging.DEBUG)}
+                         'before_sleep': before_sleep_log(logger, logging.DEBUG)}
 
 
 class API:
