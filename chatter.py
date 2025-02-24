@@ -193,7 +193,11 @@ class Chatter:
         if initial_message:
             initial_message += ' '
 
-        board = self.lichess_game.board.copy(stack=False)
+        if self.lichess_game.is_our_turn:
+            board = self.lichess_game.board.copy(stack=1)
+            board.pop()
+        else:
+            board = self.lichess_game.board.copy(stack=False)
 
         if board.turn:
             initial_message += 'PV:'
