@@ -236,7 +236,7 @@ class API:
             json_response = await response.json()
             return json_response[0]
 
-    @retry(**BASIC_RETRY_CONDITIONS)
+    @retry(**JSON_RETRY_CONDITIONS)
     async def join_tournament(self, tournament_id: str, team: str | None, password: str | None) -> bool:
         data: dict[str, str] = {}
         if team:
@@ -244,13 +244,14 @@ class API:
         if password:
             data['password'] = password
 
-        try:
-            async with self.lichess_session.post(f'/api/tournament/{tournament_id}/join', data=data) as response:
-                response.raise_for_status()
-                return True
-        except aiohttp.ClientResponseError as e:
-            print(e)
-            return False
+        async with self.lichess_session.post(f'/api/tournament/{tournament_id}/join', data=data) as response:
+            json_response = await response.json()
+
+            if 'error' in json_response:
+                print(f'Joining tournament "{tournament_id}" failed: {json_response["error"]}')
+                return False
+
+            return True
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def resign_game(self, game_id: str) -> bool:
