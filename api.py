@@ -188,7 +188,8 @@ class API:
         async with self.lichess_session.get(f'/api/bot/game/stream/{game_id}',
                                             timeout=aiohttp.ClientTimeout(sock_read=9.0)) as response:
             async for line in response.content:
-                await queue.put(json.loads(line) if line.strip() else {'type': 'ping'})
+                if line.strip():
+                    await queue.put(json.loads(line))
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_online_bots(self) -> list[dict[str, Any]]:

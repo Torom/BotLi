@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime, timedelta
 from typing import Any
 
 from api import API
@@ -41,23 +40,18 @@ class Game:
             await lichess_game.start_pondering()
 
         opponent_title = info.black_title if lichess_game.is_white else info.white_title
-        abortion_seconds = 30.0 if opponent_title == 'BOT' else 60.0
-        abortion_time = datetime.now() + timedelta(seconds=abortion_seconds)
+        abortion_seconds = 30 if opponent_title == 'BOT' else 60
+        abortion_task = asyncio.create_task(self._abortion_task(lichess_game, chatter, abortion_seconds))
 
         while event := await game_stream_queue.get():
-            if event['type'] not in ['gameFull', 'gameState']:
-                if not self.move_task and lichess_game.is_abortable and datetime.now() >= abortion_time:
-                    print('Aborting game ...')
-                    await self.api.abort_game(self.game_id)
-                    await chatter.send_abortion_message()
-
-                if event['type'] == 'chatLine':
+            match event['type']:
+                case 'chatLine':
                     await chatter.handle_chat_message(event)
-
-                continue
-
-            if event['type'] == 'gameFull':
-                event = event['state']
+                    continue
+                case 'opponentGone':
+                    continue
+                case 'gameFull':
+                    event = event['state']
 
             lichess_game.update(event)
 
@@ -72,6 +66,7 @@ class Game:
             if lichess_game.is_our_turn and not lichess_game.board.is_repetition():
                 self.move_task = asyncio.create_task(self._make_move(lichess_game, chatter))
 
+        abortion_task.cancel()
         self.was_aborted = lichess_game.is_abortable
         await lichess_game.close()
 
@@ -83,6 +78,14 @@ class Game:
             await self.api.send_move(self.game_id, lichess_move.uci_move, lichess_move.offer_draw)
             await chatter.print_eval()
         self.move_task = None
+
+    async def _abortion_task(self, lichess_game: Lichess_Game, chatter: Chatter, abortion_seconds: int) -> None:
+        await asyncio.sleep(abortion_seconds)
+
+        if not lichess_game.is_our_turn and lichess_game.is_abortable:
+            print('Aborting game ...')
+            await self.api.abort_game(self.game_id)
+            await chatter.send_abortion_message()
 
     def _print_game_information(self, info: Game_Information) -> None:
         opponents_str = f'{info.white_str}   -   {info.black_str}'
