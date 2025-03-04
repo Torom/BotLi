@@ -1,6 +1,6 @@
 from asyncio import Task
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 import chess
@@ -288,8 +288,8 @@ class Tournament_Request:
 @dataclass
 class Tournament:
     id_: str
-    seconds_to_start: int | None
-    seconds_to_finish: int | None
+    start_time: datetime
+    end_time: datetime
     name: str
     bots_allowed: bool
     team: str | None
@@ -302,12 +302,20 @@ class Tournament:
                              tournament_info: dict[str, Any],
                              tournament_request: Tournament_Request) -> 'Tournament':
         return cls(tournament_info['id'],
-                   tournament_info.get('secondsToStart'),
-                   tournament_info.get('secondsToFinish'),
+                   start_time := datetime.fromisoformat(tournament_info['startsAt']),
+                   start_time + timedelta(minutes=tournament_info['minutes']),
                    tournament_info.get('fullName', ''),
                    tournament_info.get('botsAllowed', False),
                    tournament_request.team,
                    tournament_request.password)
+
+    @property
+    def seconds_to_start(self) -> float:
+        return (self.start_time - datetime.now(UTC)).total_seconds()
+
+    @property
+    def seconds_to_finish(self) -> float:
+        return (self.end_time - datetime.now(UTC)).total_seconds()
 
     def cancel(self) -> None:
         if self.start_task:
