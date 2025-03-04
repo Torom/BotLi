@@ -102,6 +102,12 @@ class Game_Manager:
             self.changed_event.set()
 
     def on_game_started(self, game_event: dict[str, Any]) -> None:
+        if game_event['id'] in {started_game_event['id'] for started_game_event in self.started_game_events}:
+            return
+
+        if game_event['id'] in {game.game_id for game in self.tasks.values()}:
+            return
+
         self.started_game_events.append(game_event)
         self.changed_event.set()
 
@@ -220,9 +226,6 @@ class Game_Manager:
     async def _start_game(self, game_event: dict[str, Any]) -> None:
         if self.reserved_game_spots > 0:
             self.reserved_game_spots -= 1
-
-        if game_event['id'] in {game.game_id for game in self.tasks.values()}:
-            return
 
         game = Game(self.api, self.config, self.username, game_event['id'])
         task = asyncio.create_task(game.run())
