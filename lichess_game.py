@@ -193,14 +193,14 @@ class Lichess_Game:
             if self.white_time > self.move_overhead:
                 white_time = self.white_time - self.move_overhead
             else:
-                white_time = self.white_time / 2
+                white_time = self.white_time / 2.0
 
             return white_time, self.black_time, self.increment
 
         if self.black_time > self.move_overhead:
             black_time = self.black_time - self.move_overhead
         else:
-            black_time = self.black_time / 2
+            black_time = self.black_time / 2.0
 
         return self.white_time, black_time, self.increment
 
@@ -248,7 +248,7 @@ class Lichess_Game:
         if not self.engine.opponent.is_engine and not self.config.offer_draw.against_humans:
             return False
 
-        if not self.increment and self.opponent_time < 30.0:
+        if not self.increment and self.opponent_time < 10.0:
             return False
 
         return True
@@ -279,7 +279,7 @@ class Lichess_Game:
         if not self.engine.opponent.is_engine and not self.config.resign.against_humans:
             return False
 
-        if not self.increment and self.opponent_time < 30.0:
+        if not self.increment and self.opponent_time < 10.0:
             return False
 
         return True
