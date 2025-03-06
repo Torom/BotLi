@@ -311,7 +311,7 @@ class Tournament:
 
     @property
     def seconds_to_start(self) -> float:
-        return (self.start_time - datetime.now(UTC)).total_seconds()
+        return (self.start_time - datetime.now(UTC)).total_seconds() - 60.0
 
     @property
     def seconds_to_finish(self) -> float:
