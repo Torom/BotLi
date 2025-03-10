@@ -108,10 +108,10 @@ stop
 BotLi can participate in tournaments, it joins them automatically after the tournament has begun and leaves them when BotLi is terminated or the tournament is over. During participation in a tournament, one game slot is always reserved for each tournament so that the games can be played without disruption.
 To join a tournament, type:
 ```
-tournament TOURNAMENT_ID [TEAM] [PASSWORD]
+tournament TOURNAMENT_ID [TEAM_ID] [PASSWORD]
 ```
 
-Where TOURNAMENT_ID is replaced by the ID of the tournament, which is easiest to take from the URL of the tournament. TEAM and PASSWORD are optional options that are required for some tournaments. To leave a tournament, type:
+Where TOURNAMENT_ID is replaced by the ID of the tournament, which is easiest to take from the URL of the tournament. TEAM_ID and PASSWORD are optional, the TEAM_ID is taken from the URL of the team page and the PASSWORD is provided by the tournament organizer. To leave a tournament, type:
 ```
 leave TOURNAMENT_ID
 ```
@@ -143,7 +143,7 @@ python user_interface.py --matchmaking
 
 To join a tournament in non interactive mode, start it like this:
 ```bash
-python user_interface.py --tournament TOURNAMENT_ID --team TEAM --password PASSWORD
+python user_interface.py --tournament TOURNAMENT_ID --team TEAM_ID --password PASSWORD
 ```
 
 ## Upgrade to Bot account
