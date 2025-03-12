@@ -166,7 +166,7 @@ class Opponents:
     def _load(self, matchmaking_file: str) -> list[Opponent]:
         if not os.path.isfile(matchmaking_file):
             return []
-         
+
         with open(matchmaking_file, encoding='utf-8') as file:
             try:
                 data = json.load(file)
