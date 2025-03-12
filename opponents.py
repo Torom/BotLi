@@ -171,7 +171,7 @@ class Opponents:
             try:
                 data = json.load(file)
             except json.JSONDecodeError as e:
-                print (f'Error while processing the file "{matchmaking_file}": {e}.')
+                print (f'Error while processing the file "{matchmaking_file}": {e}')
                 return []
 
         return [Opponent.from_dict(item) for item in data]
