@@ -164,10 +164,16 @@ class Opponents:
         return opponent
 
     def _load(self, matchmaking_file: str) -> list[Opponent]:
-        if os.path.isfile(matchmaking_file):
-            with open(matchmaking_file, encoding='utf-8') as json_input:
-                return [Opponent.from_dict(opponent) for opponent in json.load(json_input)]
-        else:
+        try:
+            if not os.path.isfile(matchmaking_file):
+                return []
+            
+            with open(matchmaking_file, encoding='utf-8') as file:
+                data = json.load(file)
+            
+            return [Opponent.from_dict(item) for item in data]
+        except Exception as e:
+            print(f"Error while processing the file '{matchmaking_file}': {e}.")
             return []
 
     def _save(self, matchmaking_file: str) -> None:
