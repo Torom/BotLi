@@ -786,7 +786,7 @@ class Lichess_Game:
             time_str = 11 * ' '
 
         info_hashfull = info.get('hashfull')
-        hashfull = 13 * ' ' if info_hashfull is None else f'Hash: {info_hashfull/10:5.1f} %'
+        hashfull = 13 * ' ' if info_hashfull is None else f'Hash: {info_hashfull / 10:5.1f} %'
 
         info_tbhits = info.get('tbhits')
         tbhits = f'TB: {self._format_number(info_tbhits)}' if info_tbhits else ''
@@ -796,16 +796,16 @@ class Lichess_Game:
 
     def _format_number(self, number: int) -> str:
         if number >= 1_000_000_000_000:
-            return f'{number/1_000_000_000_000:5.1f} T'
+            return f'{number / 1_000_000_000_000:5.1f} T'
 
         if number >= 1_000_000_000:
-            return f'{number/1_000_000_000:5.1f} G'
+            return f'{number / 1_000_000_000:5.1f} G'
 
         if number >= 1_000_000:
-            return f'{number/1_000_000:5.1f} M'
+            return f'{number / 1_000_000:5.1f} M'
 
         if number >= 1_000:
-            return f'{number/1_000:5.1f} k'
+            return f'{number / 1_000:5.1f} k'
 
         return f'{number:5}  '
 

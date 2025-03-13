@@ -159,7 +159,7 @@ class Chatter:
 
     def _get_ram(self) -> str:
         mem_bytes = psutil.virtual_memory().total
-        mem_gib = mem_bytes/(1024.**3)
+        mem_gib = mem_bytes / (1024.**3)
 
         return f'{mem_gib:.1f} GiB'
 
