@@ -3,75 +3,273 @@ import chess
 import chess.engine
 import time
 import logging
+import threading
+import time
+import random
+import os
 
 # Configuration
-TOKEN = "your_api_token_here" # Replace with your Lichess API token
+TOKEN = os.getenv("LICHESS_API_TOKEN")
+
+ 
 STOCKFISH_PATH = "stockfish" # Adjust if needed
 
 # Logging setup
-logging.basicConfig(filename="lichess_bot.log", level=logging.INFO, format="%(asctime)s - %(message)s")
+logging.basicConfig(
+    filename="lichess_bot.log", 
+    level=logging.INFO, 
+    format="%(asctime)s - %(message)s"
+)
 
 # Lichess API
 session = berserk.TokenSession(TOKEN)
 client = berserk.Client(session)
 
-# Stockfish engine
-engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+def get_active_bots():
+"""Fetches a list of currently online Lichess bots."""
+try:
+    users = client.users.get_by_ids(["raspfish", "endogenetic-bot", "Nikitosik-ai", "botyuliirma", "exogenetic-bot"])
+    bot_list = [user['id'] for user in users if user.get("title") == "BOT" and user.get("online",False)]
+    return bot_list
+except Exception as e:
+    logging.error(f"Failed to fetch bot list: {e}")
+    return []
 
+def challenge_random_bot():
+"""Challenges a random online bot to a rated game."""
+   bot_list = get_active_bots()
+
+   if not bot_list:
+        print("No bots found online. Retrying in 30 seconds...")
+        time.sleep(30)
+        return 
+
+   opponent_bot = random.choice(bot_list) # Pick a random bot
+   try:
+      client.challenges.create(
+          opponent_bot,
+          rated=True, # Only rated games
+          clock_limit=180, # 3 minutes (adjust as needed)
+          clock_increment=0, # 2-second increment
+          variant="standard", # Standard chess
+          color="random" # Random color
+      )
+      print(f"Challenged bot {opponent_bot} to a rated 3+2 game!")
+  except Exception as e:
+      print(f"Failed to challenge bot {opponent_bot}: {e}")
+
+
+
+# Stockfish engine
+engine = chess.engine.SimpleEngine.popen_uci(r"C:\Users\Admin\Downloads\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe")
+# Extreme speed settings for hyperbullet
+HYPERBULLET_NODES = 190000 # Extremely low for fast move generation
+HYPERBULLET_DEPTH = 5 # Minimal depth to save time
+HYPERBULLET_MOVE_OVERHEAD = 50 # Lower overhead for near-instant moves
+
+# Optimized settings for blitz
+BLITZ_NODES = 555000 # More nodes for better strength
+BLITZ_DEPTH = 18 # Good depth for accuracy
+BLITZ_MOVE_OVERHEAD = 200 # Normal buffer for time safety
+
+# Maximum strength settings for rapid and longer games
+RAPID_NODES = 800000 # Deep calculation for strongest play
+RAPID_DEPTH = 22 # Maximum depth for precision
+RAPID_MOVE_OVERHEAD = 230 # Safe time buffer to avoid blunders
+
+CLASSICAL_NODES = 1000000
+CLASSICAL_DEPTH = 25
+CLASSICAL_MOVE_OVERHEAD = 200
+
+def configure_engine_for_time_control(time_control):
+"""Dynamically configure Stockfish settings based on game time."""
+if time_control <= 30: # Hyperbullet mode (extreme speed)
+    engine.configure({
+        "Nodes": HYPERBULLET_NODES,
+        "Depth": HYPERBULLET_DEPTH,
+        "Move Overhead": HYPERBULLET_MOVE_OVERHEAD,
+        "Threads": 1, # Max 2 threads for efficiency
+        "Ponder": False, # Disable pondering for speed
+        "Use NNUE": False, # Disable NNUE for ultra-fast evaluation
+        "MultiPV": 1,
+        "Hash": 32,
+        "Book File": "C:/Users/Admin/Downloads/Perfect_2023/BIN/Perfect2023.bin",
+        "Best Book move": True,
+        "Book Depth":6,
+        "Book Variety": 25,
+        "min_time": 0.01,
+        "max_time" : 0.04,
+        "SyzygyPath": "https://tablebase.lichess.ovh",
+        "SyzygyProbeDepth": 1,
+        "SyzygyProbeLimit": 7,
+        "Syzygy50MoveRule": True,
+        "SyzygyRule50": True,
+        "Lichess Opening Explorer": True,
+        "Prioritize Book": True
+        
+        
+})
+elif time_control <= 300: # Blitz mode (balance between speed and strength)
+   engine.configure({
+       "Nodes": BLITZ_NODES,
+       "Depth": BLITZ_DEPTH,
+       "Move Overhead": BLITZ_MOVE_OVERHEAD,
+       "Threads": 3, # Use 4 threads for better move selection
+       "Ponder": True, # Enable pondering for stronger play
+       "Use NNUE": True, # Enable NNUE for better evaluation
+       "MultiPV": 1,
+       "hash": 256,
+       "Book File": "C:/Users/Admin/Downloads/Perfect_2023/BIN/Perfect2023.bin",
+        "Best Book move": True,
+        "Book Depth":10,
+        "Book Variety": 40,
+        "min_time": 0.05,
+        "SyzygyPath": "https://tablebase.lichess.ovh",
+        "SyzygyProbeDepth": 1,
+        "SyzygyProbeLimit": 7,
+        "Syzygy50MoveRule": True,
+        "SyzygyRule50": True,
+        "Lichess Opening Explorer": True,
+        "Prioritize Book": True
+
+
+})
+
+
+elif time_control <= 600: # short rapid mode (balance between speed and strength)
+   engine.configure({
+       "Nodes": RAPID_NODES,
+       "Depth": RAPID_DEPTH,
+       "Move Overhead": RAPID_MOVE_OVERHEAD,
+       "Threads": 3, # Use 4 threads for better move selection
+       "Ponder": True, # Enable pondering for stronger play
+       "Use NNUE": True, # Enable NNUE for better evaluation
+       "MultiPV": 1,
+       "hash": 320,
+       "Book File": "C:/Users/Admin/Downloads/Perfect_2023/BIN/Perfect2023.bin",
+        "Best Book move": True,
+        "Book Depth":10,
+        "Book Variety": 40,
+        "min_time": 0.3,
+        "SyzygyPath": "https://tablebase.lichess.ovh",
+        "SyzygyProbeDepth": 1,
+        "SyzygyProbeLimit": 7,
+        "Syzygy50MoveRule": True,
+        "SyzygyRule50": True,
+        "Lichess Opening Explorer": True,
+        "Prioritize Book": True
+
+
+else: # Rapid and longer games (maximum strength)
+    engine.configure({
+        "Nodes": CLASSICAL_NODES,
+        "Depth": CLASSICAL_DEPTH,
+        "Move Overhead": CLASSICAL_MOVE_OVERHEAD,
+        "Threads": 6, # Use more threads for deep calculations
+        "Ponder": True, # Enable pondering
+        "Use NNUE": True, # Strongest evaluation
+        "MultiPV": 1,
+        "hash": 495
+        "Book File": "C:/Users/Admin/Downloads/Perfect_2023/BIN/Perfect2023.bin",
+        "Best Book move": True,
+        "Book Depth": 20,
+        "Book Variety": 45,
+        "SyzygyPath": "https://tablebase.lichess.ovh",
+        "SyzygyProbeDepth": 6,
+        "SyzygyProbeLimit": 7,
+        "Syzygy50MoveRule": True,
+        "SyzygyRule50": True,
+        "Lichess Opening Explorer": True,
+        "Prioritize Book": True
+
+
+})
+
+# Infinite loop to keep challenging bots
+while True:
+    challenge_random_bot()
+    time.sleep(10) # Wait 10 seconds before sending the next challenge
+
+
+
+# Call this function before making a move
+configure_engine_for_time_control(game["clock"])
 # Time Management Settings
 OVERHEAD_BUFFER = 0.15 # Extra time buffer to avoid losing on time
 MAX_THINK_TIME = 5 # Never think more than this per move
-BULLET_THINK = 0.2
-BLITZ_THINK = 0.5
+BULLET_THINK = 0.005
+BLITZ_THINK = 0.2
 RAPID_THINK = 1.5
 
 # Determine think time per move
-def get_time_control(clock):
-if not clock:
-return RAPID_THINK # Default if no time control
-initial, increment = clock["initial"], clock["increment"]
-total_time = initial + 40 * increment # Estimate for 40 moves
-if total_time < 180: # Bullet
-return BULLET_THINK
-elif total_time < 600: # Blitz
-return BLITZ_THINK
-return RAPID_THINK # Rapid/Classical
+def get_time_control(clock,is_losing):
+    if not clock:
+        return RAPID_THINK # Default if no time control
+    initial = clock.get("initial",0) 
+    increment = clock.get("increment",0)
+  
+    total_time = initial + 40 * increment # Estimate for 40 moves
+    remaining_time = clock.get("remaining",total_time)/1000
 
+    if total_time < 180: # Bullet
+        base_think = max(0.01, remaining_time * 0.05) - OVERHEAD_BUFFER
+    elif total_time < 600: # Blitz
+        base_think = max(0.15, remaining_time * 0.05)
+    else:# Rapid/Classical
+         base_think = RAPID_THINK
+     
+    if is_losing
+        base_think = base_think *(0.3 if remaining_time < 10 else 0.5)
+    safe_think_time = min(base_think,remaining_time * 0.2)
+
+    return max(0.05, safe_think_time - OVERHEAD BUFFER)
+
+
+  
 # Play a game
 def play_game(game_id):
-logging.info(f"Game started: {game_id}")
-game = client.games.export(game_id)
-board = chess.Board()
-move_time = get_time_control(game["clock"]) - OVERHEAD_BUFFER
+    logging.info(f"Game started: {game_id}")
+    game = client.games.export(game_id)
+    board = chess.Board()
+    move_time = get_time_control(game["clock"]) - OVERHEAD_BUFFER
 
 while not board.is_game_over():
-try:
-result = engine.play(board, chess.engine.Limit(time=move_time))
-move = result.move.uci()
-client.bots.make_move(game_id, move)
-board.push(result.move)
-logging.info(f"Move: {move} | Time: {move_time}s")
-except Exception as e:
-logging.error(f"Error making move: {e}")
-break
+    try:
+
+        analysis = engine.analyse(board,chess.engine.Limit(time=move_time), multipv=1)
+  
+        score = analysis.get("score')
+        if score is not None and score.relative.mate() is not None:
+            move_time=0.01
+
+
+
+        result = engine.play(board, chess.engine.Limit(time=move_time))
+        move = result.move.uci()
+        client.bots.make_move(game_id, move)
+        board.push(result.move)
+        logging.info(f"Move: {move} | Time: {move_time}s")
+    except Exception as e:#55
+       logging.error(f"Error making move: {e}")
+       break
 
 result = board.result()
 logging.info(f"Game {game_id} finished with result: {result}")
 
 # Accept only rated challenges
 def handle_events():
-for event in client.bots.stream_incoming_events():
-if event['type'] == 'challenge':
-challenge = event['challenge']
-if challenge['rated']:
-client.bots.accept_challenge(challenge['id'])
-logging.info(f"Accepted challenge from {challenge['challenger']['id']}")
-else:
-client.bots.decline_challenge(challenge['id'])
-elif event['type'] == 'gameStart':
-play_game(event['game']['id'])
+    for event in client.bots.stream_incoming_events():
+        if event['type'] == 'challenge':
+           challenge = event['challenge']
+           if challenge['rated']:
+              client.bots.accept_challenge(challenge['id'])
+              logging.info(f"Accepted challenge from {challenge['challenger']['id']}")
+           else:
+              client.bots.decline_challenge(challenge['id'])
+        elif event['type'] == 'gameStart':
+           play_game(event['game']['id'])
 
 # Start the bot
 if __name__ == "__main__":
-logging.info("Bot started...")
-handle_events()
+     logging.info("Bot started...")
+     handle_events()
