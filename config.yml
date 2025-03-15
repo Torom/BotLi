@@ -1,16 +1,50 @@
 token: "XXXXXXXXXXXXXXXXXXXXXXXX"         # Lichess OAuth2 Token.
 
 engines:
-  standard:                               # Engine used for standard chess and when no suitable special engine is configured.
-    dir: "./engines"                      # Directory containing the engine.
-    name: "stockfish"                     # Binary name of the engine to use.
-    ponder: true                          # Think on opponent's time.
-    silence_stderr: true                 # Suppresses stderr output.
-    move_overhead_multiplier: 1.0         # Increase if your bot flags games too often. Default move overhead is 1 second per 1 minute initital time.
-    uci_options:                          # Arbitrary UCI options passed to the engine. (Commenting allowed)
-      Threads: 6                          # Max CPU threads the engine can use.
-      Hash: 512                           # Max memory (in megabytes) the engine can allocate.
-      Move Overhead: 200                  # Increase if your bot flags games too often.
+  classical:
+    dir: "./engines"
+    name: "stockfish.exe"
+    ponder: true
+    silence_stderr: false
+    move_overhead_multiplier: 1.5
+    uci_options:
+      Threads: 6
+      Hash: 6200  # Deepest analysis, but not too high
+      Move Overhead: 200
+
+  rapid:
+    dir: "./engines"
+    name: "stockfish.exe"
+    ponder: true
+    silence_stderr: false
+    move_overhead_multiplier: 1.2
+    uci_options:
+      Threads: 4
+      Hash: 4096  # Balanced depth + speed
+      Move Overhead: 200
+
+  blitz:
+    dir: "./engines"
+    name: "stockfish.exe"
+    ponder: false
+    silence_stderr: false
+    move_overhead_multiplier: 1.2
+    uci_options:
+      Threads: 3
+      Hash: 4096  # Max reasonable Hash for Blitz
+      Move Overhead: 50
+
+  bullet:
+    dir: "./engines"
+    name: "stockfish.exe"
+    ponder: false
+    silence_stderr: false
+    move_overhead_multiplier: 1.0
+    uci_options:
+      Threads: 3  # No more than 3 for Bullet
+      Hash: 5120  # Best balance for speed & depth
+      Move Overhead: 10  # Minimal delay for instant moves
+                 # Increase if your bot flags games too often.
 # variants:                               # Engine used for variants when no suitable special engine is configured.
 #   dir: "./engines"                      # Directory containing the engine.
 #   name: "fairy-stockfish"               # Binary name of the engine to use.
