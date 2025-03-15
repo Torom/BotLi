@@ -93,7 +93,7 @@ if time_control <= 30: # Hyperbullet mode (extreme speed)
         "Use NNUE": False, # Disable NNUE for ultra-fast evaluation
         "MultiPV": 1,
         "Hash": 32,
-        "Book File": "C:/Users/Admin/Downloads/Perfect_2023/BIN/Perfect2023.bin",
+        "Book File": "C:\Users\Admin\Downloads\torom-boti\torom-boti\Perfect2023.bin",
         "Best Book move": True,
         "Book Depth":6,
         "Book Variety": 25,
@@ -119,7 +119,7 @@ elif time_control <= 300: # Blitz mode (balance between speed and strength)
        "Use NNUE": True, # Enable NNUE for better evaluation
        "MultiPV": 1,
        "hash": 256,
-       "Book File": "C:/Users/Admin/Downloads/Perfect_2023/BIN/Perfect2023.bin",
+       "Book File": "C:\Users\Admin\Downloads\torom-boti\torom-boti\Perfect2023.bin",
         "Best Book move": True,
         "Book Depth":10,
         "Book Variety": 40,
@@ -146,7 +146,7 @@ elif time_control <= 600: # short rapid mode (balance between speed and strength
        "Use NNUE": True, # Enable NNUE for better evaluation
        "MultiPV": 1,
        "hash": 320,
-       "Book File": "C:/Users/Admin/Downloads/Perfect_2023/BIN/Perfect2023.bin",
+       "Book File": "C:\Users\Admin\Downloads\torom-boti\torom-boti\Perfect2023.bin",
         "Best Book move": True,
         "Book Depth":10,
         "Book Variety": 40,
@@ -170,7 +170,7 @@ else: # Rapid and longer games (maximum strength)
         "Use NNUE": True, # Strongest evaluation
         "MultiPV": 1,
         "hash": 495
-        "Book File": "C:/Users/Admin/Downloads/Perfect_2023/BIN/Perfect2023.bin",
+        "Book File": "C:\Users\Admin\Downloads\torom-boti\torom-boti\Perfect2023.bin",
         "Best Book move": True,
         "Book Depth": 20,
         "Book Variety": 45,
