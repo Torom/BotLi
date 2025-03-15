@@ -12,7 +12,7 @@ import os
 TOKEN = os.getenv("LICHESS_API_TOKEN")
 
  
-STOCKFISH_PATH = "stockfish" # Adjust if needed
+STOCKFISH_PATH = "./engines/stockfish-windows-x86-64-avx2.exe" # Adjust if needed
 
 # Logging setup
 logging.basicConfig(
