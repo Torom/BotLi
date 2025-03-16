@@ -26,17 +26,17 @@ logging.basicConfig(
 # Lichess API
 session = berserk.TokenSession(TOKEN)
 client = berserk.Client(session)
-
+# call bot
 def get_active_bots():
     """Fetches a list of currently online Lichess bots."""
     try:
-        users = client.users.get_by_ids([
-            "raspfish", "endogenetic-bot", "Nikitosik-ai", 
+        users = [client.users.get_by_id(bot) for bot in [
+            "raspfish", "endogenetic-bot", "Nikitosik-ai",
             "botyuliirma", "exogenetic-bot"
-        ])
+        ]]
         bot_list = [
             user['id'] for user in users 
-            if user.get("title") == "BOT" and user.get("online", False)
+            if (user and user.get("title") == "BOT" and user.get("online", False))
         ]
         return bot_list
     except Exception as e:
