@@ -29,19 +29,20 @@ client = berserk.Client(session)
 # call bot
 def get_active_bots():
     """Fetches a list of currently online Lichess bots."""
+    bot_ids = ["raspfish", "endogenetic-bot", "Nikitosik-ai", "botyuliirma", "exogenetic-bot"]
+    bot_list = []
+
     try:
-        users = client.users.get_by_ids([
-            "raspfish", "endogenetic-bot", "Nikitosik-ai",
-            "botyuliirma", "exogenetic-bot"
-        ])
-        bot_list = [
-            user['id'] for user in users 
-            if isinstance(user, dict) and user.get("title") == "BOT" and user.get("online", False)
-        ]
-        return bot_list
+        for bot in bot_ids:
+            user = client.users.get_by_id(bot)  # Fetch each bot individually
+            if user and user.get("title") == "BOT" and user.get("online", False):
+                bot_list.append(user['id'])  # Add only if it's a bot and online
+
     except Exception as e:
         print(f"Error fetching bot list: {e}")
-        return []
+        return []  # Return empty list on error
+
+    return bot_list  # Return the list of active bots
 
 def challenge_random_bot():
     """Challenges a random online bot to a rated game."""
