@@ -30,13 +30,13 @@ client = berserk.Client(session)
 def get_active_bots():
     """Fetches a list of currently online Lichess bots."""
     try:
-        users = [client.users.get_by_id(bot) for bot in [
+        users = client.users.get_by_ids([
             "raspfish", "endogenetic-bot", "Nikitosik-ai",
             "botyuliirma", "exogenetic-bot"
-        ]]
+        ])
         bot_list = [
             user['id'] for user in users 
-            if (user and user.get("title") == "BOT" and user.get("online", False))
+            if isinstance(user, dict) and user.get("title") == "BOT" and user.get("online", False)
         ]
         return bot_list
     except Exception as e:
