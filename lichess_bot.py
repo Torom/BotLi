@@ -93,107 +93,104 @@ CLASSICAL_MOVE_OVERHEAD = 200
 def configure_engine_for_time_control(time_control):
     """Dynamically configure Stockfish settings based on game time."""
 
+    if time_control <= 30:  # Hyperbullet mode (extreme speed)
+        engine.configure({
+            "Nodes": HYPERBULLET_NODES,
+            "Depth": HYPERBULLET_DEPTH,
+            "Move Overhead": HYPERBULLET_MOVE_OVERHEAD,
+            "Threads": 1,  # Max 2 threads for efficiency
+            "Ponder": False,  # Disable pondering for speed
+            "Use NNUE": False,  # Disable NNUE for ultra-fast evaluation
+            "MultiPV": 1,
+            "Hash": 32,
+            "Book File": "C:/Users/Admin/Downloads/torom-boti/torom-boti/Perfect2023.bin",
+            "Best Book move": True,
+            "Book Depth": 6,
+            "Book Variety": 25,
+            "min_time": 0.01,
+            "max_time": 0.04,
+            "SyzygyPath": "https://tablebase.lichess.ovh",
+            "SyzygyProbeDepth": 1,
+            "SyzygyProbeLimit": 7,
+            "Syzygy50MoveRule": True,
+            "SyzygyRule50": True,
+            "Lichess Opening Explorer": True,
+            "Prioritize Book File": True
+        })
 
-       if time_control <= 30: # Hyperbullet mode (extreme speed)
-           engine.configure({
-               "Nodes": HYPERBULLET_NODES,
-               "Depth": HYPERBULLET_DEPTH,
-               "Move Overhead": HYPERBULLET_MOVE_OVERHEAD,
-               "Threads": 1, # Max 2 threads for efficiency
-               "Ponder": False, # Disable pondering for speed
-               "Use NNUE": False, # Disable NNUE for ultra-fast evaluation
-               "MultiPV": 1,
-               "Hash": 32,
-               "Book File": "C:/Users/Admin/Downloads/torom-boti/torom-boti/Perfect2023.bin",
-               "Best Book move": True,
-               "Book Depth":6,
-               "Book Variety": 25,
-               "min_time": 0.01,
-               "max_time" : 0.04,
-               "SyzygyPath": "https://tablebase.lichess.ovh",
-               "SyzygyProbeDepth": 1,
-               "SyzygyProbeLimit": 7,
-               "Syzygy50MoveRule": True,
-               "SyzygyRule50": True,
-               "Lichess Opening Explorer": True,
-               "Prioritize Book File": True
-        
-        
-})
-       elif time_control <= 300: # Blitz mode (balance between speed and strength)
-             engine.configure({
-                 "Nodes": BLITZ_NODES,
-                 "Depth": BLITZ_DEPTH,
-                 "Move Overhead": BLITZ_MOVE_OVERHEAD,
-                 "Threads": 3, # Use 4 threads for better move selection
-                 "Ponder": True, # Enable pondering for stronger play
-                 "Use NNUE": True, # Enable NNUE for better evaluation
-                 "MultiPV": 1,
-                 "hash": 5120,
-                 "Book File": "C:/Users/Admin/Downloads/torom-boti/torom-boti/Perfect2023.bin",
-                 "Best Book move": True,
-                 "Book Depth":10,
-                 "Book Variety": 40,
-                 "min_time": 0.05,
-                 "SyzygyPath": "https://tablebase.lichess.ovh",
-                 "SyzygyProbeDepth": 1,
-                 "SyzygyProbeLimit": 7,
-                 "Syzygy50MoveRule": True,
-                 "SyzygyRule50": True,
-                 "Lichess Opening Explorer": True,
-                 "Prioritize Book File": True
-})
+    elif time_control <= 300:  # Blitz mode (balance between speed and strength)
+        engine.configure({
+            "Nodes": BLITZ_NODES,
+            "Depth": BLITZ_DEPTH,
+            "Move Overhead": BLITZ_MOVE_OVERHEAD,
+            "Threads": 3,  # Use 4 threads for better move selection
+            "Ponder": True,  # Enable pondering for stronger play
+            "Use NNUE": True,  # Enable NNUE for better evaluation
+            "MultiPV": 1,
+            "Hash": 5120,
+            "Book File": "C:/Users/Admin/Downloads/torom-boti/torom-boti/Perfect2023.bin",
+            "Best Book move": True,
+            "Book Depth": 10,
+            "Book Variety": 40,
+            "min_time": 0.05,
+            "SyzygyPath": "https://tablebase.lichess.ovh",
+            "SyzygyProbeDepth": 1,
+            "SyzygyProbeLimit": 7,
+            "Syzygy50MoveRule": True,
+            "SyzygyRule50": True,
+            "Lichess Opening Explorer": True,
+            "Prioritize Book File": True
+        })
 
+    elif time_control <= 600:  # Short rapid mode (balance between speed and strength)
+        engine.configure({
+            "Nodes": RAPID_NODES,
+            "Depth": RAPID_DEPTH,
+            "Move Overhead": RAPID_MOVE_OVERHEAD,
+            "Threads": 4,  # Use 4 threads for better move selection
+            "Ponder": True,  # Enable pondering for stronger play
+            "Use NNUE": True,  # Enable NNUE for better evaluation
+            "MultiPV": 1,
+            "Hash": 5192,
+            "Book File": "C:/Users/Admin/Downloads/torom-boti/torom-boti/Perfect2023.bin",
+            "Best Book move": True,
+            "Book Depth": 11,
+            "Book Variety": 40,
+            "min_time": 0.3,
+            "SyzygyPath": "https://tablebase.lichess.ovh",
+            "SyzygyProbeDepth": 1,
+            "SyzygyProbeLimit": 7,
+            "Syzygy50MoveRule": True,
+            "SyzygyRule50": True,
+            "Lichess Opening Explorer": True,
+            "Prioritize Book File": True
+        })
 
-       elif time_control <= 600: # short rapid mode (balance between speed and strength)
-             engine.configure({
-                 "Nodes": RAPID_NODES,
-                 "Depth": RAPID_DEPTH,
-                 "Move Overhead": RAPID_MOVE_OVERHEAD,
-                 "Threads": 4, # Use 4 threads for better move selection
-                 "Ponder": True, # Enable pondering for stronger play
-                 "Use NNUE": True, # Enable NNUE for better evaluation
-                 "MultiPV": 1,
-                 "hash": 5192,
-                 "Book File": "C:/Users/Admin/Downloads/torom-boti/torom-boti/Perfect2023.bin",
-                 "Best Book move": True,
-                 "Book Depth":11,
-                 "Book Variety": 40,
-                 "min_time": 0.3,
-                 "SyzygyPath": "https://tablebase.lichess.ovh",
-                 "SyzygyProbeDepth": 1,
-                 "SyzygyProbeLimit": 7,
-                 "Syzygy50MoveRule": True,
-                 "SyzygyRule50": True,
-                 "Lichess Opening Explorer": True,
-                 "Prioritize Book File": True
+    else:  # Rapid and longer games (maximum strength)
+        engine.configure({
+            "Nodes": CLASSICAL_NODES,
+            "Depth": CLASSICAL_DEPTH,
+            "Move Overhead": CLASSICAL_MOVE_OVERHEAD,
+            "Threads": 6,  # Use more threads for deep calculations
+            "Ponder": True,  # Enable pondering
+            "Use NNUE": True,  # Strongest evaluation
+            "MultiPV": 1,
+            "Hash": 6144,
+            "Book File": "C:/Users/Admin/Downloads/torom-boti/torom-boti/Perfect2023.bin",
+            "Best Book move": True,
+            "Book Depth": 20,
+            "Book Variety": 45,
+            "SyzygyPath": "https://tablebase.lichess.ovh",
+            "SyzygyProbeDepth": 6,
+            "SyzygyProbeLimit": 7,
+            "Syzygy50MoveRule": True,
+            "SyzygyRule50": True,
+            "Lichess Opening Explorer": True,
+            "Prioritize Book File": True
+        })
 
-
-       else: # Rapid and longer games (maximum strength)
-             engine.configure({
-                 "Nodes": CLASSICAL_NODES,
-                 "Depth": CLASSICAL_DEPTH,
-                 "Move Overhead": CLASSICAL_MOVE_OVERHEAD,
-                 "Threads": 6, # Use more threads for deep calculations
-                 "Ponder": True, # Enable pondering
-                 "Use NNUE": True, # Strongest evaluation
-                 "MultiPV": 1,
-                 "hash": 6144,
-                 "Book File": "C:/Users/Admin/Downloads/torom-boti/torom-boti/Perfect2023.bin",
-                 "Best Book move": True,
-                 "Book Depth": 20,
-                 "Book Variety": 45,
-                 "SyzygyPath": "https://tablebase.lichess.ovh",
-                 "SyzygyProbeDepth": 6,
-                 "SyzygyProbeLimit": 7,
-                 "Syzygy50MoveRule": True,
-                 "SyzygyRule50": True,
-                 "Lichess Opening Explorer": True,
-                 "Prioritize Book File": True
-
-
-})
-
+    
+      
 # Infinite loop to keep challenging bots
 while True:
     challenge_random_bot()
