@@ -8,6 +8,7 @@ import time
 import random
 import os
 import chess.engine
+import yaml
 
 # Configuration
 TOKEN = os.getenv("LICHESS_API_TOKEN")
@@ -69,6 +70,13 @@ def challenge_random_bot():
     
     except Exception as e:
         print(f"Failed to challenge bot {opponent_bot}: {e}")
+
+with open("config.yml", "r") as file:
+    config = yaml.safe_load(file)
+
+# Use only specific values, not overriding engine settings
+custom_message = config.get("message", "Default message")
+print(custom_message)
 
 # Stockfish engine
 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
