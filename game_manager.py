@@ -64,11 +64,11 @@ class Game_Manager:
             while tournament := self._get_next_tournament_to_join():
                 await self._join_tournament(tournament)
 
-            while challenge_request := self._get_next_challenge_request():
-                await self._create_challenge(challenge_request)
-
             while challenge := self._get_next_challenge():
                 await self._accept_challenge(challenge)
+
+            while challenge_request := self._get_next_challenge_request():
+                await self._create_challenge(challenge_request)
 
         for tournament in self.unstarted_tournaments.values():
             tournament.cancel()
