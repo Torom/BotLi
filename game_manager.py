@@ -82,9 +82,7 @@ class Game_Manager:
 
     @property
     def is_busy(self) -> bool:
-        return (len(self.tasks) +
-                len(self.tournaments) +
-                self.reserved_game_spots) >= self.config.challenge.concurrency
+        return len(self.tasks) + len(self.tournaments) + self.reserved_game_spots >= self.config.challenge.concurrency
 
     def add_challenge(self, challenge: Challenge) -> None:
         if challenge not in self.open_challenges:

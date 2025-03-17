@@ -278,7 +278,7 @@ class API:
     async def send_move(self, game_id: str, uci_move: str, offer_draw: bool) -> bool:
         try:
             async with self.lichess_session.post(f'/api/bot/game/{game_id}/move/{uci_move}',
-                                                 params={'offeringDraw': str(offer_draw).lower()},
+                                                 params={'offeringDraw': 'true' if offer_draw else 'false'},
                                                  timeout=aiohttp.ClientTimeout(total=1.0)) as response:
                 response.raise_for_status()
                 return True
