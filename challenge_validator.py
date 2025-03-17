@@ -17,6 +17,10 @@ class Challenge_Validator:
 
     def get_decline_reason(self, challenge_event: dict[str, Any]) -> Decline_Reason | None:
         speed: str = challenge_event['speed']
+        if speed == 'ultraBullet':
+            print('Time control "UltraBullet" is not allowed for bots.')
+            return Decline_Reason.TIME_CONTROL
+
         if speed == 'correspondence':
             print('Time control "Correspondence" is not supported by BotLi.')
             return Decline_Reason.TIME_CONTROL
