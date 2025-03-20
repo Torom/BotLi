@@ -229,7 +229,7 @@ class Lichess_Game:
         if not move_response.is_engine_move:
             return move_response.is_drawish
 
-        if self.board.fullmove_number < self.config.offer_draw.min_game_length:
+        if self.board.fullmove_number - (not self.is_white) < self.config.offer_draw.min_game_length:
             return False
 
         if len(self.scores) < self.config.offer_draw.consecutive_moves:
