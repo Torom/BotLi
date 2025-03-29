@@ -49,6 +49,8 @@ class Game:
                     await chatter.handle_chat_message(event)
                     continue
                 case 'opponentGone':
+                    if event.get('claimWinInSeconds', -1) == 0:
+                        await self.api.claim_victory(self.game_id)
                     continue
                 case 'gameFull':
                     event = event['state']
@@ -119,6 +121,8 @@ class Game:
                     message += f'! {loser} resigned.'
                 case 'variantEnd':
                     message += ' by variant rules!'
+                case 'timeout':
+                    message += f'! {loser} timed out.'
         else:
             white_result = '½'
             black_result = '½'

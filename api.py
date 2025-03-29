@@ -80,6 +80,16 @@ class API:
             print(e)
             return False
 
+    @retry(**BASIC_RETRY_CONDITIONS)
+    async def claim_victory(self, game_id: str) -> bool:
+        try:
+            async with self.lichess_session.post(f'/api/bot/game/{game_id}/claim-victory') as response:
+                response.raise_for_status()
+                return True
+        except aiohttp.ClientResponseError as e:
+            print(e)
+            return False
+
     async def create_challenge(self,
                                challenge_request: Challenge_Request
                                ) -> AsyncIterator[API_Challenge_Reponse]:
