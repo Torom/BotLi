@@ -244,14 +244,11 @@ class API:
             data['team'] = team.lower()
         if password:
             data['password'] = password
-
         async with self.lichess_session.post(f'/api/tournament/{tournament_id}/join', data=data) as response:
             json_response = await response.json()
-
             if 'error' in json_response:
                 print(f'Joining tournament "{tournament_id}" failed: {json_response["error"]}')
                 return False
-
             return True
 
     @retry(**BASIC_RETRY_CONDITIONS)
