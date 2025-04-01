@@ -291,6 +291,7 @@ class Tournament:
     start_time: datetime
     end_time: datetime
     name: str
+    initial_time: int
     bots_allowed: bool
     team: str | None = None
     password: str | None = None
@@ -303,6 +304,7 @@ class Tournament:
                    start_time := datetime.fromisoformat(tournament_info['startsAt']),
                    start_time + timedelta(minutes=tournament_info['minutes']),
                    tournament_info.get('fullName', ''),
+                   tournament_info['clock']['limit'],
                    tournament_info.get('botsAllowed', False))
 
     @property
@@ -311,7 +313,7 @@ class Tournament:
 
     @property
     def seconds_to_finish(self) -> float:
-        return (self.end_time - datetime.now(UTC)).total_seconds()
+        return (self.end_time - datetime.now(UTC)).total_seconds() - max(30.0, min(self.initial_time / 2, 120.0))
 
     def cancel(self) -> None:
         if self.start_task:
