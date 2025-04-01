@@ -77,6 +77,7 @@ online_moves:
   opening_explorer:
     enabled: false                        # Activate online moves from Lichess opening explorer. The move that has performed best for this bot is played.
     priority: 300                         # Priority with which this move source is used. Higher priority is used first.
+    only_without_book: false              # Whether the Lichess opening explorer should only be used if there is no matching book.
     use_for_variants: false               # Whether the Lichess opening explorer should be used for other variants than standard and chess960.
     min_time: 10                          # Time the bot must have at least to use the online move. +10 seconds in games without increment.
     timeout: 5                            # Time the server has to respond.
@@ -98,7 +99,8 @@ online_moves:
   chessdb:
     enabled: false                        # Activate online moves from https://chessdb.cn/queryc_en/
     priority: 100                         # Priority with which this move source is used. Higher priority is used first.
-    min_eval_depth: 10                    # Minimum evaluation depth.
+    only_without_book: false              # Whether the chessdb should only be used if there is no matching book.
+    min_candidates: 1                     # Minimum number of candidate moves.
     min_time: 10                          # Time the bot must have at least to use the online move. +10 seconds in games without increment.
     timeout: 5                            # Time the server has to respond.
     selection: "best"                     # Move selection is one of "optimal", "best" or "good".

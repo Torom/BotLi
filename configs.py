@@ -45,6 +45,7 @@ class Opening_Books_Config:
 class Opening_Explorer_Config:
     enabled: bool
     priority: int
+    only_without_book: bool
     use_for_variants: bool
     min_time: int
     timeout: int
@@ -72,6 +73,8 @@ class Lichess_Cloud_Config:
 class ChessDB_Config:
     enabled: bool
     priority: int
+    only_without_book: bool
+    min_candidates: int
     min_time: int
     timeout: int
     selection: Literal['optimal', 'best', 'good']

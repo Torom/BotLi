@@ -506,6 +506,9 @@ class Lichess_Game:
             candidate_moves = [chessdb_move for chessdb_move in response['moves']
                                if chessdb_move['rank'] > 0]
 
+        if len(candidate_moves) < self.config.online_moves.chessdb.min_candidates:
+            return
+
         random.shuffle(candidate_moves)
         for chessdb_move in candidate_moves:
             move = chess.Move.from_uci(chessdb_move['uci'])
@@ -857,17 +860,20 @@ class Lichess_Game:
         if self.config.opening_books.enabled:
             opening_sources[self._make_book_move] = self.config.opening_books.priority
 
-        if self.config.online_moves.opening_explorer.enabled:
-            if self.board.uci_variant == 'chess' or self.config.online_moves.opening_explorer.use_for_variants:
-                opening_sources[self._make_opening_explorer_move] = self.config.online_moves.opening_explorer.priority
+        opening_explorer_config = self.config.online_moves.opening_explorer
+        if opening_explorer_config.enabled:
+            if not opening_explorer_config.only_without_book or not self.book_settings.readers:
+                if self.board.uci_variant == 'chess' or opening_explorer_config.use_for_variants:
+                    opening_sources[self._make_opening_explorer_move] = opening_explorer_config.priority
 
         if self.config.online_moves.lichess_cloud.enabled:
-            if not (self.config.online_moves.lichess_cloud.only_without_book and self.book_settings.readers):
+            if not self.config.online_moves.lichess_cloud.only_without_book or not self.book_settings.readers:
                 opening_sources[self._make_cloud_move] = self.config.online_moves.lichess_cloud.priority
 
         if self.config.online_moves.chessdb.enabled:
-            if self.board.uci_variant == 'chess':
-                opening_sources[self._make_chessdb_move] = self.config.online_moves.chessdb.priority
+            if not self.config.online_moves.chessdb.only_without_book or not self.book_settings.readers:
+                if self.board.uci_variant == 'chess':
+                    opening_sources[self._make_chessdb_move] = self.config.online_moves.chessdb.priority
 
         move_sources += [opening_source
                          for opening_source, _
