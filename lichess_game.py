@@ -536,9 +536,9 @@ class Lichess_Game:
 
             if board_copy.is_checkmate():
                 return Gaviota_Result(move, 2, 0)
-            else:
-                dtm = -self.gaviota_tablebase.probe_dtm(board_copy)
-                wdl = self._value_to_wdl(dtm, board_copy.halfmove_clock)
+
+            dtm = -self.gaviota_tablebase.probe_dtm(board_copy)
+            wdl = self._value_to_wdl(dtm, board_copy.halfmove_clock)
 
             if best_move:
                 if wdl > best_wdl:
