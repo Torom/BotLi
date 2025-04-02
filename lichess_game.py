@@ -527,37 +527,35 @@ class Lichess_Game:
     def _probe_gaviota(self, moves: Iterable[chess.Move]) -> Gaviota_Result:
         assert self.gaviota_tablebase
 
-        best_moves: list[chess.Move] = []
+        best_move = chess.Move.null()
         best_wdl = -2
         best_dtm = 1_000_000
+        board_copy = self.board.copy(stack=False)
         for move in moves:
-            board_copy = self.board.copy(stack=False)
             board_copy.push(move)
 
             if board_copy.is_checkmate():
-                wdl = 2
-                dtm = 0
+                return Gaviota_Result(move, 2, 0)
             else:
                 dtm = -self.gaviota_tablebase.probe_dtm(board_copy)
                 wdl = self._value_to_wdl(dtm, board_copy.halfmove_clock)
 
-            if best_moves:
+            if best_move:
                 if wdl > best_wdl:
-                    best_moves = [move]
+                    best_move = move
                     best_wdl = wdl
                     best_dtm = dtm
-                elif wdl == best_wdl:
-                    if dtm < best_dtm:
-                        best_moves = [move]
-                        best_dtm = dtm
-                    elif dtm == best_dtm:
-                        best_moves.append(move)
+                elif wdl == best_wdl and dtm < best_dtm:
+                    best_move = move
+                    best_dtm = dtm
             else:
-                best_moves.append(move)
+                best_move = move
                 best_wdl = wdl
                 best_dtm = dtm
 
-        return Gaviota_Result(best_moves, best_wdl, best_dtm)
+            board_copy.pop()
+
+        return Gaviota_Result(best_move, best_wdl, best_dtm)
 
     async def _make_gaviota_move(self) -> Move_Response | None:
         match chess.popcount(self.board.occupied):
@@ -597,19 +595,18 @@ class Lichess_Game:
                 return
 
         await self.engine.stop_pondering(self.board)
-        move = random.choice(result.moves)
-        message = f'Gaviota: {self._format_move(move):14} {egtb_info}'
-        return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
+        message = f'Gaviota: {self._format_move(result.move):14} {egtb_info}'
+        return Move_Response(result.move, message, is_drawish=offer_draw, is_resignable=resign)
 
     def _probe_syzygy(self, moves: Iterable[chess.Move]) -> Syzygy_Result:
         assert self.syzygy_tablebase
 
-        best_moves: list[chess.Move] = []
+        best_move = chess.Move.null()
         best_wdl = -2
         best_dtz = 1_000_000
-        best_real_dtz = best_dtz
+        best_real_dtz = 0
+        board_copy = self.board.copy(stack=False)
         for move in moves:
-            board_copy = self.board.copy(stack=False)
             board_copy.push(move)
 
             dtz = -self.syzygy_tablebase.probe_dtz(board_copy)
@@ -622,26 +619,25 @@ class Lichess_Game:
                 elif wdl > 0:
                     dtz -= 10_000
 
-            if best_moves:
+            if best_move:
                 if wdl > best_wdl:
-                    best_moves = [move]
+                    best_move = move
                     best_wdl = wdl
                     best_dtz = dtz
                     best_real_dtz = real_dtz
-                elif wdl == best_wdl:
-                    if dtz < best_dtz:
-                        best_moves = [move]
-                        best_dtz = dtz
-                        best_real_dtz = real_dtz
-                    elif dtz == best_dtz:
-                        best_moves.append(move)
+                elif wdl == best_wdl and dtz < best_dtz:
+                    best_move = move
+                    best_dtz = dtz
+                    best_real_dtz = real_dtz
             else:
-                best_moves.append(move)
+                best_move = move
                 best_wdl = wdl
                 best_dtz = dtz
                 best_real_dtz = real_dtz
 
-        return Syzygy_Result(best_moves, best_wdl, best_real_dtz)
+            board_copy.pop()
+
+        return Syzygy_Result(best_move, best_wdl, best_real_dtz)
 
     async def _make_syzygy_move(self) -> Move_Response | None:
         match chess.popcount(self.board.occupied):
@@ -684,9 +680,8 @@ class Lichess_Game:
                 resign = True
 
         await self.engine.stop_pondering(self.board)
-        move = random.choice(result.moves)
-        message = f'Syzygy:  {self._format_move(move):14} {egtb_info}'
-        return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
+        message = f'Syzygy:  {self._format_move(result.move):14} {egtb_info}'
+        return Move_Response(result.move, message, is_drawish=offer_draw, is_resignable=resign)
 
     def _value_to_wdl(self, value: int, halfmove_clock: int) -> Literal[-2, -1, 0, 1, 2]:
         if value > 0:

@@ -206,7 +206,7 @@ class Game_Information:
 
 @dataclass
 class Gaviota_Result:
-    moves: list[chess.Move]
+    move: chess.Move
     wdl: Literal[-2, -1, 0, 1, 2]
     dtm: int
 
@@ -273,7 +273,7 @@ class Move_Response:
 
 @dataclass
 class Syzygy_Result:
-    moves: list[chess.Move]
+    move: chess.Move
     wdl: Literal[-2, -1, 0, 1, 2]
     dtz: int
 
