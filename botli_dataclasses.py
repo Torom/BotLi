@@ -218,6 +218,34 @@ class Lichess_Move:
 
 
 @dataclass
+class Matchmaking_Data:
+    release_time: datetime = datetime.now()
+    multiplier: int = 1
+    color: Challenge_Color = Challenge_Color.WHITE
+
+    @classmethod
+    def from_dict(cls, dict_: dict[str, Any]) -> 'Matchmaking_Data':
+        release_time = datetime.fromisoformat(dict_['release_time']) if 'release_time' in dict_ else datetime.now()
+        multiplier = dict_.get('multiplier', 1)
+        color = Challenge_Color(dict_['color']) if 'color' in dict_ else Challenge_Color.WHITE
+
+        return Matchmaking_Data(release_time, multiplier, color)
+
+    def to_dict(self) -> dict[str, Any]:
+        dict_ = {}
+        if self.release_time > datetime.now():
+            dict_['release_time'] = self.release_time.isoformat(timespec='seconds')
+
+        if self.multiplier > 1:
+            dict_['multiplier'] = self.multiplier
+
+        if self.color == Challenge_Color.BLACK:
+            dict_['color'] = Challenge_Color.BLACK.value
+
+        return dict_
+
+
+@dataclass
 class Matchmaking_Type:
     name: str
     initial_time: int

@@ -6,7 +6,8 @@ from botli_dataclasses import Bot, Challenge_Request, Challenge_Response, Matchm
 from challenger import Challenger
 from config import Config
 from enums import Busy_Reason, Perf_Type, Variant
-from opponents import NoOpponentException, Opponents
+from exceptions import NoOpponentException
+from opponents import Opponents
 
 
 class Matchmaking:
@@ -82,7 +83,7 @@ class Matchmaking:
         if response.success:
             self.game_start_time = datetime.now()
         elif not (response.has_reached_rate_limit or response.is_misconfigured):
-            self.opponents.add_timeout(False, self.current_type.estimated_game_duration, self.current_type)
+            self.opponents.add_timeout(False, self.current_type.estimated_game_duration)
         else:
             self.current_type = None
 
@@ -95,7 +96,7 @@ class Matchmaking:
         if was_aborted:
             game_duration += self.current_type.estimated_game_duration
 
-        self.opponents.add_timeout(not was_aborted, game_duration, self.current_type)
+        self.opponents.add_timeout(not was_aborted, game_duration)
         self.current_type = None
 
     def _get_type(self) -> Matchmaking_Type | None:
