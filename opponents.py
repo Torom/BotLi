@@ -127,9 +127,6 @@ class Opponents:
         self.busy_bots.clear()
         self._save(self.matchmaking_file)
 
-    def skip_bot(self) -> None:
-        self.busy_bots.append(self.last_opponent[0])
-
     def reset_release_time(self, perf_type: Perf_Type) -> None:
         for opponent in self.opponent_list:
             if perf_type in opponent.data:
@@ -139,9 +136,6 @@ class Opponents:
 
     def _filter_bots(self, bots: list[Bot], matchmaking_type: Matchmaking_Type) -> list[Bot]:
         def bot_filter(bot: Bot) -> bool:
-            if matchmaking_type.rated and bot.tos_violation:
-                return False
-
             if abs(bot.rating_diffs[matchmaking_type.perf_type]) > matchmaking_type.max_rating_diff:
                 return False
 

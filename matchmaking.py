@@ -1,5 +1,4 @@
 import random
-from collections import defaultdict
 from datetime import datetime, timedelta
 
 from api import API
@@ -65,7 +64,7 @@ class Matchmaking:
             case Busy_Reason.PLAYING:
                 rating_diff = opponent.rating_diffs[self.current_type.perf_type]
                 print(f'Skipping {opponent.username} ({rating_diff:+}) as {color.value} ...')
-                self.opponents.skip_bot()
+                self.opponents.busy_bots.append(opponent)
                 return
 
             case Busy_Reason.OFFLINE:
@@ -155,24 +154,13 @@ class Matchmaking:
         user_ratings = await self._get_user_ratings()
 
         online_bots: list[Bot] = []
-        bot_counts: defaultdict[str, int] = defaultdict(int)
+        blacklisted_bot_count = 0
         for bot in await self.api.get_online_bots():
-            bot_counts['online'] += 1
-
-            tos_violation = False
-            if 'tosViolation' in bot:
-                tos_violation = True
-                bot_counts['with tosViolation'] += 1
-
             if bot['username'] == self.username:
                 continue
 
-            if 'disabled' in bot:
-                bot_counts['disabled'] += 1
-                continue
-
             if bot['id'] in self.config.blacklist:
-                bot_counts['blacklisted'] += 1
+                blacklisted_bot_count += 1
                 continue
 
             rating_diffs: dict[Perf_Type, int] = {}
@@ -180,11 +168,10 @@ class Matchmaking:
                 bot_rating = bot['perfs'][perf_type.value]['rating'] if perf_type.value in bot['perfs'] else 1500
                 rating_diffs[perf_type] = bot_rating - user_ratings[perf_type]
 
-            online_bots.append(Bot(bot['username'], tos_violation, rating_diffs))
+            online_bots.append(Bot(bot['username'], rating_diffs))
 
-        for category, count in bot_counts.items():
-            if count:
-                print(f'{count:3} bots {category}')
+        print(f'{len(online_bots) + blacklisted_bot_count + 1:3} bots online')
+        print(f'{blacklisted_bot_count:3} bots blacklisted')
 
         self.next_update = datetime.now() + timedelta(minutes=30.0)
         return online_bots
