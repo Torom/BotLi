@@ -4,7 +4,7 @@ import logging
 import os
 import signal
 import sys
-from enum import Enum
+from enum import StrEnum
 from typing import TypeVar
 
 from api import API
@@ -37,7 +37,7 @@ COMMANDS = {
     'whitelist': 'Temporarily whitelists a user. Use config for permanent whitelisting. Usage: whitelist USERNAME'
 }
 
-EnumT = TypeVar('EnumT', bound=Enum)
+EnumT = TypeVar('EnumT', bound=StrEnum)
 
 
 class User_Interface:
@@ -306,7 +306,7 @@ class User_Interface:
 
     def _find_enum(self, name: str, enum_type: type[EnumT]) -> EnumT:
         for enum in enum_type:
-            if enum.value.lower() == name.lower():
+            if enum.lower() == name.lower():
                 return enum
 
         raise ValueError(f'{name} is not a valid {enum_type}')

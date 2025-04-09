@@ -64,7 +64,7 @@ class Matchmaking:
         match await self._get_busy_reason(opponent):
             case Busy_Reason.PLAYING:
                 rating_diff = opponent.rating_diffs[self.current_type.perf_type]
-                print(f'Skipping {opponent.username} ({rating_diff:+}) as {color.value} ...')
+                print(f'Skipping {opponent.username} ({rating_diff:+}) as {color} ...')
                 self.opponents.busy_bots.append(opponent)
                 return
 
@@ -74,7 +74,7 @@ class Matchmaking:
                 return
 
         rating_diff = opponent.rating_diffs[self.current_type.perf_type]
-        print(f'Challenging {opponent.username} ({rating_diff:+}) as {color.value} to {self.current_type.name} ...')
+        print(f'Challenging {opponent.username} ({rating_diff:+}) as {color} to {self.current_type.name} ...')
         challenge_request = Challenge_Request(opponent.username, self.current_type.initial_time,
                                               self.current_type.increment, self.current_type.rated, color,
                                               self.current_type.variant, self.timeout)
@@ -166,7 +166,7 @@ class Matchmaking:
 
             rating_diffs: dict[Perf_Type, int] = {}
             for perf_type in Perf_Type:
-                bot_rating = bot['perfs'][perf_type.value]['rating'] if perf_type.value in bot['perfs'] else 1500
+                bot_rating = bot['perfs'][perf_type]['rating'] if perf_type in bot['perfs'] else 1500
                 rating_diffs[perf_type] = bot_rating - user_ratings[perf_type]
 
             online_bots.append(Bot(bot['username'], rating_diffs))
@@ -182,8 +182,8 @@ class Matchmaking:
 
         performances: dict[Perf_Type, int] = {}
         for perf_type in Perf_Type:
-            if perf_type.value in user['perfs']:
-                performances[perf_type] = user['perfs'][perf_type.value]['rating']
+            if perf_type in user['perfs']:
+                performances[perf_type] = user['perfs'][perf_type]['rating']
             else:
                 performances[perf_type] = 2500
 
@@ -191,7 +191,7 @@ class Matchmaking:
 
     def _variant_to_perf_type(self, variant: Variant, initial_time: int, increment: int) -> Perf_Type:
         if variant != Variant.STANDARD:
-            return Perf_Type(variant.value)
+            return Perf_Type(variant)
 
         estimated_game_duration = initial_time + increment * 40
         if estimated_game_duration < 179:
@@ -209,7 +209,7 @@ class Matchmaking:
         if perf_type in [Perf_Type.BULLET, Perf_Type.BLITZ, Perf_Type.RAPID, Perf_Type.CLASSICAL]:
             return Variant.STANDARD
 
-        return Variant(perf_type.value)
+        return Variant(perf_type)
 
     async def _get_busy_reason(self, bot: Bot) -> Busy_Reason | None:
         bot_status = await self.api.get_user_status(bot.username)

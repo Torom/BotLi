@@ -1,13 +1,13 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class Challenge_Color(Enum):
+class Challenge_Color(StrEnum):
     WHITE = 'white'
     BLACK = 'black'
     RANDOM = 'random'
 
 
-class Decline_Reason(Enum):
+class Decline_Reason(StrEnum):
     GENERIC = 'generic'
     LATER = 'later'
     TOO_FAST = 'tooFast'
@@ -21,7 +21,7 @@ class Decline_Reason(Enum):
     ONLY_BOT = 'onlyBot'
 
 
-class Variant(Enum):
+class Variant(StrEnum):
     STANDARD = 'standard'
     FROM_POSITION = 'fromPosition'
     ANTICHESS = 'antichess'
@@ -34,7 +34,7 @@ class Variant(Enum):
     THREE_CHECK = 'threeCheck'
 
 
-class Perf_Type(Enum):
+class Perf_Type(StrEnum):
     BULLET = 'bullet'
     BLITZ = 'blitz'
     RAPID = 'rapid'
@@ -49,6 +49,6 @@ class Perf_Type(Enum):
     THREE_CHECK = 'threeCheck'
 
 
-class Busy_Reason(Enum):
+class Busy_Reason(StrEnum):
     OFFLINE = 'offline'
     PLAYING = 'playing'

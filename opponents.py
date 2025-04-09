@@ -108,11 +108,11 @@ class Opponents:
                                 for username,
                                 perf_types in dict_.items()})
 
-    def _min_opponent_dict(self) -> dict[str, dict[str, dict[str, Any]]]:
+    def _min_opponent_dict(self) -> dict[str, dict[Perf_Type, dict[str, Any]]]:
         return {username: user_dict
                 for username, perf_types
                 in self.opponent_dict.items()
-                if (user_dict := {perf_type.value: matchmaking_dict
+                if (user_dict := {perf_type: matchmaking_dict
                                   for perf_type, matchmaking_data
                                   in perf_types.items()
                                   if (matchmaking_dict := matchmaking_data.to_dict())})}

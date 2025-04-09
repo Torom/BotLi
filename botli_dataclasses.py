@@ -240,7 +240,7 @@ class Matchmaking_Data:
             dict_['multiplier'] = self.multiplier
 
         if self.color == Challenge_Color.BLACK:
-            dict_['color'] = Challenge_Color.BLACK.value
+            dict_['color'] = Challenge_Color.BLACK
 
         return dict_
 
@@ -275,7 +275,7 @@ class Matchmaking_Type:
             initial_time_str = str(initial_time_min)
         tc_str = f'TC: {initial_time_str}+{self.increment}'
         rated_str = 'Rated' if self.rated else 'Casual'
-        variant_str = f'Variant: {self.variant.value}'
+        variant_str = f'Variant: {self.variant}'
         delimiter = 5 * ' '
 
         return delimiter.join([self.name, tc_str, rated_str, variant_str])

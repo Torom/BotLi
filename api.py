@@ -95,11 +95,11 @@ class API:
                                ) -> AsyncIterator[API_Challenge_Reponse]:
         try:
             async with self.lichess_session.post(f'/api/challenge/{challenge_request.opponent_username}',
-                                                 data={'rated': str(challenge_request.rated).lower(),
+                                                 data={'rated': 'true' if challenge_request.rated else 'false',
                                                        'clock.limit': challenge_request.initial_time,
                                                        'clock.increment': challenge_request.increment,
-                                                       'color': challenge_request.color.value,
-                                                       'variant': challenge_request.variant.value,
+                                                       'color': challenge_request.color,
+                                                       'variant': challenge_request.variant,
                                                        'keepAliveStream': 'true'},
                                                  timeout=aiohttp.ClientTimeout(total=challenge_request.timeout)
                                                  ) as response:
@@ -129,7 +129,7 @@ class API:
     async def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
         try:
             async with self.lichess_session.post(f'/api/challenge/{challenge_id}/decline',
-                                                 data={'reason': reason.value}) as response:
+                                                 data={'reason': reason}) as response:
                 response.raise_for_status()
                 return True
         except aiohttp.ClientResponseError as e:
@@ -162,8 +162,7 @@ class API:
 
     async def get_cloud_eval(self, fen: str, variant: Variant, timeout: int) -> dict[str, Any] | None:
         try:
-            async with self.lichess_session.get('/api/cloud-eval', params={'fen': fen,
-                                                                           'variant': variant.value},
+            async with self.lichess_session.get('/api/cloud-eval', params={'fen': fen, 'variant': variant},
                                                 timeout=aiohttp.ClientTimeout(total=timeout)) as response:
                 response.raise_for_status()
                 return await response.json()
@@ -217,7 +216,7 @@ class API:
                                    ) -> dict[str, Any] | None:
         try:
             async with self.external_session.get('https://explorer.lichess.ovh/player',
-                                                 params={'player': username, 'variant': variant.value,
+                                                 params={'player': username, 'variant': variant,
                                                          'fen': fen, 'color': color, 'speeds': speeds,
                                                          'modes': 'rated', 'recentGames': 0},
                                                  timeout=aiohttp.ClientTimeout(total=timeout)) as response:
