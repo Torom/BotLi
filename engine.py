@@ -52,7 +52,7 @@ class Engine:
                                 engine_config: Engine_Config,
                                 syzygy_config: Syzygy_Config) -> None:
         for name, value in engine_config.uci_options.items():
-            if chess.engine.Option(name, '', None, None, None, None).is_managed():
+            if name.lower() in chess.engine.MANAGED_OPTIONS:
                 print(f'UCI option "{name}" ignored as it is managed by the bot.')
             elif name in engine.options:
                 await engine.configure({name: value})
