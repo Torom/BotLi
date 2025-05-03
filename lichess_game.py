@@ -363,16 +363,15 @@ class Lichess_Game:
             color = 'white' if self.board.turn else 'black'
             username = self.game_info.white_name if self.board.turn else self.game_info.black_name
 
-        if self.board.uci_variant != 'chess' or self.board.chess960:
-            speeds = 'bullet,blitz,rapid,classical'
-        else:
-            speeds = self.game_info.speed
+        speeds = self.game_info.speed if self.game_info.variant == Variant.STANDARD else None
+        modes = 'rated' if self.game_info.rated else None
 
         start_time = time.perf_counter()
         response = await self.api.get_opening_explorer(username,
                                                        self.board.fen(),
                                                        self.game_info.variant,
                                                        color,
+                                                       modes,
                                                        speeds,
                                                        self.config.online_moves.opening_explorer.timeout)
         if response is None:
