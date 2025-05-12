@@ -17,7 +17,7 @@ class Matchmaking:
         self.username = username
         self.next_update = datetime.now()
         self.timeout = max(config.matchmaking.timeout, 1)
-        self.types = self._get_init_types()
+        self.types = self._get_matchmaking_types()
         self.suspended_types: list[Matchmaking_Type] = []
         self.opponents = Opponents(config.matchmaking.delay, username)
         self.challenger = Challenger(api)
@@ -53,7 +53,11 @@ class Matchmaking:
 
         if next_opponent is None:
             print(f'No opponent available for matchmaking type {self.current_type.name}.')
-            self.current_type = self._get_type()
+            if self.config.matchmaking.selection == 'weighted_random':
+                self.current_type = None
+            else:
+                self.current_type = self._get_next_type()
+
             if self.current_type is None:
                 return Challenge_Response(no_opponent=True)
 
@@ -97,12 +101,13 @@ class Matchmaking:
             game_duration += self.current_type.estimated_game_duration
 
         self.opponents.add_timeout(not was_aborted, game_duration)
-        self.current_type = None
 
-    def _get_type(self) -> Matchmaking_Type | None:
-        if self.config.matchmaking.selection == 'weighted_random':
-            return
+        if self.config.matchmaking.selection == 'cyclic':
+            self.current_type = self._get_next_type()
+        else:
+            self.current_type = None
 
+    def _get_next_type(self) -> Matchmaking_Type | None:
         last_type = self.types[-1]
         for i, matchmaking_type in enumerate(self.types):
             if matchmaking_type == last_type:
@@ -112,7 +117,7 @@ class Matchmaking:
                 print(f'Matchmaking type: {self.types[i + 1]}')
                 return self.types[i + 1]
 
-    def _get_init_types(self) -> list[Matchmaking_Type]:
+    def _get_matchmaking_types(self) -> list[Matchmaking_Type]:
         matchmaking_types: list[Matchmaking_Type] = []
         for name, type_config in self.config.matchmaking.types.items():
             initial_time, increment = type_config.tc.split('+')
