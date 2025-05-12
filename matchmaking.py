@@ -166,8 +166,10 @@ class Matchmaking:
 
             rating_diffs: dict[Perf_Type, int] = {}
             for perf_type in Perf_Type:
-                bot_rating = bot['perfs'][perf_type]['rating'] if perf_type in bot['perfs'] else 1500
-                rating_diffs[perf_type] = bot_rating - user_ratings[perf_type]
+                if perf_type not in bot['perfs']:
+                    continue
+
+                rating_diffs[perf_type] = bot['perfs'][perf_type]['rating'] - user_ratings[perf_type]
 
             online_bots.append(Bot(bot['username'], rating_diffs))
 

@@ -66,6 +66,9 @@ class Opponents:
 
     def _filter_bots(self, bots: list[Bot], matchmaking_type: Matchmaking_Type) -> list[Bot]:
         def bot_filter(bot: Bot) -> bool:
+            if matchmaking_type.perf_type not in bot.rating_diffs:
+                return False
+
             if abs(bot.rating_diffs[matchmaking_type.perf_type]) > matchmaking_type.max_rating_diff:
                 return False
 
