@@ -38,7 +38,7 @@ class Opponents:
         if success and data.multiplier > 1:
             data.multiplier //= 2
         elif not success:
-            data.multiplier += 1
+            data.multiplier *= 2
 
         timeout = (game_duration + self.delay) * matchmaking_type.multiplier * data.multiplier
 
