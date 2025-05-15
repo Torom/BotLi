@@ -185,7 +185,9 @@ ExecStart=/usr/bin/python3 /home/ubuntu/BotLi/user_interface.py
 WorkingDirectory=/home/ubuntu/BotLi
 User=ubuntu
 Group=ubuntu
-Restart=always
+Restart=on-failure
+TimeoutStopSec=infinity
+KillMode=mixed
 
 [Install]
 WantedBy=multi-user.target
