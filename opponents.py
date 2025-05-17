@@ -69,11 +69,13 @@ class Opponents:
             if matchmaking_type.perf_type not in bot.rating_diffs:
                 return False
 
-            if abs(bot.rating_diffs[matchmaking_type.perf_type]) > matchmaking_type.max_rating_diff:
-                return False
+            if matchmaking_type.max_rating_diff:
+                if abs(bot.rating_diffs[matchmaking_type.perf_type]) > matchmaking_type.max_rating_diff:
+                    return False
 
-            if abs(bot.rating_diffs[matchmaking_type.perf_type]) < matchmaking_type.min_rating_diff:
-                return False
+            if matchmaking_type.min_rating_diff:
+                if abs(bot.rating_diffs[matchmaking_type.perf_type]) < matchmaking_type.min_rating_diff:
+                    return False
 
             return True
 

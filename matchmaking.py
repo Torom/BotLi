@@ -126,19 +126,13 @@ class Matchmaking:
             rated = True if type_config.rated is None else type_config.rated
             variant = Variant.STANDARD if type_config.variant is None else Variant(type_config.variant)
             perf_type = self._variant_to_perf_type(variant, initial_time, increment)
-            multiplier = 15 if type_config.multiplier is None else type_config.multiplier
             weight = 1.0 if type_config.weight is None else type_config.weight
-            min_rating_diff = 0 if type_config.min_rating_diff is None else type_config.min_rating_diff
-            max_rating_diff = 10_000 if type_config.max_rating_diff is None else type_config.max_rating_diff
 
             matchmaking_types.append(Matchmaking_Type(name, initial_time, increment, rated, variant,
-                                                      perf_type, multiplier, weight, min_rating_diff, max_rating_diff))
+                                                      perf_type, type_config.multiplier, -1, weight,
+                                                      type_config.min_rating_diff, type_config.max_rating_diff))
 
-        perf_type_count = len({matchmaking_type.perf_type for matchmaking_type in matchmaking_types})
         for matchmaking_type, type_config in zip(matchmaking_types, self.config.matchmaking.types.values()):
-            if type_config.multiplier is None:
-                matchmaking_type.multiplier *= perf_type_count
-
             if type_config.weight is None:
                 matchmaking_type.weight /= matchmaking_type.estimated_game_duration.total_seconds()
 
@@ -147,14 +141,15 @@ class Matchmaking:
         return matchmaking_types
 
     async def _call_update(self) -> bool:
-        if self.next_update <= datetime.now():
-            print('Updating online bots and rankings ...')
-            self.types.extend(self.suspended_types)
-            self.suspended_types.clear()
-            self.online_bots = await self._get_online_bots()
-            return True
+        if self.next_update > datetime.now():
+            return False
 
-        return False
+        print('Updating online bots and rankings ...')
+        self.types.extend(self.suspended_types)
+        self.suspended_types.clear()
+        self.online_bots = await self._get_online_bots()
+        self._set_multiplier()
+        return True
 
     async def _get_online_bots(self) -> list[Bot]:
         user_ratings = await self._get_user_ratings()
@@ -195,6 +190,36 @@ class Matchmaking:
                 performances[perf_type] = 2500
 
         return performances
+
+    def _set_multiplier(self) -> None:
+        for matchmaking_type in self.types:
+            if matchmaking_type.config_multiplier:
+                matchmaking_type.multiplier = matchmaking_type.config_multiplier
+            else:
+                min_rating_diff = matchmaking_type.min_rating_diff if matchmaking_type.min_rating_diff else 0
+                max_rating_diff = matchmaking_type.max_rating_diff if matchmaking_type.max_rating_diff else 600
+
+                bot_count = self._get_bot_count(matchmaking_type.perf_type, min_rating_diff, max_rating_diff)
+                perf_type_count = len({matchmaking_type.perf_type for matchmaking_type in self.types})
+                matchmaking_type.multiplier = bot_count * perf_type_count
+
+    def _get_bot_count(self, perf_type: Perf_Type, min_rating_diff: int, max_rating_diff: int) -> int:
+        def bot_filter(bot: Bot) -> bool:
+            if perf_type not in bot.rating_diffs:
+                return False
+
+            if abs(bot.rating_diffs[perf_type]) > max_rating_diff:
+                return False
+
+            if abs(bot.rating_diffs[perf_type]) < min_rating_diff:
+                return False
+
+            if self.opponents.opponent_dict[bot.username][perf_type].multiplier > 1:
+                return False
+
+            return True
+
+        return sum(map(bot_filter, self.online_bots))
 
     def _variant_to_perf_type(self, variant: Variant, initial_time: int, increment: int) -> Perf_Type:
         if variant != Variant.STANDARD:

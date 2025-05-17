@@ -253,10 +253,11 @@ class Matchmaking_Type:
     rated: bool
     variant: Variant
     perf_type: Perf_Type
-    multiplier: float
+    config_multiplier: int | None
+    multiplier: int
     weight: float
-    min_rating_diff: int
-    max_rating_diff: int
+    min_rating_diff: int | None
+    max_rating_diff: int | None
 
     def __post_init__(self) -> None:
         self.estimated_game_duration = timedelta(seconds=max(self.initial_time, 3) * 1.33 + self.increment * 94.48)

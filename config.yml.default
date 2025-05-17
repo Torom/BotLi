@@ -170,7 +170,7 @@ matchmaking:
 #     rated: true                         # Whether matchmaking should play rated games. Default: true
 #     variant: standard                   # Chess variant (https://lichess.org/variant) to challenge. Default: standard
 #     weight: 100                         # Weight with which this type is selected. Default: Types are played according to their time control.
-#     multiplier: 15                      # Multiplier for calculating timeouts in matchmaking. Default: 15 * number of configured performance types.
+#     multiplier: 15                      # Multiplier for calculating timeouts in matchmaking. Default: smart multiplier calculation.
 #     min_rating_diff: 0                  # Minimum rating distance to opponent. Default: 0
 #     max_rating_diff: 300                # Maximum rating distance to opponent. Default: 10000
 
