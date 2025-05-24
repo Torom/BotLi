@@ -35,11 +35,7 @@ class Opponents:
         username, color, matchmaking_type = self.last_opponent
         data = self.opponent_dict[username][matchmaking_type.perf_type]
 
-        if success and data.multiplier > 1:
-            data.multiplier //= 2
-        elif not success:
-            data.multiplier *= 2
-
+        data.multiplier = 1 if success else data.multiplier * 2
         timeout = (game_duration + self.delay) * matchmaking_type.multiplier * data.multiplier
 
         if data.release_time > datetime.now():
