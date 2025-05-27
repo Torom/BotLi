@@ -1,4 +1,5 @@
 import random
+import struct
 import time
 from collections.abc import Awaitable, Callable, Iterable
 from itertools import islice
@@ -268,7 +269,12 @@ class Lichess_Game:
             return
 
         for name, book_reader in self.book_settings.readers.items():
-            entries = list(book_reader.find_all(self.board))
+            try:
+                entries = list(book_reader.find_all(self.board))
+            except struct.error:
+                print(f'Skipping book "{name}" due to error.')
+                continue
+
             if not entries:
                 continue
 
