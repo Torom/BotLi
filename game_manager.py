@@ -135,6 +135,10 @@ class Game_Manager:
             return
 
         tournament_info = await self.api.get_tournament_info(tournament_request.id_)
+        if not tournament_info:
+            print(f'Tournament "{tournament_request.id_}" not found.')
+            return
+
         tournament = Tournament.from_tournament_info(tournament_info)
         tournament.team = tournament_request.team
         tournament.password = tournament_request.password
