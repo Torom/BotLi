@@ -27,6 +27,7 @@ COMMANDS = {
     'clear': 'Clears the challenge queue.',
     'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]',
     'help': 'Prints this message.',
+    'join': 'Joins a team. Usage: join TEAM',
     'leave': 'Leaves tournament. Usage: leave ID',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
@@ -92,17 +93,19 @@ class User_Interface:
                         self._blacklist(command)
                     case 'challenge':
                         self._challenge(command)
-                    case 'create':
-                        self._create(command)
-                    case 'leave':
-                        self._leave(command)
                     case 'clear':
                         self._clear()
-                    case 'exit' | 'quit':
-                        await self._quit()
-                        break
+                    case 'create':
+                        self._create(command)
+                    case 'join':
+                        await self._join(command)
+                    case 'leave':
+                        self._leave(command)
                     case 'matchmaking':
                         self._matchmaking()
+                    case 'quit' | 'exit':
+                        await self._quit()
+                        break
                     case 'rechallenge':
                         self._rechallenge()
                     case 'reset':
@@ -183,6 +186,10 @@ class User_Interface:
         self.game_manager.request_challenge(challenge_request)
         print(f'Challenge against {challenge_request.opponent_username} added to the queue.')
 
+    def _clear(self) -> None:
+        self.game_manager.challenge_requests.clear()
+        print('Challenge queue cleared.')
+
     def _create(self, command: list[str]) -> None:
         if len(command) < 3 or len(command) > 6:
             print(COMMANDS['create'])
@@ -211,16 +218,19 @@ class User_Interface:
         self.game_manager.request_challenge(*challenges)
         print(f'Challenges for {count} game pairs against {opponent_username} added to the queue.')
 
+    async def _join(self, command: list[str]) -> None:
+        if len(command) != 2:
+            print(COMMANDS['join'])
+            return
+
+        await self.api.join_team(command[1])
+
     def _leave(self, command: list[str]) -> None:
         if len(command) != 2:
             print(COMMANDS['leave'])
             return
 
         self.game_manager.request_tournament_leaving(command[1])
-
-    def _clear(self) -> None:
-        self.game_manager.challenge_requests.clear()
-        print('Challenge queue cleared.')
 
     def _matchmaking(self) -> None:
         print('Starting matchmaking ...')
