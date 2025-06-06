@@ -27,7 +27,7 @@ COMMANDS = {
     'clear': 'Clears the challenge queue.',
     'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]',
     'help': 'Prints this message.',
-    'join': 'Joins a team. Usage: join TEAM',
+    'join': 'Joins a team. Usage: join TEAM [PASSWORD]',
     'leave': 'Leaves tournament. Usage: leave ID',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
@@ -219,11 +219,13 @@ class User_Interface:
         print(f'Challenges for {count} game pairs against {opponent_username} added to the queue.')
 
     async def _join(self, command: list[str]) -> None:
-        if len(command) != 2:
+        if len(command) < 2 or len(command) > 3:
             print(COMMANDS['join'])
             return
 
-        await self.api.join_team(command[1])
+        password = command[2] if len(command) > 2 else None
+        if await self.api.join_team(command[1], password):
+            print(f'Joined team "{command[1]}" successfully.')
 
     def _leave(self, command: list[str]) -> None:
         if len(command) != 2:
