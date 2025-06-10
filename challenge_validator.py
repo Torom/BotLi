@@ -101,6 +101,6 @@ class Challenge_Validator:
         for speed in speeds:
             if '+' in speed:
                 initial_str, increment_str = speed.split('+')
-                time_controls.append((int(initial_str) * 60, int(increment_str)))
+                time_controls.append((int(float(initial_str) * 60), int(increment_str)))
 
         return time_controls
