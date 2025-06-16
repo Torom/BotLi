@@ -1,4 +1,5 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Torom/BotLi)
+[![](https://dcbadge.limes.pink/api/server/https://discord.gg/6aS945KMFD?style=flat)](https://discord.gg/6aS945KMFD)
 
 # Overview
 
