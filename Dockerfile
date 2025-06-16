@@ -21,5 +21,5 @@ RUN mv stockfish/stockfish-* engines/stockfish && rm -r stockfish
 # RUN wget "https://drive.google.com/u/0/uc?id=1x25r_1PgB5XqttkfR494M4rseiIm0BAV&export=download" -O engines/kingofthehill-978b86d0e6a4.nnue
 # RUN wget "https://drive.google.com/u/0/uc?id=1Tiq8FqSu7eiekE2iaWQzSdJPg-mhvLzJ&export=download" -O engines/racingkings-636b95f085e3.nnue
 
-# Add the "--matchmaking" flag to start the matchmaking mode.
+# Add the "matchmaking" command to start the matchmaking mode.
 CMD python user_interface.py

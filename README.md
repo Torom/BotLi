@@ -130,14 +130,19 @@ The bot will always wait until the current game is finished.
 
 ## Non interactive mode
 
-This mode is used automatically when BotLi is used without an interactive terminal, for example as a service. In this case, the bot is controlled by setting flags at start time.
+This mode is used automatically when BotLi is used without an interactive terminal, for example as a service. In this case, the bot is controlled by passing any command at start time.
+
+Note that commands consisting of several words are delimited by `"`. Any number of commands can be passed this way:
+```bash
+python user_interface.py matchmaking "tournament TOURNAMENT_ID" "create COUNT USERNAME"
+```
 
 ### Matchmaking
 
 To let the bot challenge other bots in non interactive mode, start it like this:
 
 ```bash
-python user_interface.py --matchmaking
+python user_interface.py matchmaking
 ```
 
 **CAUTION**: Lichess will rate limit you if you let matchmaking run too long without adjusting the delay accordingly.
@@ -146,7 +151,12 @@ python user_interface.py --matchmaking
 
 To join a tournament in non interactive mode, start it like this:
 ```bash
-python user_interface.py --tournament TOURNAMENT_ID --team TEAM_ID --password PASSWORD
+python user_interface.py "tournament TOURNAMENT_ID TEAM_ID PASSWORD"
+```
+
+You can also join multiple tournaments this way:
+```bash
+python user_interface.py "tournament TOURNAMENT_ID TEAM_ID PASSWORD" "tournament TOURNAMENT2_ID TEAM2_ID PASSWORD2"
 ```
 
 ## Upgrade to Bot account
@@ -194,7 +204,7 @@ KillMode=mixed
 WantedBy=multi-user.target
 ```
 
-If the service should run with matchmaking the `--matchmaking` flag must be appended at the end of the `ExecStart` line.
+If the service should run with matchmaking the `matchmaking` command must be appended at the end of the `ExecStart` line.
 
 **Note**: If you want the bot to run in matchmaking mode for a long time, it is recommended to set the `matchmaking` `delay` higher to avoid problems with the Lichess rate limit. I recommend the following formula: `delay = 430 - 2 * initial_time - 160 * increment`
 

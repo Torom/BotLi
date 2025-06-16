@@ -27,14 +27,14 @@ COMMANDS = {
     'clear': 'Clears the challenge queue.',
     'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]',
     'help': 'Prints this message.',
-    'join': 'Joins a team. Usage: join TEAM [PASSWORD]',
+    'join': 'Joins a team. Usage: join TEAM_ID [PASSWORD]',
     'leave': 'Leaves tournament. Usage: leave ID',
     'matchmaking': 'Starts matchmaking mode.',
     'quit': 'Exits the bot.',
     'rechallenge': 'Challenges the opponent to the last received challenge.',
     'reset': 'Resets matchmaking. Usage: reset PERF_TYPE',
     'stop': 'Stops matchmaking mode.',
-    'tournament': 'Joins tournament. Usage: tournament ID [TEAM] [PASSWORD]',
+    'tournament': 'Joins tournament. Usage: tournament ID [TEAM_ID] [PASSWORD]',
     'whitelist': 'Temporarily whitelists a user. Use config for permanent whitelisting. Usage: whitelist USERNAME'
 }
 
@@ -42,13 +42,7 @@ EnumT = TypeVar('EnumT', bound=StrEnum)
 
 
 class User_Interface:
-    async def main(self,
-                   config_path: str,
-                   start_matchmaking: bool,
-                   tournament_id: str | None,
-                   tournament_team: str | None,
-                   tournament_password: str | None,
-                   allow_upgrade: bool) -> None:
+    async def main(self, commands: list[str], config_path: str, allow_upgrade: bool) -> None:
         self.config = Config.from_yaml(config_path)
 
         async with API(self.config) as self.api:
@@ -63,18 +57,15 @@ class User_Interface:
             self.game_manager = Game_Manager(self.api, self.config, username)
             self.game_manager_task = asyncio.create_task(self.game_manager.run())
 
-            if tournament_id:
-                self.game_manager.request_tournament_joining(tournament_id, tournament_team, tournament_password)
-
             self.event_handler = Event_Handler(self.api, self.config, username, self.game_manager)
             self.event_handler_task = asyncio.create_task(self.event_handler.run())
 
-            if start_matchmaking:
-                self._matchmaking()
+            signal.signal(signal.SIGTERM, self.signal_handler)
+
+            for command in commands:
+                await self._handle_command(command.split())
 
             if not sys.stdin.isatty():
-                signal.signal(signal.SIGINT, self.signal_handler)
-                signal.signal(signal.SIGTERM, self.signal_handler)
                 await self.game_manager_task
                 return
 
@@ -85,39 +76,8 @@ class User_Interface:
 
             while True:
                 command = (await asyncio.to_thread(input)).split()
-                if len(command) == 0:
-                    continue
-
-                match command[0]:
-                    case 'blacklist':
-                        self._blacklist(command)
-                    case 'challenge':
-                        self._challenge(command)
-                    case 'clear':
-                        self._clear()
-                    case 'create':
-                        self._create(command)
-                    case 'join':
-                        await self._join(command)
-                    case 'leave':
-                        self._leave(command)
-                    case 'matchmaking':
-                        self._matchmaking()
-                    case 'quit' | 'exit':
-                        await self._quit()
-                        break
-                    case 'rechallenge':
-                        self._rechallenge()
-                    case 'reset':
-                        self._reset(command)
-                    case 'stop':
-                        self._stop()
-                    case 'tournament':
-                        self._tournament(command)
-                    case 'whitelist':
-                        self._whitelist(command)
-                    case _:
-                        self._help()
+                if len(command) > 0:
+                    await self._handle_command(command)
 
     async def _handle_bot_status(self, title: str | None, allow_upgrade: bool) -> None:
         if 'bot:play' not in await self.api.get_token_scopes(self.config.token):
@@ -155,6 +115,38 @@ class User_Interface:
             print(f'Testing engine "{engine_name}" ... ', end='')
             await Engine.test(engine_config)
             print('OK')
+
+    async def _handle_command(self, command: list[str]) -> None:
+        match command[0]:
+            case 'blacklist':
+                self._blacklist(command)
+            case 'challenge':
+                self._challenge(command)
+            case 'clear':
+                self._clear()
+            case 'create':
+                self._create(command)
+            case 'join':
+                await self._join(command)
+            case 'leave':
+                self._leave(command)
+            case 'matchmaking' | 'm':
+                self._matchmaking()
+            case 'quit' | 'exit' | 'q':
+                await self._quit()
+                sys.exit()
+            case 'rechallenge':
+                self._rechallenge()
+            case 'reset':
+                self._reset(command)
+            case 'stop' | 's':
+                self._stop()
+            case 'tournament':
+                self._tournament(command)
+            case 'whitelist':
+                self._whitelist(command)
+            case _:
+                self._help()
 
     def _blacklist(self, command: list[str]) -> None:
         if len(command) != 2:
@@ -347,11 +339,8 @@ class Autocompleter:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', '-c', default='config.yml', type=str, help='Path to config.yml.')
-    parser.add_argument('--matchmaking', '-m', action='store_true', help='Start matchmaking mode.')
-    parser.add_argument('--tournament', '-t', type=str, help='ID of the tournament to be played.')
-    parser.add_argument('--team', type=str, help='The team to join the tournament with, if one is required.')
-    parser.add_argument('--password', type=str, help='The tournament password, if one is required.')
+    parser.add_argument('commands', nargs='*', help='Commands that BotLi executes.')
+    parser.add_argument('--config', '-c', default='config.yml', help='Path to config.yml.')
     parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
     parser.add_argument('--debug', '-d', action='store_true', help='Enable debug logging.')
     args = parser.parse_args()
@@ -359,10 +348,4 @@ if __name__ == '__main__':
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    asyncio.run(User_Interface().main(args.config,
-                                      args.matchmaking,
-                                      args.tournament,
-                                      args.team,
-                                      args.password,
-                                      args.upgrade),
-                debug=args.debug)
+    asyncio.run(User_Interface().main(args.commands, args.config, args.upgrade), debug=args.debug)
