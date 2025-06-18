@@ -1,3 +1,4 @@
+import asyncio
 import random
 import struct
 import time
@@ -490,13 +491,14 @@ class Lichess_Game:
             return
 
         start_time = time.perf_counter()
-        response = await self.api.get_chessdb_eval(self.board.fen(), self.config.online_moves.chessdb.timeout)
+        response = await self.api.get_chessdb_eval(fen := self.board.fen(), self.config.online_moves.chessdb.timeout)
         if response is None:
             self.out_of_chessdb_counter += 1
             self._reduce_own_time(time.perf_counter() - start_time)
             return
 
         if response['status'] != 'ok':
+            asyncio.create_task(self.api.queue_chessdb(fen))
             self.out_of_chessdb_counter += 1
             return
 

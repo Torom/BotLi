@@ -274,6 +274,14 @@ class API:
                 return False
             return True
 
+    async def queue_chessdb(self, fen: str) -> None:
+        try:
+            async with self.external_session.get('http://www.chessdb.cn/cdb.php',
+                                                 params={'action': 'queue', 'board': fen}):
+                pass
+        except aiohttp.ClientError as e:
+            print(f'ChessDB: {e}')
+
     @retry(**BASIC_RETRY_CONDITIONS)
     async def resign_game(self, game_id: str) -> bool:
         try:
