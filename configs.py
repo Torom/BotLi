@@ -7,7 +7,7 @@ class Engine_Config:
     path: str
     ponder: bool
     silence_stderr: bool
-    move_overhead_multiplier: float | None
+    move_overhead_multiplier: float
     uci_options: dict[str, Any]
 
 

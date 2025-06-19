@@ -884,10 +884,7 @@ class Lichess_Game:
         return move_sources
 
     def _get_move_overhead(self, engine_config: Engine_Config) -> float:
-        move_overhead_multiplier = (1.0
-                                    if engine_config.move_overhead_multiplier is None
-                                    else engine_config.move_overhead_multiplier)
-        return max(self.game_info.initial_time_ms / 60_000 * move_overhead_multiplier, 1.0)
+        return max(self.game_info.initial_time_ms / 60_000 * engine_config.move_overhead_multiplier, 1.0)
 
     def _has_time(self, min_time: float) -> bool:
         if len(self.board.move_stack) < 2:

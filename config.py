@@ -106,6 +106,7 @@ class Config:
             ['name', str, '"name" must be a string wrapped in quotes.'],
             ['ponder', bool, '"ponder" must be a bool.'],
             ['silence_stderr', bool, '"silence_stderr" must be a bool.'],
+            ['move_overhead_multiplier', float, '"move_overhead_multiplier" must be a float.'],
             ['uci_options', dict | None, '"uci_options" must be a dictionary with indented keys followed by colons.']]
 
         engine_configs: dict[str, Engine_Config] = {}
@@ -132,7 +133,7 @@ class Config:
             engine_configs[key] = Engine_Config(settings['path'],
                                                 settings['ponder'],
                                                 settings['silence_stderr'],
-                                                settings.get('move_overhead_multiplier'),
+                                                settings['move_overhead_multiplier'],
                                                 settings['uci_options'] or {})
 
         return engine_configs
