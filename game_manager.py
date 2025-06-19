@@ -169,18 +169,18 @@ class Game_Manager:
         if tournament := self.unstarted_tournaments.pop(tournament_id, None):
             tournament.cancel()
             print(f'Removed unstarted tournament "{tournament.name}".')
-            return
 
         if tournament := self.tournaments.pop(tournament_id, None):
             await self.api.withdraw_tournament(tournament_id)
             tournament.cancel()
             print(f'Left tournament "{tournament.name}".')
-            return
 
         for tournament in list(self.tournaments_to_join):
             if tournament.id_ == tournament_id:
                 self.tournaments_to_join.remove(tournament)
                 print(f'Removed unjoined tournament "{tournament.name}".')
+
+        self._set_next_matchmaking(1)
 
     async def _tournament_start_task(self, tournament: Tournament) -> None:
         await asyncio.sleep(tournament.seconds_to_start)
