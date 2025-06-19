@@ -11,6 +11,10 @@ engines:
       Threads: 4                          # Max CPU threads the engine can use.
       Hash: 256                           # Max memory (in megabytes) the engine can allocate.
       Move Overhead: 100                  # Increase if your bot flags games too often.
+    limits:                               # Limits that end the move calculation early.
+#     time: 5.0                           # Max time per move in seconds.
+#     depth: 26                           # Max depth per move.
+#     nodes: 4000000                      # Max nodes per move.
 # variants:                               # Engine used for variants when no suitable special engine is configured.
 #   dir: "./engines"                      # Directory containing the engine.
 #   name: "fairy-stockfish"               # Binary name of the engine to use.
@@ -21,6 +25,10 @@ engines:
 #     Threads: 4                          # Max CPU threads the engine can use.
 #     Hash: 256                           # Max memory (in megabytes) the engine can allocate.
 #     Move Overhead: 100                  # Increase if your bot flags games too often.
+#   limits:                               # Limits that end the move calculation early.
+#     time: 5.0                           # Max time per move in seconds.
+#     depth: 26                           # Max depth per move.
+#     nodes: 4000000                      # Max nodes per move.
 # Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
 # 'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
 # Append '_white' or '_black' to use the engine only as the specific color.
