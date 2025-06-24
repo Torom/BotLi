@@ -237,8 +237,6 @@ class Game_Manager:
     async def _accept_challenge(self, challenge: Challenge) -> None:
         if await self.api.accept_challenge(challenge.challenge_id):
             self.reserved_game_spots += 1
-        else:
-            print(f'Challenge "{challenge.challenge_id}" could not be accepted!')
 
     async def _check_matchmaking(self) -> None:
         self.next_matchmaking = None

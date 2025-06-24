@@ -61,14 +61,12 @@ class API:
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def accept_challenge(self, challenge_id: str) -> bool:
-        try:
-            async with self.lichess_session.post(f'/api/challenge/{challenge_id}/accept') as response:
-                response.raise_for_status()
-                return True
-        except aiohttp.ClientResponseError as e:
-            if not 400 <= e.status <= 499:
-                print(e)
-            return False
+        async with self.lichess_session.post(f'/api/challenge/{challenge_id}/accept') as response:
+            json_response = await response.json()
+            if 'error' in json_response:
+                print(f'Challenge "{challenge_id}" could not be accepted: {json_response["error"]}')
+                return False
+            return True
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def cancel_challenge(self, challenge_id: str) -> bool:
