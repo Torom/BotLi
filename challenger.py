@@ -1,5 +1,7 @@
+import asyncio
+
 from api import API
-from botli_dataclasses import Challenge_Request, Challenge_Response
+from botli_dataclasses import API_Challenge_Reponse, Challenge_Request, Challenge_Response
 
 
 class Challenger:
@@ -9,7 +11,10 @@ class Challenger:
     async def create(self, challenge_request: Challenge_Request) -> Challenge_Response:
         challenge_id = None
 
-        async for response in self.api.create_challenge(challenge_request):
+        challenge_queue: asyncio.Queue[API_Challenge_Reponse] = asyncio.Queue()
+        asyncio.create_task(self.api.create_challenge(challenge_request, challenge_queue))
+
+        while response := await challenge_queue.get():
             if response.challenge_id:
                 challenge_id = response.challenge_id
 
