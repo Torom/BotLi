@@ -220,6 +220,13 @@ class Game_Manager:
         if self.reserved_game_spots > 0:
             self.reserved_game_spots -= 1
 
+        if 'tournamentId' in game_event and game_event['tournamentId'] not in self.tournaments:
+            tournament_info = await self.api.get_tournament_info(game_event['tournamentId'])
+            tournament = Tournament.from_tournament_info(tournament_info)
+            tournament.end_task = asyncio.create_task(self._tournament_end_task(tournament))
+            self.tournaments[tournament.id_] = tournament
+            print(f'External joined tournament "{tournament.name}" detected.')
+
         game = Game(self.api, self.config, self.username, game_event['id'])
         task = asyncio.create_task(game.run())
         task.add_done_callback(self._task_callback)
