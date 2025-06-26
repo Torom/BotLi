@@ -115,6 +115,7 @@ class Game_Information:
     variant_name: str
     initial_fen: str
     state: dict[str, Any]
+    tournament_id: str | None
 
     @classmethod
     def from_gameFull_event(cls, gameFull_event: dict[str, Any]) -> 'Game_Information':
@@ -139,10 +140,11 @@ class Game_Information:
         variant_name = gameFull_event['variant']['name']
         initial_fen = gameFull_event['initialFen']
         state = gameFull_event['state']
+        tournament_id = gameFull_event.get('tournamentId')
 
         return cls(id_, white_title, white_name, white_rating, white_ai_level, white_provisional, black_title,
                    black_name, black_rating, black_ai_level, black_provisional, initial_time_ms, increment_ms, speed,
-                   rated, variant, variant_name, initial_fen, state)
+                   rated, variant, variant_name, initial_fen, state, tournament_id)
 
     @property
     def id_str(self) -> str:

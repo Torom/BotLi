@@ -213,6 +213,11 @@ class Game_Manager:
             self.matchmaking.on_game_finished(game.was_aborted)
             self.current_matchmaking_game_id = None
 
+        if game.ejected_tournament in self.tournaments:
+            self.tournaments[game.ejected_tournament].cancel()
+            del self.tournaments[game.ejected_tournament]
+            print(f'Ignoring tournament "{game.ejected_tournament}" after failure to start the game.')
+
         self._set_next_matchmaking(self.config.matchmaking.delay)
         self.changed_event.set()
 

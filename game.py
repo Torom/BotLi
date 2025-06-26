@@ -14,7 +14,10 @@ class Game:
         self.config = config
         self.username = username
         self.game_id = game_id
+
         self.was_aborted = False
+        self.ejected_tournament: str | None = None
+
         self.move_task: asyncio.Task[None] | None = None
 
     async def run(self) -> None:
@@ -69,7 +72,6 @@ class Game:
                 self.move_task = asyncio.create_task(self._make_move(lichess_game, chatter))
 
         abortion_task.cancel()
-        self.was_aborted = lichess_game.is_abortable
         await lichess_game.close()
 
     async def _make_move(self, lichess_game: Lichess_Game, chatter: Chatter) -> None:
@@ -124,32 +126,36 @@ class Game:
                 case 'timeout':
                     message += f'! {loser} timed out.'
                 case 'noStart':
+                    if loser == self.username:
+                        self.ejected_tournament = info.tournament_id
                     message += f'! {loser} has not started the game.'
         else:
             white_result = '½'
             black_result = '½'
 
-            if game_state['status'] == 'draw':
-                if lichess_game.board.is_fifty_moves():
-                    message = 'Game drawn by 50-move rule.'
-                elif lichess_game.board.is_repetition():
-                    message = 'Game drawn by threefold repetition.'
-                elif lichess_game.board.is_insufficient_material():
-                    message = 'Game drawn due to insufficient material.'
-                elif lichess_game.board.is_variant_draw():
-                    message = 'Game drawn by variant rules.'
-                else:
-                    message = 'Game drawn by agreement.'
-            elif game_state['status'] == 'stalemate':
-                message = 'Game drawn by stalemate.'
-            elif game_state['status'] == 'outoftime':
-                out_of_time_player = info.black_name if game_state['wtime'] else info.white_name
-                message = f'Game drawn. {out_of_time_player} ran out of time.'
-            else:
-                message = 'Game aborted.'
+            match game_state['status']:
+                case 'draw':
+                    if lichess_game.board.is_fifty_moves():
+                        message = 'Game drawn by 50-move rule.'
+                    elif lichess_game.board.is_repetition():
+                        message = 'Game drawn by threefold repetition.'
+                    elif lichess_game.board.is_insufficient_material():
+                        message = 'Game drawn due to insufficient material.'
+                    elif lichess_game.board.is_variant_draw():
+                        message = 'Game drawn by variant rules.'
+                    else:
+                        message = 'Game drawn by agreement.'
+                case 'stalemate':
+                    message = 'Game drawn by stalemate.'
+                case 'outoftime':
+                    out_of_time_player = info.black_name if game_state['wtime'] else info.white_name
+                    message = f'Game drawn. {out_of_time_player} ran out of time.'
+                case _:
+                    self.was_aborted = True
+                    message = 'Game aborted.'
 
-                white_result = 'X'
-                black_result = 'X'
+                    white_result = 'X'
+                    black_result = 'X'
 
         opponents_str = f'{info.white_str} {white_result} - {black_result} {info.black_str}'
         message = (5 * ' ').join([info.id_str, opponents_str, message])
