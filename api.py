@@ -161,6 +161,8 @@ class API:
         try:
             async with self.lichess_session.get('/api/cloud-eval', params={'fen': fen, 'variant': variant},
                                                 timeout=aiohttp.ClientTimeout(total=timeout)) as response:
+                if response.status == 404:
+                    return
                 response.raise_for_status()
                 return await response.json()
         except (aiohttp.ClientError, json.JSONDecodeError) as e:
