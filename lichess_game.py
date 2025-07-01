@@ -97,6 +97,13 @@ class Lichess_Game:
                     return 'chess960'
 
             else:
+                if game_info.white_title != 'BOT' or game_info.black_title != 'BOT':
+                    if f'humans_{color}' in config.engines:
+                        return f'humans_{color}'
+
+                    if 'humans' in config.engines:
+                        return 'humans'
+
                 if f'{game_info.speed}_{color}' in config.engines:
                     return f'{game_info.speed}_{color}'
 
@@ -335,6 +342,13 @@ class Lichess_Game:
                 return 'chess960'
 
         else:
+            if self.game_info.white_title != 'BOT' or self.game_info.black_title != 'BOT':
+                if f'humans_{color}' in self.config.opening_books.books:
+                    return f'humans_{color}'
+
+                if 'humans' in self.config.opening_books.books:
+                    return 'humans'
+
             if f'{self.game_info.speed}_{color}' in self.config.opening_books.books:
                 return f'{self.game_info.speed}_{color}'
 

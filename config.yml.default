@@ -30,7 +30,8 @@ engines:
 #     depth: 26                           # Max depth per move.
 #     nodes: 4000000                      # Max nodes per move.
 # Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
-# 'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
+# 'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings', '3check'
+# and 'humans' as well.
 # Append '_white' or '_black' to use the engine only as the specific color.
 
 syzygy:
@@ -78,7 +79,8 @@ opening_books:
       names:                              # List of names of books to use if there is no specific book for the time control, white, black or chess960.
         - DefaultBook
 #   Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
-#   'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
+#   'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings', '3check'
+#   and 'humans' as well.
 #   Append '_white' or '_black' to use the books only as the specific color.
 
 online_moves:
