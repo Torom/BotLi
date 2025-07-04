@@ -131,7 +131,13 @@ class Game_Manager:
         self.changed_event.set()
 
     async def _process_tournament_request(self, tournament_request: Tournament_Request) -> None:
+        if tournament_request.id_ in self.unstarted_tournaments:
+            return
+
         if tournament_request.id_ in self.tournaments:
+            return
+
+        if tournament_request.id_ in {tournament.id_ for tournament in self.tournaments_to_join}:
             return
 
         tournament_info = await self.api.get_tournament_info(tournament_request.id_)
