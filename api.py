@@ -279,7 +279,7 @@ class API:
                                                  params={'action': 'queue', 'board': fen}):
                 pass
         except aiohttp.ClientError as e:
-            print(f'ChessDB: {e}')
+            print(f'ChessDB Queue: {e}')
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def resign_game(self, game_id: str) -> bool:

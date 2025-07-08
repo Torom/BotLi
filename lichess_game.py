@@ -516,6 +516,9 @@ class Lichess_Game:
             self.out_of_chessdb_counter += 1
             return
 
+        if len(response['moves']) < 5 <= self.board.legal_moves.count():
+            asyncio.create_task(self.api.queue_chessdb(fen))
+
         self.out_of_chessdb_counter = 0
         if self.config.online_moves.chessdb.selection == 'optimal' or response['moves'][0]['rank'] == 0:
             candidate_moves = [chessdb_move for chessdb_move in response['moves']
