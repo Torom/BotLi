@@ -70,6 +70,7 @@ class Lichess_Cloud_Config:
     enabled: bool
     priority: int
     only_without_book: bool
+    use_for_variants: bool
     min_eval_depth: int
     min_time: int
     timeout: int

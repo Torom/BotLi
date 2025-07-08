@@ -101,6 +101,7 @@ online_moves:
     enabled: false                        # Activate online moves from Lichess cloud eval.
     priority: 200                         # Priority with which this move source is used. Higher priority is used first.
     only_without_book: false              # Whether the cloud should only be used if there is no matching book.
+    use_for_variants: false               # Whether the cloud should be used for other variants than standard and chess960.
     min_eval_depth: 10                    # Minimum evaluation depth.
     min_time: 10                          # Time the bot must have at least to use the online move. +10 seconds in games without increment.
     timeout: 5                            # Time the server has to respond.

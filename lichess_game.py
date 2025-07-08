@@ -887,7 +887,8 @@ class Lichess_Game:
 
         if self.config.online_moves.lichess_cloud.enabled:
             if not self.config.online_moves.lichess_cloud.only_without_book or not self.book_settings.readers:
-                opening_sources[self._make_cloud_move] = self.config.online_moves.lichess_cloud.priority
+                if self.board.uci_variant == 'chess' or self.config.online_moves.lichess_cloud.use_for_variants:
+                    opening_sources[self._make_cloud_move] = self.config.online_moves.lichess_cloud.priority
 
         if self.config.online_moves.chessdb.enabled:
             if not self.config.online_moves.chessdb.only_without_book or not self.book_settings.readers:
