@@ -82,7 +82,7 @@ class Engine:
                         increment: float
                         ) -> tuple[chess.Move, chess.engine.InfoDict]:
         if len(board.move_stack) < 2:
-            time_limit = 15.0 if self.opponent.is_engine else 5.0
+            time_limit = 10.0 if self.opponent.is_engine else 5.0
             if self.limit_config.time:
                 time_limit = min(time_limit, self.limit_config.time)
 
