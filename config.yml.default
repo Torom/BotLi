@@ -11,7 +11,7 @@ engines:
       Threads: 4                          # Max CPU threads the engine can use.
       Hash: 256                           # Max memory (in megabytes) the engine can allocate.
       Move Overhead: 100                  # Increase if your bot flags games too often.
-    limits:                               # Limits that end the move calculation early.
+    limits:                               # Limits that end the move calculation early. (Commenting allowed)
 #     time: 5.0                           # Max time per move in seconds.
 #     depth: 26                           # Max depth per move.
 #     nodes: 4000000                      # Max nodes per move.
@@ -25,14 +25,13 @@ engines:
 #     Threads: 4                          # Max CPU threads the engine can use.
 #     Hash: 256                           # Max memory (in megabytes) the engine can allocate.
 #     Move Overhead: 100                  # Increase if your bot flags games too often.
-#   limits:                               # Limits that end the move calculation early.
+#   limits:                               # Limits that end the move calculation early. (Commenting allowed)
 #     time: 5.0                           # Max time per move in seconds.
 #     depth: 26                           # Max depth per move.
 #     nodes: 4000000                      # Max nodes per move.
 # Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
-# 'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings', '3check'
-# and 'humans' as well.
-# Append '_white' or '_black' to use the engine only as the specific color.
+# 'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
+# Append '_white', '_black' or '_human' to use the engine only as the specific color or against humans.
 
 syzygy:
   standard:
@@ -79,9 +78,8 @@ opening_books:
       names:                              # List of names of books to use if there is no specific book for the time control, white, black or chess960.
         - DefaultBook
 #   Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
-#   'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings', '3check'
-#   and 'humans' as well.
-#   Append '_white' or '_black' to use the books only as the specific color.
+#   'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
+#   Append '_white', '_black' or '_human' to use the engine only as the specific color or against humans.
 
 online_moves:
   opening_explorer:

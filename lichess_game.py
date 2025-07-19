@@ -87,48 +87,37 @@ class Lichess_Game:
     @staticmethod
     def _get_engine_key(config: Config, board: chess.Board, is_white: bool, game_info: Game_Information) -> str:
         color = 'white' if is_white else 'black'
+        is_human = game_info.white_title != 'BOT' or game_info.black_title != 'BOT'
+
+        def check_engine_key(base_name: str) -> str | None:
+            if is_human and f'{base_name}_human' in config.engines:
+                return f'{base_name}_human'
+
+            if f'{base_name}_{color}' in config.engines:
+                return f'{base_name}_{color}'
+
+            if base_name in config.engines:
+                return base_name
 
         if board.uci_variant == 'chess':
             if board.chess960:
-                if f'chess960_{color}' in config.engines:
-                    return f'chess960_{color}'
-
-                if 'chess960' in config.engines:
-                    return 'chess960'
+                if key := check_engine_key('chess960'):
+                    return key
 
             else:
-                if game_info.white_title != 'BOT' or game_info.black_title != 'BOT':
-                    if f'humans_{color}' in config.engines:
-                        return f'humans_{color}'
-
-                    if 'humans' in config.engines:
-                        return 'humans'
-
-                if f'{game_info.speed}_{color}' in config.engines:
-                    return f'{game_info.speed}_{color}'
-
-                if game_info.speed in config.engines:
-                    return game_info.speed
+                if key := check_engine_key(game_info.speed):
+                    return key
 
         else:
-            for alias in [alias.lower() for alias in board.aliases]:
-                if f'{alias}_{color}' in config.engines:
-                    return f'{alias}_{color}'
+            for alias in map(str.lower, board.aliases):
+                if key := check_engine_key(alias):
+                    return key
 
-                if alias in config.engines:
-                    return alias
+            if key := check_engine_key('variants'):
+                return key
 
-            if f'variants_{color}' in config.engines:
-                return f'variants_{color}'
-
-            if 'variants' in config.engines:
-                return 'variants'
-
-        if f'standard_{color}' in config.engines:
-            return f'standard_{color}'
-
-        if 'standard' in config.engines:
-            return 'standard'
+        if key := check_engine_key('standard'):
+            return key
 
         raise RuntimeError(f'No suitable engine for "{board.uci_variant}" configured.')
 
@@ -323,45 +312,34 @@ class Lichess_Game:
 
     def _get_book_key(self) -> str | None:
         color = 'white' if self.is_white else 'black'
+        is_human = self.game_info.white_title != 'BOT' or self.game_info.black_title != 'BOT'
+
+        def check_book_key(base_name: str) -> str | None:
+            if is_human and f'{base_name}_human' in self.config.opening_books.books:
+                return f'{base_name}_human'
+
+            if f'{base_name}_{color}' in self.config.opening_books.books:
+                return f'{base_name}_{color}'
+
+            if base_name in self.config.opening_books.books:
+                return base_name
 
         if self.board.uci_variant != 'chess':
-            for alias in [alias.lower() for alias in self.board.aliases]:
-                if f'{alias}_{color}' in self.config.opening_books.books:
-                    return f'{alias}_{color}'
-
-                if alias in self.config.opening_books.books:
-                    return alias
+            for alias in map(str.lower, self.board.aliases):
+                if key := check_book_key(alias):
+                    return key
 
             return
 
         if self.board.chess960:
-            if f'chess960_{color}' in self.config.opening_books.books:
-                return f'chess960_{color}'
-
-            if 'chess960' in self.config.opening_books.books:
-                return 'chess960'
+            if key := check_book_key('chess960'):
+                return key
 
         else:
-            if self.game_info.white_title != 'BOT' or self.game_info.black_title != 'BOT':
-                if f'humans_{color}' in self.config.opening_books.books:
-                    return f'humans_{color}'
+            if key := check_book_key(self.game_info.speed):
+                return key
 
-                if 'humans' in self.config.opening_books.books:
-                    return 'humans'
-
-            if f'{self.game_info.speed}_{color}' in self.config.opening_books.books:
-                return f'{self.game_info.speed}_{color}'
-
-            if self.game_info.speed in self.config.opening_books.books:
-                return self.game_info.speed
-
-        if f'standard_{color}' in self.config.opening_books.books:
-            return f'standard_{color}'
-
-        if 'standard' in self.config.opening_books.books:
-            return 'standard'
-
-        return
+        return check_book_key('standard')
 
     async def _make_opening_explorer_move(self) -> Move_Response | None:
         out_of_book = self.out_of_opening_explorer_counter >= 5
