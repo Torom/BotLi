@@ -55,8 +55,8 @@ class Config:
         challenge_config = cls._get_challenge_config(yaml_config['challenge'])
         matchmaking_config = cls._get_matchmaking_config(yaml_config['matchmaking'])
         messages_config = cls._get_messages_config(yaml_config['messages'] or {})
-        whitelist = [string.lower() for string in yaml_config.get('whitelist') or []]
-        blacklist = [string.lower() for string in yaml_config.get('blacklist') or []]
+        whitelist = [username.lower() for username in yaml_config.get('whitelist') or []]
+        blacklist = [username.lower() for username in yaml_config.get('blacklist') or []]
 
         return cls(yaml_config.get('url', 'https://lichess.org'),
                    yaml_config['token'],
@@ -91,6 +91,8 @@ class Config:
             ['challenge', dict, 'Section `challenge` must be a dictionary with indented keys followed by colons.'],
             ['matchmaking', dict, 'Section `matchmaking` must be a dictionary with indented keys followed by colons.'],
             ['messages', dict | None, 'Section `messages` must be a dictionary with indented keys followed by colons.'],
+            ['whitelist', list | None, 'Section `whitelist` must be a list.'],
+            ['blacklist', list | None, 'Section `blacklist` must be a list.'],
             ['books', dict, 'Section `books` must be a dictionary with indented keys followed by colons.']]
         for section in sections:
             if section[0] not in config:
