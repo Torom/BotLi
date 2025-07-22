@@ -135,6 +135,7 @@ class Challenge_Config:
     time_controls: list[str]
     bot_modes: list[str]
     human_modes: list[str]
+    casual_variants_only: bool | None  # Changed from rated_standard_only
 
 
 @dataclass
