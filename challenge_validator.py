@@ -30,13 +30,19 @@ class Challenge_Validator:
             print(f'Variant "{variant}" is not allowed according to config.')
             return Decline_Reason.VARIANT
 
+        # Check rated_standard_only for rated challenges
+        is_rated: bool = challenge_event['rated']
+        if is_rated and self.config.challenge.casual_variants_only and variant not in ['standard', 'chess960']:
+            print(f'Rated challenges are only allowed for standard variant according to config.')
+            return Decline_Reason.CASUAL
+
         if (len(self.game_manager.tournaments) +
                 len(self.game_manager.tournaments_to_join)) >= self.config.challenge.concurrency:
             print('Concurrency exhausted due to tournaments.')
             return Decline_Reason.LATER
 
         if challenge_event['challenger']['id'] in self.config.whitelist:
-            return
+            return None
 
         if challenge_event['challenger']['id'] in self.config.blacklist:
             print('Challenger is blacklisted.')
@@ -86,7 +92,6 @@ class Challenge_Validator:
             print('Bullet against bots is only allowed with increment according to config.')
             return Decline_Reason.TOO_FAST
 
-        is_rated: bool = challenge_event['rated']
         is_casual = not is_rated
         if is_rated and 'rated' not in modes:
             print('Rated is not allowed according to config.')
@@ -95,6 +100,8 @@ class Challenge_Validator:
         if is_casual and 'casual' not in modes:
             print('Casual is not allowed according to config.')
             return Decline_Reason.RATED
+
+        return None
 
     def _get_time_controls(self, speeds: list[str]) -> list[tuple[int, int]]:
         time_controls: list[tuple[int, int]] = []
