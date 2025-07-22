@@ -163,6 +163,7 @@ challenge:                                # Incoming challenges. (Commenting all
   human_modes:                            # Game modes to accept against humans.
     - casual                              # Unrated games.
     - rated                               # Rated games
+  bots_casual_variants: true              # Accept only casual variant challenges from bots
 
 matchmaking:
   delay: 10                               # Time in seconds the bot must be idle before a new challenge is started.
