@@ -30,6 +30,12 @@ class Challenge_Validator:
             print(f'Variant "{variant}" is not allowed according to config.')
             return Decline_Reason.VARIANT
 
+        is_rated: bool = challenge_event['rated']
+        is_bot: bool = challenge_event['challenger']['title'] == 'BOT'
+        if is_bot and is_rated and self.config.challenge.bots_casual_variants and variant not in ['standard', 'chess960']:
+            print(f'Rated challenges from bots are only allowed for standard or chess960 variants according to config.')
+            return Decline_Reason.CASUAL
+
         if (len(self.game_manager.tournaments) +
                 len(self.game_manager.tournaments_to_join)) >= self.config.challenge.concurrency:
             print('Concurrency exhausted due to tournaments.')
