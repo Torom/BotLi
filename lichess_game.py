@@ -169,6 +169,7 @@ class Lichess_Game:
         else:
             for _ in range(-delta):
                 self.board.pop()
+            self.last_pv.clear()
             await self.start_pondering()
 
         self.white_time = gameState_event['wtime'] / 1000

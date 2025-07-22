@@ -27,9 +27,6 @@ class Game:
         info = Game_Information.from_gameFull_event(await game_stream_queue.get())
         lichess_game = await Lichess_Game.acreate(self.api, self.config, self.username, info)
         chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
-        opponent_takeback = 'btakeback' if lichess_game.is_white else 'wtakeback'
-        opponent_is_bot = info.white_title == 'BOT' and info.black_title == 'BOT'
-        max_takebacks = 0 if opponent_is_bot else self.config.challenge.max_takebacks
 
         self._print_game_information(info)
 
@@ -46,8 +43,10 @@ class Game:
         else:
             await lichess_game.start_pondering()
 
+        opponent_is_bot = info.white_title == 'BOT' and info.black_title == 'BOT'
         abortion_seconds = 30 if opponent_is_bot else 60
         abortion_task = asyncio.create_task(self._abortion_task(lichess_game, chatter, abortion_seconds))
+        max_takebacks = 0 if opponent_is_bot else self.config.challenge.max_takebacks
 
         while event := await game_stream_queue.get():
             match event['type']:
@@ -61,7 +60,7 @@ class Game:
                 case 'gameFull':
                     event = event['state']
 
-            if event.get(opponent_takeback):
+            if event.get('wtakeback') or event.get('btakeback'):
                 if self.takeback_count < max_takebacks:
                     if await self.api.handle_takeback(self.game_id, True):
                         self.takeback_count += 1
