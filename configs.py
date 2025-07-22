@@ -135,6 +135,7 @@ class Challenge_Config:
     time_controls: list[str]
     bot_modes: list[str]
     human_modes: list[str]
+    bots_casual_variants: bool = False
 
 
 @dataclass
