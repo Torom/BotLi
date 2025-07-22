@@ -55,8 +55,8 @@ class Config:
         challenge_config = cls._get_challenge_config(yaml_config['challenge'])
         matchmaking_config = cls._get_matchmaking_config(yaml_config['matchmaking'])
         messages_config = cls._get_messages_config(yaml_config['messages'] or {})
-        whitelist = [username.lower() for username in yaml_config.get('whitelist') or []]
-        blacklist = [username.lower() for username in yaml_config.get('blacklist') or []]
+        whitelist = [string.lower() for string in yaml_config.get('whitelist') or []]
+        blacklist = [string.lower() for string in yaml_config.get('blacklist') or []]
 
         return cls(yaml_config.get('url', 'https://lichess.org'),
                    yaml_config['token'],
@@ -91,8 +91,6 @@ class Config:
             ['challenge', dict, 'Section `challenge` must be a dictionary with indented keys followed by colons.'],
             ['matchmaking', dict, 'Section `matchmaking` must be a dictionary with indented keys followed by colons.'],
             ['messages', dict | None, 'Section `messages` must be a dictionary with indented keys followed by colons.'],
-            ['whitelist', list | None, 'Section `whitelist` must be a list.'],
-            ['blacklist', list | None, 'Section `blacklist` must be a list.'],
             ['books', dict, 'Section `books` must be a dictionary with indented keys followed by colons.']]
         for section in sections:
             if section[0] not in config:
@@ -432,7 +430,9 @@ class Config:
             ['variants', list, '"variants" must be a list of variants.'],
             ['time_controls', list | None, '"time_controls" must be a list of speeds or time controls.'],
             ['bot_modes', list | None, '"bot_modes" must be a list of game modes.'],
-            ['human_modes', list | None, '"human_modes" must be a list of game modes.']]
+            ['human_modes', list | None, '"human_modes" must be a list of game modes.'],
+            ['casual_variants_only', bool, '"casual_variants_only" must be a bool.'] 
+    ]
 
         for subsection in challenge_sections:
             if subsection[0] not in challenge_section:
@@ -450,14 +450,16 @@ class Config:
                                 challenge_section['variants'],
                                 challenge_section['time_controls'] or [],
                                 challenge_section['bot_modes'] or [],
-                                challenge_section['human_modes'] or [])
+                                challenge_section['human_modes'] or [],
+                                challenge_section.get('casual_variants_only', False))
+                                
 
     @staticmethod
     def _get_matchmaking_config(matchmaking_section: dict[str, Any]) -> Matchmaking_Config:
         matchmaking_sections = [
             ['delay', int, '"delay" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.'],
-            ['selection', str, '"selection" must be one of "weighted_random", "sequential" or "cyclic".'],
+            ['selection', str, '"selection" must be "weighted_random" or "sequential".'],
             ['types', dict, '"types" must be a dictionary with indented keys followed by colons.']]
 
         for subsection in matchmaking_sections:
