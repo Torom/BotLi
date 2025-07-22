@@ -126,6 +126,7 @@ class Resign_Config:
 @dataclass
 class Challenge_Config:
     concurrency: int
+    max_takebacks: int
     bullet_with_increment_only: bool
     min_increment: int | None
     max_increment: int | None

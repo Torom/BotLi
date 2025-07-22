@@ -58,7 +58,7 @@ class API:
             print(e)
             return False
 
-    @retry(**BASIC_RETRY_CONDITIONS)
+    @retry(**JSON_RETRY_CONDITIONS)
     async def accept_challenge(self, challenge_id: str) -> bool:
         async with self.lichess_session.post(f'/api/challenge/{challenge_id}/accept') as response:
             json_response = await response.json()
@@ -248,6 +248,16 @@ class API:
         async with self.lichess_session.get('/api/users/status', params={'ids': username}) as response:
             json_response = await response.json()
             return json_response[0]
+
+    @retry(**JSON_RETRY_CONDITIONS)
+    async def handle_takeback(self, game_id: str, accept: bool) -> bool:
+        accept_str = 'yes' if accept else 'no'
+        async with self.lichess_session.post(f'/api/bot/game/{game_id}/takeback/{accept_str}') as response:
+            json_response = await response.json()
+            if 'error' in json_response:
+                print(f'Takeback error: {json_response["error"]}')
+                return False
+            return True
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def join_team(self, team: str, password: str | None) -> bool:

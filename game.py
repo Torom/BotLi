@@ -15,6 +15,7 @@ class Game:
         self.username = username
         self.game_id = game_id
 
+        self.takeback_count = 0
         self.was_aborted = False
         self.ejected_tournament: str | None = None
 
@@ -26,6 +27,9 @@ class Game:
         info = Game_Information.from_gameFull_event(await game_stream_queue.get())
         lichess_game = await Lichess_Game.acreate(self.api, self.config, self.username, info)
         chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
+        opponent_takeback = 'btakeback' if lichess_game.is_white else 'wtakeback'
+        opponent_is_bot = info.white_title == 'BOT' and info.black_title == 'BOT'
+        max_takebacks = 0 if opponent_is_bot else self.config.challenge.max_takebacks
 
         self._print_game_information(info)
 
@@ -42,8 +46,7 @@ class Game:
         else:
             await lichess_game.start_pondering()
 
-        opponent_title = info.black_title if lichess_game.is_white else info.white_title
-        abortion_seconds = 30 if opponent_title == 'BOT' else 60
+        abortion_seconds = 30 if opponent_is_bot else 60
         abortion_task = asyncio.create_task(self._abortion_task(lichess_game, chatter, abortion_seconds))
 
         while event := await game_stream_queue.get():
@@ -58,7 +61,18 @@ class Game:
                 case 'gameFull':
                     event = event['state']
 
-            lichess_game.update(event)
+            if event.get(opponent_takeback):
+                if self.takeback_count < max_takebacks:
+                    if await self.api.handle_takeback(self.game_id, True):
+                        self.takeback_count += 1
+                        if self.move_task:
+                            self.move_task.cancel()
+                            self.move_task = None
+                else:
+                    await self.api.handle_takeback(self.game_id, False)
+                continue
+
+            await lichess_game.update(event)
 
             if event['status'] != 'started':
                 if self.move_task:
@@ -68,7 +82,7 @@ class Game:
                 await chatter.send_goodbyes()
                 break
 
-            if lichess_game.is_our_turn and not lichess_game.board.is_repetition():
+            if lichess_game.is_our_turn and not self.move_task and not lichess_game.board.is_repetition():
                 self.move_task = asyncio.create_task(self._make_move(lichess_game, chatter))
 
         abortion_task.cancel()
