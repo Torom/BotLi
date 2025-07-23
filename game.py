@@ -61,17 +61,19 @@ class Game:
                     event = event['state']
 
             if event.get('wtakeback') or event.get('btakeback'):
-                if self.takeback_count < max_takebacks:
-                    if await self.api.handle_takeback(self.game_id, True):
-                        self.takeback_count += 1
-                        if self.move_task:
-                            self.move_task.cancel()
-                            self.move_task = None
-                else:
+                if self.takeback_count >= max_takebacks:
                     await self.api.handle_takeback(self.game_id, False)
+                    continue
+
+                if await self.api.handle_takeback(self.game_id, True):
+                    if self.move_task:
+                        self.move_task.cancel()
+                        self.move_task = None
+                    await lichess_game.takeback()
+                    self.takeback_count += 1
                 continue
 
-            await lichess_game.update(event)
+            lichess_game.update(event)
 
             if event['status'] != 'started':
                 if self.move_task:

@@ -157,23 +157,20 @@ class Lichess_Game:
 
         return Lichess_Move(move_response.move.uci(), self._offer_draw(move_response), self._resign(move_response))
 
-    async def update(self, gameState_event: dict[str, Any]) -> None:
-        moves = gameState_event['moves'].split()
-        delta = len(moves) - len(self.board.move_stack)
-
-        if delta == 0:
-            return
-
-        if delta > 0:
-            self.board.push(chess.Move.from_uci(moves[-1]))
-        else:
-            for _ in range(-delta):
-                self.board.pop()
-            self.last_pv.clear()
-            await self.start_pondering()
-
+    def update(self, gameState_event: dict[str, Any]) -> None:
         self.white_time = gameState_event['wtime'] / 1000
         self.black_time = gameState_event['btime'] / 1000
+
+        moves = gameState_event['moves'].split()
+        if len(moves) > len(self.board.move_stack):
+            self.board.push(chess.Move.from_uci(moves[-1]))
+
+    async def takeback(self) -> None:
+        self.board.pop()
+        if self.is_our_turn:
+            self.board.pop()
+        self.last_pv.clear()
+        await self.start_pondering()
 
     @property
     def is_our_turn(self) -> bool:
