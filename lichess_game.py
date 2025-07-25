@@ -495,13 +495,11 @@ class Lichess_Game:
             self._reduce_own_time(time.perf_counter() - start_time)
             return
 
+        asyncio.create_task(self.api.queue_chessdb(fen))
+
         if response['status'] != 'ok':
-            asyncio.create_task(self.api.queue_chessdb(fen))
             self.out_of_chessdb_counter += 1
             return
-
-        if len(response['moves']) < 5 <= self.board.legal_moves.count():
-            asyncio.create_task(self.api.queue_chessdb(fen))
 
         self.out_of_chessdb_counter = 0
         if self.config.online_moves.chessdb.selection == 'optimal' or response['moves'][0]['rank'] == 0:

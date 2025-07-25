@@ -286,7 +286,7 @@ class API:
     async def queue_chessdb(self, fen: str) -> None:
         try:
             async with self.external_session.get('http://www.chessdb.cn/cdb.php',
-                                                 params={'action': 'queue', 'board': fen}):
+                                                 params={'action': 'querypv', 'board': fen}):
                 pass
         except aiohttp.ClientError as e:
             print(f'ChessDB Queue: {e}')
