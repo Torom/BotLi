@@ -116,7 +116,7 @@ class User_Interface:
 
     async def _test_engines(self) -> None:
         for engine_name, engine_config in self.config.engines.items():
-            print(f'Testing engine "{engine_name}" ... ', end='')
+            print(f'Testing engine "{engine_name}" ... ', end='', flush=True)
             await Engine.test(engine_config)
             print('OK')
 
