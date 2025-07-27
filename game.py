@@ -73,7 +73,7 @@ class Game:
                     self.takeback_count += 1
                 continue
 
-            lichess_game.update(event)
+            has_updated = lichess_game.update(event)
 
             if event['status'] != 'started':
                 if self.move_task:
@@ -83,7 +83,7 @@ class Game:
                 await chatter.send_goodbyes()
                 break
 
-            if lichess_game.is_our_turn and not self.move_task and not lichess_game.board.is_repetition():
+            if has_updated:
                 self.move_task = asyncio.create_task(self._make_move(lichess_game, chatter))
 
         abortion_task.cancel()
