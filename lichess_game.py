@@ -498,7 +498,8 @@ class Lichess_Game:
             self._reduce_own_time(time.perf_counter() - start_time)
             return
 
-        asyncio.create_task(self.api.queue_chessdb(fen))
+        if response['status'] != 'rate limit exceeded':
+            asyncio.create_task(self.api.queue_chessdb(fen))
 
         if response['status'] != 'ok':
             self.out_of_chessdb_counter += 1
