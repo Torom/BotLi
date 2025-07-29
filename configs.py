@@ -53,6 +53,8 @@ class Opening_Books_Config:
 class Opening_Explorer_Config:
     enabled: bool
     priority: int
+    use_player: bool
+    player: str | None
     only_without_book: bool
     use_for_variants: bool
     min_time: int
