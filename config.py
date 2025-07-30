@@ -272,6 +272,7 @@ class Config:
 
         return Opening_Explorer_Config(opening_explorer_section['enabled'],
                                        opening_explorer_section['priority'],
+                                       opening_explorer_section.get('player'),
                                        opening_explorer_section['only_without_book'],
                                        opening_explorer_section['use_for_variants'],
                                        opening_explorer_section['min_time'],
