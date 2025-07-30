@@ -230,10 +230,12 @@ class Lichess_Game:
         if not self.engine.opponent.is_engine and not self.config.offer_draw.against_humans:
             return False
 
-        if (self.config.offer_draw.min_rating is not None and   
-        self.engine.opponent.rating is not None and   
-        self.engine.opponent.rating < self.config.offer_draw.min_rating):  
-        return False  
+        if (
+            self.config.offer_draw.min_rating is not None and   
+            self.engine.opponent.rating is not None and   
+            self.engine.opponent.rating < self.config.offer_draw.min_rating
+        ):  
+            return False  
 
         if not self.increment and self.opponent_time < 10.0:
             return False
@@ -260,10 +262,12 @@ class Lichess_Game:
         if not self.engine.opponent.is_engine and not self.config.resign.against_humans:
             return False
 
-        if (self.config.resign.min_rating is not None and   
-        self.engine.opponent.rating is not None and   
-        self.engine.opponent.rating < self.config.resign.min_rating):  
-        return False  
+        if (
+          self.config.resign.min_rating is not None and   
+          self.engine.opponent.rating is not None and   
+          self.engine.opponent.rating < self.config.resign.min_rating
+        ):  
+          return False  
         
         if not self.increment and self.opponent_time < 10.0:
             return False
