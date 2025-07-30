@@ -84,10 +84,8 @@ opening_books:
 online_moves:
   opening_explorer:
     enabled: false                        # Activate online moves from Lichess opening explorer. The move that has performed best for this bot is played.
-    priority: 300                         # Priority with which this move source is used. Higher priority is used first.     
-    use_player: false                     # Whether the Lichess opening explorer should be used with specific player.  
-    player: "Xxxxxx"                      # Specify which player to query  
-    only_without_book: false              # Whether the Lichess opening explorer should only be used if there is no matching book. 
+    priority: 300                         # Priority with which this move source is used. Higher priority is used first.    
+#   player: Username                      # Player whose Lichess opening explorer should be used. Comment this to use your own or with anti your opponent's.    only_without_book: false              # Whether the Lichess opening explorer should only be used if there is no matching book. 
     use_for_variants: false               # Whether the Lichess opening explorer should be used for other variants than standard and chess960.
     min_time: 10                          # Time the bot must have at least to use the online move. +10 seconds in games without increment.
     timeout: 5                            # Time the server has to respond.
