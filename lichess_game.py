@@ -364,7 +364,10 @@ class Lichess_Game:
         if out_of_book or too_deep or out_of_range or too_many_moves or not has_time:
             return
 
-        if self.config.online_moves.opening_explorer.anti:
+        if self.config.online_moves.opening_explorer.player:
+            color = 'white' if self.board.turn else 'black'
+            username = self.config.online_moves.opening_explorer.player
+        elif self.config.online_moves.opening_explorer.anti:
             color = 'black' if self.board.turn else 'white'
             username = self.game_info.black_name if self.board.turn else self.game_info.white_name
         else:
