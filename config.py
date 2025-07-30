@@ -253,8 +253,6 @@ class Config:
         opening_explorer_sections = [
             ['enabled', bool, '"enabled" must be a bool.'],
             ['priority', int, '"priority" must be an integer.'],
-            ['use_player', bool, '"use_player" must be a bool.'],
-            ['player', int, '"player" must be an integer.'],
             ['only_without_book', bool, '"only_without_book" must be a bool.'],
             ['use_for_variants', bool, '"use_for_variants" must be a bool.'],
             ['min_time', int, '"min_time" must be an integer.'],
