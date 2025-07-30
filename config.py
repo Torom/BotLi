@@ -270,12 +270,6 @@ class Config:
             if not isinstance(opening_explorer_section[subsection[0]], subsection[1]):
                 raise TypeError(f'`online_moves` `opening_explorer` field {subsection[2]}')
 
-        if opening_explorer_section['use_player']:  
-            if 'player' not in opening_explorer_section:  
-                raise RuntimeError('Your config does not have required '  
-                               '`online_moves` `opening_explorer` field `player` when `use_player` is true.')  
-            if not isinstance(opening_explorer_section['player'], str):  
-                raise TypeError('`online_moves` `opening_explorer` field "player" must be a string.')
           
         return Opening_Explorer_Config(opening_explorer_section['enabled'],
                                        opening_explorer_section['priority'],
