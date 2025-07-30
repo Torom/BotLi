@@ -223,53 +223,64 @@ class Lichess_Game:
         if self.gaviota_tablebase:
             self.gaviota_tablebase.close()
 
-    def _offer_draw(self, move_response: Move_Response) -> bool:
-        if not self.config.offer_draw.enabled:
-            return False
+    def _offer_draw(self, move_response: Move_Response) -> bool:  
+    if not self.config.offer_draw.enabled:  
+        return False  
+  
+    if not self.engine.opponent.is_engine and not self.config.offer_draw.against_humans:  
+        return False  
+  
+    # Add min_rating check  
+    if (self.config.offer_draw.min_rating is not None and   
+        self.engine.opponent.rating is not None and   
+        self.engine.opponent.rating < self.config.offer_draw.min_rating):  
+        return False  
+  
+    if not self.increment and self.opponent_time < 10.0:  
+        return False  
+  
+    if not move_response.is_engine_move:  
+        return move_response.is_drawish  
+  
+    if self.board.fullmove_number - (not self.is_white) < self.config.offer_draw.min_game_length:  
+        return False  
+  
+    if len(self.scores) < self.config.offer_draw.consecutive_moves:  
+        return False  
+  
+    for score in islice(self.scores, len(self.scores) - self.config.offer_draw.consecutive_moves, None):  
+        if abs(score.relative.score(mate_score=40_000)) > self.config.offer_draw.score:  
+            return False  
+  
+    return True
 
-        if not self.engine.opponent.is_engine and not self.config.offer_draw.against_humans:
-            return False
-
-        if not self.increment and self.opponent_time < 10.0:
-            return False
-
-        if not move_response.is_engine_move:
-            return move_response.is_drawish
-
-        if self.board.fullmove_number - (not self.is_white) < self.config.offer_draw.min_game_length:
-            return False
-
-        if len(self.scores) < self.config.offer_draw.consecutive_moves:
-            return False
-
-        for score in islice(self.scores, len(self.scores) - self.config.offer_draw.consecutive_moves, None):
-            if abs(score.relative.score(mate_score=40_000)) > self.config.offer_draw.score:
-                return False
-
-        return True
-
-    def _resign(self, move_response: Move_Response) -> bool:
-        if not self.config.resign.enabled:
-            return False
-
-        if not self.engine.opponent.is_engine and not self.config.resign.against_humans:
-            return False
-
-        if not self.increment and self.opponent_time < 10.0:
-            return False
-
-        if not move_response.is_engine_move:
-            return move_response.is_resignable
-
-        if len(self.scores) < self.config.resign.consecutive_moves:
-            return False
-
-        for score in islice(self.scores, len(self.scores) - self.config.resign.consecutive_moves, None):
-            if score.relative.score(mate_score=40_000) > self.config.resign.score:
-                return False
-
-        return True
-
+    def _resign(self, move_response: Move_Response) -> bool:  
+    if not self.config.resign.enabled:  
+        return False  
+  
+    if not self.engine.opponent.is_engine and not self.config.resign.against_humans:  
+        return False  
+  
+    # Add min_rating check  
+    if (self.config.resign.min_rating is not None and   
+        self.engine.opponent.rating is not None and   
+        self.engine.opponent.rating < self.config.resign.min_rating):  
+        return False  
+  
+    if not self.increment and self.opponent_time < 10.0:  
+        return False  
+  
+    if not move_response.is_engine_move:  
+        return move_response.is_resignable  
+  
+    if len(self.scores) < self.config.resign.consecutive_moves:  
+        return False  
+  
+    for score in islice(self.scores, len(self.scores) - self.config.resign.consecutive_moves, None):  
+        if score.relative.score(mate_score=40_000) > self.config.resign.score:  
+            return False  
+  
+    return True
     async def _make_book_move(self) -> Move_Response | None:
         if self.book_settings.max_depth and self.board.ply() >= self.book_settings.max_depth:
             return
