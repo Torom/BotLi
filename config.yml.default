@@ -126,12 +126,14 @@ offer_draw:
   consecutive_moves: 10                   # How many moves in a row the absolute value of the score has to be below the draw value
   min_game_length: 35                     # Earliest move in which draw is offered.
   against_humans: true                    # Activate whether these settings should apply against humans.
+#  min_rating: 2500                      # Minimum opponent rating to offer draws against. (Comment this line to disable)  
 
 resign:
   enabled: false                          # Activate whether the bot should resign games.
   score: -1000                            # If the score is less than or equal to this value, the bot resigns (in cp).
   consecutive_moves: 5                    # How many moves in a row the score has to be below the resign value.
-  against_humans: true                    # Activate whether these settings should apply against humans.
+  against_humans: true                    #Activate whether these settings should apply against humans.          
+ # min_rating: 2500                       # Minimum opponent rating to resign against. (Comment this line to disable
 
 challenge:                                # Incoming challenges.
   concurrency: 1                          # Number of games to play simultaneously.
