@@ -364,7 +364,7 @@ class Lichess_Game:
 
         return check_book_key('standard')
 
-     async def _make_opening_explorer_move(self) -> Move_Response | None:
+    async def _make_opening_explorer_move(self) -> Move_Response | None:
         out_of_book = self.out_of_opening_explorer_counter >= 5
         too_deep = (False
                     if self.config.online_moves.opening_explorer.max_depth is None
