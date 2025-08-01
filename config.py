@@ -399,11 +399,17 @@ class Config:
             if not isinstance(offer_draw_section[subsection[0]], subsection[1]):
                 raise TypeError(f'`offer_draw` subsection {subsection[2]}')
 
-        return Offer_Draw_Config(offer_draw_section['enabled'],
-                                 offer_draw_section['score'],
-                                 offer_draw_section['consecutive_moves'],
-                                 offer_draw_section['min_game_length'],
-                                 offer_draw_section['against_humans'])
+        # Validate optional min_rating field  
+
+        if 'min_rating' in offer_draw_section and not isinstance(offer_draw_section['min_rating'], int):  
+            raise TypeError('`offer_draw` subsection "min_rating" must be an integer.')  
+  
+        return Offer_Draw_Config(offer_draw_section['enabled'],  
+                             offer_draw_section['score'],  
+                             offer_draw_section['consecutive_moves'],  
+                             offer_draw_section['min_game_length'],  
+                             offer_draw_section['against_humans'],  
+                             offer_draw_section.get('min_rating'))
 
     @staticmethod
     def _get_resign_config(resign_section: dict[str, Any]) -> Resign_Config:
@@ -420,10 +426,16 @@ class Config:
             if not isinstance(resign_section[subsection[0]], subsection[1]):
                 raise TypeError(f'`resign` subsection {subsection[2]}')
 
-        return Resign_Config(resign_section['enabled'],
-                             resign_section['score'],
-                             resign_section['consecutive_moves'],
-                             resign_section['against_humans'])
+         #add optional min rating    
+
+        if 'min_rating' in resign_section and not isinstance(resign_section['min_rating'], int):  
+            raise TypeError('`resign` subsection "min_rating" must be an integer.')  
+  
+        return Resign_Config(resign_section['enabled'],  
+                         resign_section['score'],  
+                         resign_section['consecutive_moves'],  
+                         resign_section['against_humans'],  
+                         resign_section.get('min_rating'))
 
     @staticmethod
     def _get_challenge_config(challenge_section: dict[str, Any]) -> Challenge_Config:
