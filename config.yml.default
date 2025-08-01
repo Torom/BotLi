@@ -1,4 +1,4 @@
-token: "XXXXXXXXXXXXXXXXXXXXXXXX"         # Lichess OAuth2 Token
+token: "XXXXXXXXXXXXXXXXXXXXXXXX"         # Lichess OAuth2 Token.
 
 engines:
   standard:                               # Engine used for standard chess and when no suitable special engine is configured.
@@ -85,9 +85,6 @@ online_moves:
   opening_explorer:
     enabled: false                        # Activate online moves from Lichess opening explorer. The move that has performed best for this bot is played.
     priority: 300                         # Priority with which this move source is used. Higher priority is used first.
-
- 
-=======
 #   player: Username                      # Player whose Lichess opening explorer should be used. Comment this to use your own or with anti your opponent's.
     only_without_book: false              # Whether the Lichess opening explorer should only be used if there is no matching book.
     use_for_variants: false               # Whether the Lichess opening explorer should be used for other variants than standard and chess960.
@@ -130,14 +127,14 @@ offer_draw:
   consecutive_moves: 10                   # How many moves in a row the absolute value of the score has to be below the draw value
   min_game_length: 35                     # Earliest move in which draw is offered.
   against_humans: true                    # Activate whether these settings should apply against humans.
-#  min_rating: 2300                       # Minimum opponent rating to offer draws against. (Comment this line to disable)  
+#  min_rating: 2300                        # Minimum rating required for opponent for bot to offer a draw, comment if not needed
 
 resign:
   enabled: false                          # Activate whether the bot should resign games.
   score: -1000                            # If the score is less than or equal to this value, the bot resigns (in cp).
   consecutive_moves: 5                    # How many moves in a row the score has to be below the resign value.
-  against_humans: true                    # Activate whether these settings should apply against humans.          
- # min_rating: 2300                       # Minimum opponent rating to resign against. (Comment this line to disable)
+  against_humans: true                    # Activate whether these settings should apply against humans.
+#  min_rating: 2300                       # Minimum rating required for opponent for bot to resign a game, comment if not needed
 
 challenge:                                # Incoming challenges.
   concurrency: 1                          # Number of games to play simultaneously.
