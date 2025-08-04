@@ -231,11 +231,11 @@ class Lichess_Game:
             return False
 
         if (
-            self.config.offer_draw.min_rating is not None and   
-            self.engine.opponent.rating is not None and   
+            self.config.offer_draw.min_rating is not None and
+            self.engine.opponent.rating is not None and
             self.engine.opponent.rating < self.config.offer_draw.min_rating
-        ):  
-            return False  
+        ):
+            return False
 
         if not self.increment and self.opponent_time < 10.0:
             return False
@@ -263,12 +263,12 @@ class Lichess_Game:
             return False
 
         if (
-            self.config.resign.min_rating is not None and   
-            self.engine.opponent.rating is not None and   
+            self.config.resign.min_rating is not None and
+            self.engine.opponent.rating is not None and
             self.engine.opponent.rating < self.config.resign.min_rating
-        ):  
-            return False  
-        
+        ):
+            return False
+
         if not self.increment and self.opponent_time < 10.0:
             return False
 
