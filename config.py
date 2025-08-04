@@ -403,7 +403,8 @@ class Config:
                                  offer_draw_section['score'],
                                  offer_draw_section['consecutive_moves'],
                                  offer_draw_section['min_game_length'],
-                                 offer_draw_section['against_humans'])
+                                 offer_draw_section['against_humans'],
+                                 offer_draw_section.get('min_rating'))
 
     @staticmethod
     def _get_resign_config(resign_section: dict[str, Any]) -> Resign_Config:
@@ -423,7 +424,8 @@ class Config:
         return Resign_Config(resign_section['enabled'],
                              resign_section['score'],
                              resign_section['consecutive_moves'],
-                             resign_section['against_humans'])
+                             resign_section['against_humans'],
+                             resign_section.get('min_rating'))
 
     @staticmethod
     def _get_challenge_config(challenge_section: dict[str, Any]) -> Challenge_Config:
