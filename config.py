@@ -398,11 +398,6 @@ class Config:
 
             if not isinstance(offer_draw_section[subsection[0]], subsection[1]):
                 raise TypeError(f'`offer_draw` subsection {subsection[2]}')
-
-        # Validate optional min_rating field  
-
-       # if 'min_rating' in offer_draw_section and not isinstance(offer_draw_section['min_rating'], int):  
-          #  raise TypeError('`offer_draw` subsection "min_rating" must be an integer.')  
   
         return Offer_Draw_Config(offer_draw_section['enabled'],  
                              offer_draw_section['score'],  
@@ -425,11 +420,6 @@ class Config:
 
             if not isinstance(resign_section[subsection[0]], subsection[1]):
                 raise TypeError(f'`resign` subsection {subsection[2]}')
-
-         #add optional min rating    
-
-       # if 'min_rating' in resign_section and not isinstance(resign_section['min_rating'], int):  
-          #  raise TypeError('`resign` subsection "min_rating" must be an integer.')  
   
         return Resign_Config(resign_section['enabled'],  
                          resign_section['score'],  
