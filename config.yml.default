@@ -134,7 +134,7 @@ resign:
   score: -1000                            # If the score is less than or equal to this value, the bot resigns (in cp).
   consecutive_moves: 5                    # How many moves in a row the score has to be below the resign value.
   against_humans: true                    # Activate whether these settings should apply against humans.
-#  min_rating: 2300                       # Minimum rating required for opponent for bot to resign a game, comment if not needed
+# min_rating: 2300                        # Minimum rating of opponent to resign.
 
 challenge:                                # Incoming challenges.
   concurrency: 1                          # Number of games to play simultaneously.
