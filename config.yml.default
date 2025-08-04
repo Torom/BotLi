@@ -127,7 +127,7 @@ offer_draw:
   consecutive_moves: 10                   # How many moves in a row the absolute value of the score has to be below the draw value
   min_game_length: 35                     # Earliest move in which draw is offered.
   against_humans: true                    # Activate whether these settings should apply against humans.
-#  min_rating: 2300                        # Minimum rating required for opponent for bot to offer a draw, comment if not needed
+# min_rating: 2300                        # Minimum rating of opponent to offer draw.
 
 resign:
   enabled: false                          # Activate whether the bot should resign games.
