@@ -165,6 +165,8 @@ class Game:
                 case 'outoftime':
                     out_of_time_player = info.black_name if game_state['wtime'] else info.white_name
                     message = f'Game drawn. {out_of_time_player} ran out of time.'
+                case 'insufficientMaterialClaim':
+                    message = 'Game drawn due to insufficient material claim.'
                 case _:
                     self.was_aborted = True
                     message = 'Game aborted.'
