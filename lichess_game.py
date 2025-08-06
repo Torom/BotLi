@@ -190,9 +190,10 @@ class Lichess_Game:
     @property
     def opponent_time(self) -> float:
         return self.black_time if self.is_white else self.white_time
+
     @property
-    def is_tournament(self) -> bool:  
-        return self.game_info.tournament_id is not None 
+    def is_tournament(self) -> bool:
+        return self.game_info.tournament_id is not None
 
     @property
     def engine_times(self) -> tuple[float, float, float]:
@@ -342,8 +343,8 @@ class Lichess_Game:
 
         def check_book_key(base_name: str) -> str | None:
             if self.is_tournament and f'{base_name}_tournament' in self.config.opening_books.books:
-                return f'{base_name}_tournament'  
-          
+                return f'{base_name}_tournament'
+
             if is_human and f'{base_name}_human' in self.config.opening_books.books:
                 return f'{base_name}_human'
 
