@@ -11,30 +11,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repo with full history
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Required for pull/rebase
 
+      # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
+      # Step 3: Install autopep8
       - name: Install autopep8
         run: pip install autopep8
 
-      - name: Run autopep8 and fix code
+      # Step 4: Run autopep8 and fix files in-place
+      - name: Run autopep8
         run: |
-          autopep8 --in-place --recursive --max-line-length 120 --aggressive --aggressive .
+          autopep8 --in-place --recursive --max-line-length 120 .
 
-      - name: Commit and Push changes
+      # Step 5: Pull latest changes to avoid non-fast-forward push
+      - name: Pull latest changes with rebase
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+
+      # Step 6: Commit and Push changes if any
+      - name: Commit and Push changes
+        run: |
           git add .
-          # Only commit if there are changes
           if ! git diff --cached --quiet; then
-            git commit -m "add min_rating field for draw offers and resign"
-            git push
+            git commit -m "Add tournament dedicated opening books"
+            git push origin main
           fi
