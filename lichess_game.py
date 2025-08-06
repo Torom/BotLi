@@ -190,6 +190,9 @@ class Lichess_Game:
     @property
     def opponent_time(self) -> float:
         return self.black_time if self.is_white else self.white_time
+    @property
+    def is_tournament(self) -> bool:  
+        return self.game_info.tournament_id is not None 
 
     @property
     def engine_times(self) -> tuple[float, float, float]:
