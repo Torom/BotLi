@@ -338,6 +338,9 @@ class Lichess_Game:
         is_human = self.game_info.white_title != 'BOT' or self.game_info.black_title != 'BOT'
 
         def check_book_key(base_name: str) -> str | None:
+            if self.is_tournament and f'{base_name}_tournament' in self.config.opening_books.books:
+                return f'{base_name}_tournament'  
+          
             if is_human and f'{base_name}_human' in self.config.opening_books.books:
                 return f'{base_name}_human'
 
