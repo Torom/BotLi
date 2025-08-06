@@ -186,7 +186,7 @@ class API:
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_event_stream(self, queue: asyncio.Queue[dict[str, Any]]) -> None:
         async with self.lichess_session.get('/api/stream/event',
-                                            timeout=aiohttp.ClientTimeout(sock_read=9.0)) as response:
+                                            timeout=aiohttp.ClientTimeout(sock_connect=5.0)) as response:
             async for line in response.content:
                 if line.strip():
                     await queue.put(json.loads(line))
@@ -194,15 +194,14 @@ class API:
     @retry(**GAME_STREAM_RETRY_CONDITIONS)
     async def get_game_stream(self, game_id: str, queue: asyncio.Queue[dict[str, Any]]) -> None:
         async with self.lichess_session.get(f'/api/bot/game/stream/{game_id}',
-                                            timeout=aiohttp.ClientTimeout(sock_read=9.0)) as response:
+                                            timeout=aiohttp.ClientTimeout(sock_connect=5.0)) as response:
             async for line in response.content:
                 if line.strip():
                     await queue.put(json.loads(line))
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_online_bots(self) -> list[dict[str, Any]]:
-        async with self.lichess_session.get('/api/bot/online',
-                                            timeout=aiohttp.ClientTimeout(sock_read=9.0)) as response:
+        async with self.lichess_session.get('/api/bot/online') as response:
             return [json.loads(line) async for line in response.content if line.strip()]
 
     async def get_opening_explorer(self,
