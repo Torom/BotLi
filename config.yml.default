@@ -31,7 +31,7 @@ engines:
 #     nodes: 4000000                      # Max nodes per move.
 # Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
 # 'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
-# Append '_white', '_black' or '_human' to use the engine only as the specific color or against humans.
+# Append '_white', '_black', '_human' and/or '_tournament' to use the engine only as the specific color, against humans or in tournaments.
 
 syzygy:
   standard:
@@ -79,7 +79,7 @@ opening_books:
         - DefaultBook
 #   Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
 #   'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
-#   Append '_white', '_black' or '_human' to use the engine only as the specific color or against humans.
+#   Append '_white', '_black', '_human' and/or '_tournament' to use the book only as the specific color, against humans or in tournaments.
 
 online_moves:
   opening_explorer:
