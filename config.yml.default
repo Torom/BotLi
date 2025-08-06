@@ -79,7 +79,7 @@ opening_books:
         - DefaultBook
 #   Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical',
 #   'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
-#   Append '_white', '_black' or '_human' to use the engine only as the specific color or against humans.
+#   Append '_white', '_black' or '_human' to use the engine only as the specific color or against humans or _tournament to use the book only in tournaments.
 
 online_moves:
   opening_explorer:
