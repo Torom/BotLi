@@ -518,7 +518,9 @@ class Lichess_Game:
             self._reduce_own_time(time.perf_counter() - start_time)
             return
 
-        if response['status'] != 'rate limit exceeded':
+        if response['status'] == 'rate limit exceeded':
+            print('ChessDB: rate limit exceeded')
+        else:
             asyncio.create_task(self.api.queue_chessdb(fen))
 
         if response['status'] != 'ok':
