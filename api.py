@@ -25,6 +25,7 @@ GAME_STREAM_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.Client
 MOVE_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.ClientError, TimeoutError)),
                          'wait': wait_fixed(1.0),
                          'before_sleep': before_sleep_log(logger, logging.DEBUG)}
+STREAM_TIMEOUT = aiohttp.ClientTimeout(sock_connect=5.0, sock_read=9.0)
 
 
 class API:
@@ -185,23 +186,21 @@ class API:
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_event_stream(self, queue: asyncio.Queue[dict[str, Any]]) -> None:
-        async with self.lichess_session.get('/api/stream/event',
-                                            timeout=aiohttp.ClientTimeout(sock_connect=5.0)) as response:
+        async with self.lichess_session.get('/api/stream/event', timeout=STREAM_TIMEOUT) as response:
             async for line in response.content:
                 if line.strip():
                     await queue.put(json.loads(line))
 
     @retry(**GAME_STREAM_RETRY_CONDITIONS)
     async def get_game_stream(self, game_id: str, queue: asyncio.Queue[dict[str, Any]]) -> None:
-        async with self.lichess_session.get(f'/api/bot/game/stream/{game_id}',
-                                            timeout=aiohttp.ClientTimeout(sock_connect=5.0)) as response:
+        async with self.lichess_session.get(f'/api/bot/game/stream/{game_id}', timeout=STREAM_TIMEOUT) as response:
             async for line in response.content:
                 if line.strip():
                     await queue.put(json.loads(line))
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_online_bots(self) -> list[dict[str, Any]]:
-        async with self.lichess_session.get('/api/bot/online') as response:
+        async with self.lichess_session.get('/api/bot/online', timeout=STREAM_TIMEOUT) as response:
             return [json.loads(line) async for line in response.content if line.strip()]
 
     async def get_opening_explorer(self,
