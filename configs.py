@@ -167,3 +167,16 @@ class Messages_Config:
     goodbye: str | None
     greeting_spectators: str | None
     goodbye_spectators: str | None
+
+
+@dataclass
+class Auto_Rematch_Config:
+    enabled: bool
+    max_rematches: int
+    delay: int
+    message: str | None
+    alternate_colors: bool
+    only_after_wins: bool
+    only_after_losses: bool
+    only_against_bots: bool
+    only_against_humans: bool
