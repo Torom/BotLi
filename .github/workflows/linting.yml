@@ -29,17 +29,26 @@ jobs:
         run: |
           autopep8 --in-place --recursive --max-line-length 120 .
 
-      - name: Pull latest changes with rebase
+      - name: Commit formatting changes before pull
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .  # stage changes BEFORE pulling
-          git pull --rebase origin main
+          git add .
+          if ! git diff --cached --quiet; then
+            git commit -m "Temporary autopep8 formatting commit"
+          fi
 
-      - name: Commit and Push changes
+      - name: Pull latest changes with rebase
+        run: git pull --rebase origin main
+
+      - name: Commit final changes
         run: |
           git add .
           if ! git diff --cached --quiet; then
-            git commit -m "Add tournament dedicated opening books"
-            git push origin main
+            git commit --amend -m "Add tournament dedicated opening books"
+          else
+            git commit --amend --no-edit
           fi
+
+      - name: Push changes
+        run: git push origin main --force-with-lease
