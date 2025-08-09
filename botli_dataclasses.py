@@ -176,6 +176,13 @@ class Game_Information:
     def tc_str(self) -> str:
         initial_time_min = self.initial_time_ms / 60_000
         if initial_time_min.is_integer():
+            initial_time_min = int(initial_time_min)
+        return f'{initial_time_min}+{self.increment_ms // 1000}'
+
+    @property
+    def tc_format(self) -> str:
+        initial_time_min = self.initial_time_ms / 60_000
+        if initial_time_min.is_integer():
             initial_time_str = str(int(initial_time_min))
         elif initial_time_min == 0.25:
             initial_time_str = '¼'

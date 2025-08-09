@@ -108,7 +108,7 @@ class Game:
 
     def _print_game_information(self, info: Game_Information) -> None:
         opponents_str = f'{info.white_str}   -   {info.black_str}'
-        message = (5 * ' ').join([info.id_str, opponents_str, info.tc_str,
+        message = (5 * ' ').join([info.id_str, opponents_str, info.tc_format,
                                   info.rated_str, info.variant_str])
 
         print(f'\n{message}\n{128 * "‾"}')
