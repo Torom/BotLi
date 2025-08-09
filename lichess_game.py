@@ -105,6 +105,10 @@ class Lichess_Game:
             if board.chess960:
                 if key := check_engine_key('chess960'):
                     return key
+            else:
+                time_control = f"{game_info.initial_time_ms // 60000}+{game_info.increment_ms // 1000}"
+                if key := check_engine_key(time_control): 
+                    return key
 
             else:
                 if key := check_engine_key(game_info.speed):
@@ -360,6 +364,10 @@ class Lichess_Game:
         if self.board.chess960:
             if key := check_book_key('chess960'):
                 return key
+        else:
+            time_control = f"{self.game_info.initial_time_ms // 60000}+{self.game_info.increment_ms // 1000}"
+            if key := check_book_key(time_control):  
+                return key 
 
         else:
             if key := check_book_key(self.game_info.speed):
