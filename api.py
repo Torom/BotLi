@@ -343,3 +343,15 @@ class API:
         except aiohttp.ClientResponseError as e:
             print(e)
             return False
+
+    @retry(**BASIC_RETRY_CONDITIONS)
+    async def create_rematch(self, game_id: str) -> bool:
+        """Create a rematch for a game using the Lichess rematch API for bot accounts."""
+        try:
+            # Use the bot-specific endpoint for creating rematches
+            async with self.lichess_session.post(f'/api/board/game/{game_id}/rematch') as response:
+                response.raise_for_status()
+                return True
+        except aiohttp.ClientResponseError as e:
+            print(f"Error creating rematch for game {game_id}: {e}")
+            return False
