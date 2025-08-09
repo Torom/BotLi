@@ -110,7 +110,6 @@ class Lichess_Game:
                 if key := check_engine_key(time_control):
                     return key
 
-            else:
                 if key := check_engine_key(game_info.speed):
                     return key
 
@@ -369,7 +368,6 @@ class Lichess_Game:
             if key := check_book_key(time_control):
                 return key
 
-        else:
             if key := check_book_key(self.game_info.speed):
                 return key
 
