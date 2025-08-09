@@ -1,3 +1,4 @@
+@@ -1,560 +1,524 @@
 import os
 import os.path
 import subprocess
@@ -7,7 +8,7 @@ from typing import Any
 
 import yaml
 
-from configs import (Books_Config, Challenge_Config, ChessDB_Config, Engine_Config, Gaviota_Config,
+from configs import (Auto_Rematch_Config, Books_Config, Challenge_Config, ChessDB_Config, Engine_Config, Gaviota_Config,
                      Lichess_Cloud_Config, Limit_Config, Matchmaking_Config, Matchmaking_Type_Config, Messages_Config,
                      Offer_Draw_Config, Online_EGTB_Config, Online_Moves_Config, Opening_Books_Config,
                      Opening_Explorer_Config, Resign_Config, Syzygy_Config)
@@ -27,6 +28,7 @@ class Config:
     challenge: Challenge_Config
     matchmaking: Matchmaking_Config
     messages: Messages_Config
+    auto_rematch: Auto_Rematch_Config
     whitelist: list[str]
     blacklist: list[str]
     version: str
@@ -55,8 +57,9 @@ class Config:
         challenge_config = cls._get_challenge_config(yaml_config['challenge'])
         matchmaking_config = cls._get_matchmaking_config(yaml_config['matchmaking'])
         messages_config = cls._get_messages_config(yaml_config['messages'] or {})
-        whitelist = [username.lower() for username in yaml_config.get('whitelist') or []]
-        blacklist = [username.lower() for username in yaml_config.get('blacklist') or []]
+        auto_rematch_config = cls._get_auto_rematch_config(yaml_config.get('auto_rematch', {}))
+        whitelist = [string.lower() for string in yaml_config.get('whitelist') or []]
+        blacklist = [string.lower() for string in yaml_config.get('blacklist') or []]
 
         return cls(yaml_config.get('url', 'https://lichess.org'),
                    yaml_config['token'],
@@ -70,6 +73,7 @@ class Config:
                    challenge_config,
                    matchmaking_config,
                    messages_config,
+                   auto_rematch_config,
                    whitelist,
                    blacklist,
                    cls._get_version())
@@ -91,8 +95,7 @@ class Config:
             ['challenge', dict, 'Section `challenge` must be a dictionary with indented keys followed by colons.'],
             ['matchmaking', dict, 'Section `matchmaking` must be a dictionary with indented keys followed by colons.'],
             ['messages', dict | None, 'Section `messages` must be a dictionary with indented keys followed by colons.'],
-            ['whitelist', list | None, 'Section `whitelist` must be a list.'],
-            ['blacklist', list | None, 'Section `blacklist` must be a list.'],
+            ['auto_rematch', dict | None, 'Section `auto_rematch` must be a dictionary with indented keys followed by colons.'],
             ['books', dict, 'Section `books` must be a dictionary with indented keys followed by colons.']]
         for section in sections:
             if section[0] not in config:
@@ -272,7 +275,6 @@ class Config:
 
         return Opening_Explorer_Config(opening_explorer_section['enabled'],
                                        opening_explorer_section['priority'],
-                                       opening_explorer_section.get('player'),
                                        opening_explorer_section['only_without_book'],
                                        opening_explorer_section['use_for_variants'],
                                        opening_explorer_section['min_time'],
@@ -290,7 +292,6 @@ class Config:
             ['enabled', bool, '"enabled" must be a bool.'],
             ['priority', int, '"priority" must be an integer.'],
             ['only_without_book', bool, '"only_without_book" must be a bool.'],
-            ['use_for_variants', bool, '"use_for_variants" must be a bool.'],
             ['min_eval_depth', int, '"min_eval_depth" must be an integer.'],
             ['min_time', int, '"min_time" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.']]
@@ -306,7 +307,6 @@ class Config:
         return Lichess_Cloud_Config(lichess_cloud_section['enabled'],
                                     lichess_cloud_section['priority'],
                                     lichess_cloud_section['only_without_book'],
-                                    lichess_cloud_section['use_for_variants'],
                                     lichess_cloud_section['min_eval_depth'],
                                     lichess_cloud_section['min_time'],
                                     lichess_cloud_section['timeout'],
@@ -403,8 +403,7 @@ class Config:
                                  offer_draw_section['score'],
                                  offer_draw_section['consecutive_moves'],
                                  offer_draw_section['min_game_length'],
-                                 offer_draw_section['against_humans'],
-                                 offer_draw_section.get('min_rating'))
+                                 offer_draw_section['against_humans'])
 
     @staticmethod
     def _get_resign_config(resign_section: dict[str, Any]) -> Resign_Config:
@@ -424,14 +423,12 @@ class Config:
         return Resign_Config(resign_section['enabled'],
                              resign_section['score'],
                              resign_section['consecutive_moves'],
-                             resign_section['against_humans'],
-                             resign_section.get('min_rating'))
+                             resign_section['against_humans'])
 
     @staticmethod
     def _get_challenge_config(challenge_section: dict[str, Any]) -> Challenge_Config:
         challenge_sections = [
             ['concurrency', int, '"concurrency" must be an integer.'],
-            ['max_takebacks', int, '"max_takebacks" must be an integer.'],
             ['bullet_with_increment_only', bool, '"bullet_with_increment_only" must be a bool.'],
             ['variants', list, '"variants" must be a list of variants.'],
             ['time_controls', list | None, '"time_controls" must be a list of speeds or time controls.'],
@@ -446,7 +443,6 @@ class Config:
                 raise TypeError(f'`challenge` subsection {subsection[2]}')
 
         return Challenge_Config(challenge_section['concurrency'],
-                                challenge_section['max_takebacks'],
                                 challenge_section['bullet_with_increment_only'],
                                 challenge_section.get('min_increment'),
                                 challenge_section.get('max_increment'),
@@ -462,7 +458,7 @@ class Config:
         matchmaking_sections = [
             ['delay', int, '"delay" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.'],
-            ['selection', str, '"selection" must be one of "weighted_random", "sequential" or "cyclic".'],
+            ['selection', str, '"selection" must be "weighted_random" or "sequential".'],
             ['types', dict, '"types" must be a dictionary with indented keys followed by colons.']]
 
         for subsection in matchmaking_sections:
@@ -519,6 +515,38 @@ class Config:
                                messages_section.get('goodbye'),
                                messages_section.get('greeting_spectators'),
                                messages_section.get('goodbye_spectators'))
+
+    @staticmethod
+    def _get_auto_rematch_config(auto_rematch_section: dict[str, Any]) -> Auto_Rematch_Config:
+        # If auto_rematch section is empty or not present, return default config
+        if not auto_rematch_section:
+            return Auto_Rematch_Config(False, 3, 2, None, True, False, False, False, False)
+            
+        auto_rematch_sections = [
+            ['enabled', bool, '"enabled" must be a bool.'],
+            ['max_rematches', int, '"max_rematches" must be an integer.'],
+            ['delay', int, '"delay" must be an integer.'],
+            ['alternate_colors', bool, '"alternate_colors" must be a bool.'],
+            ['only_after_wins', bool, '"only_after_wins" must be a bool.'],
+            ['only_after_losses', bool, '"only_after_losses" must be a bool.'],
+            ['only_against_bots', bool, '"only_against_bots" must be a bool.'],
+            ['only_against_humans', bool, '"only_against_humans" must be a bool.']]
+
+        for subsection in auto_rematch_sections:
+            if subsection[0] in auto_rematch_section and not isinstance(auto_rematch_section[subsection[0]], subsection[1]):
+                raise TypeError(f'`auto_rematch` subsection {subsection[2]}')
+
+        return Auto_Rematch_Config(
+            auto_rematch_section.get('enabled', False),
+            auto_rematch_section.get('max_rematches', 3),
+            auto_rematch_section.get('delay', 2),
+            auto_rematch_section.get('message'),
+            auto_rematch_section.get('alternate_colors', True),
+            auto_rematch_section.get('only_after_wins', False),
+            auto_rematch_section.get('only_after_losses', False),
+            auto_rematch_section.get('only_against_bots', False),
+            auto_rematch_section.get('only_against_humans', False)
+        )
 
     @staticmethod
     def _get_version() -> str:
