@@ -923,7 +923,7 @@ class Lichess_Game:
                             self.config.online_moves.lichess_cloud.priority,
                             self.cloud_success_count,
                             self.cloud_total_attempts
-                )
+                        )
             else:
                 priority = self.config.online_moves.lichess_cloud.priority
             opening_sources[self._make_cloud_move] = priority
@@ -936,7 +936,7 @@ class Lichess_Game:
                             self.config.online_moves.chessdb.priority,
                             self.chessdb_success_count,
                             self.chessdb_total_attempts
-                )
+                        )
             else:
                 priority = self.config.online_moves.chessdb.priority
             opening_sources[self._make_chessdb_move] = priority
