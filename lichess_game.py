@@ -58,6 +58,10 @@ class Lichess_Game:
         self.scores: list[chess.engine.PovScore] = []
         self.last_message = 'No eval available yet.'
         self.last_pv: list[chess.Move] = []
+        self.cloud_success_count = 0  
+        self.cloud_total_attempts = 0  
+        self.chessdb_success_count = 0  
+        self.chessdb_total_attempts = 0
 
     @classmethod
     async def acreate(cls, api: API, config: Config, username: str, game_info: Game_Information) -> 'Lichess_Game':
@@ -469,6 +473,8 @@ class Lichess_Game:
 
         if out_of_book or too_deep or too_many_moves or not has_time:
             return
+          
+        self.cloud_total_attempts += 1
 
         start_time = time.perf_counter()
         response = await self.api.get_cloud_eval(self.board.fen().replace('[', '/').replace(']', ''),
@@ -488,6 +494,7 @@ class Lichess_Game:
             return
 
         self.out_of_cloud_counter = 0
+        self.cloud_success_count += 1
         pv = [chess.Move.from_uci(uci_move) for uci_move in response['pvs'][0]['moves'].split()]
         if self._is_repetition(pv[0]):
             return
@@ -516,7 +523,8 @@ class Lichess_Game:
 
         if out_of_book or too_deep or too_many_moves or not has_time or is_endgame:
             return
-
+          
+        self.chessdb_total_attempts += 1
         start_time = time.perf_counter()
         response = await self.api.get_chessdb_eval(fen := self.board.fen(), self.config.online_moves.chessdb.timeout)
         if response is None:
@@ -534,6 +542,7 @@ class Lichess_Game:
             return
 
         self.out_of_chessdb_counter = 0
+        self.chessdb_success_count += 1
         if self.config.online_moves.chessdb.selection == 'optimal' or response['moves'][0]['rank'] == 0:
             candidate_moves = [chessdb_move for chessdb_move in response['moves']
                                if chessdb_move['score'] == response['moves'][0]['score']]
