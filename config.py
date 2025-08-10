@@ -367,11 +367,11 @@ class Config:
             raise RuntimeError('Your config does not have required `online_moves` field `dynamic_selection`.')
 
         online_moves_sections = [
-            ['opening_explorer', dict, '"opening_explorer" must be a dictionary with indented keys followed by colons.'],
+            ['opening_explorer', dict, ('"opening_explorer" must be a dictionary '
+                                        'with indented keys followed by colons.')],
             ['chessdb', dict, '"chessdb" must be a dictionary with indented keys followed by colons.'],
             ['lichess_cloud', dict, '"lichess_cloud" must be a dictionary with indented keys followed by colons.'],
-            ['online_egtb', dict, '"online_egtb" must be a dictionary with indented keys followed by colons.']
-        ]
+            ['online_egtb', dict, '"online_egtb" must be a dictionary with indented keys followed by colons.']]
 
         for subsection in online_moves_sections:
             if subsection[0] not in online_moves_section:
