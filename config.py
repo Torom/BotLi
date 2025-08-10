@@ -363,30 +363,29 @@ class Config:
 
     @staticmethod
     def _get_online_moves_config(online_moves_section: dict[str, dict[str, Any]]) -> Online_Moves_Config:
-        if 'dynamic_selection' not in online_moves_section: 
-            raise RuntimeError('Your config does not have required `online_moves` field `dynamic_selection`.')  
-           
+        if 'dynamic_selection' not in online_moves_section:
+            raise RuntimeError('Your config does not have required `online_moves` field `dynamic_selection`.')
+
         online_moves_sections = [
-            ['opening_explorer', dict, ('"opening_explorer" must be a dictionary '
-                                        'with indented keys followed by colons.')],
+            ['opening_explorer', dict, '"opening_explorer" must be a dictionary with indented keys followed by colons.'],
             ['chessdb', dict, '"chessdb" must be a dictionary with indented keys followed by colons.'],
             ['lichess_cloud', dict, '"lichess_cloud" must be a dictionary with indented keys followed by colons.'],
-            ['online_egtb', dict, '"online_egtb" must be a dictionary with indented keys followed by colons.']]
-         
+            ['online_egtb', dict, '"online_egtb" must be a dictionary with indented keys followed by colons.']
+        ]
 
         for subsection in online_moves_sections:
             if subsection[0] not in online_moves_section:
-                raise RuntimeError('Your config does not have required '
-                                   f'`online_moves` subsection `{subsection[0]}`.')
-
+                raise RuntimeError(f'Your config does not have required `online_moves` subsection `{subsection[0]}`.')
             if not isinstance(online_moves_section[subsection[0]], subsection[1]):
                 raise TypeError(f'`online_moves` subsection {subsection[2]}')
 
-        return Online_Moves_Config(online_moves_section['dynamic_selection'],
-                                   Config._get_opening_explorer_config(online_moves_section['opening_explorer']),
-                                   Config._get_lichess_cloud_config(online_moves_section['lichess_cloud']),
-                                   Config._get_chessdb_config(online_moves_section['chessdb']),
-                                   Config._get_online_egtb_config(online_moves_section['online_egtb']))
+        return Online_Moves_Config(
+            online_moves_section['dynamic_selection'],
+            Config._get_opening_explorer_config(online_moves_section['opening_explorer']),
+            Config._get_lichess_cloud_config(online_moves_section['lichess_cloud']),
+            Config._get_chessdb_config(online_moves_section['chessdb']),
+            Config._get_online_egtb_config(online_moves_section['online_egtb'])
+        )
 
     @staticmethod
     def _get_offer_draw_config(offer_draw_section: dict[str, Any]) -> Offer_Draw_Config:
