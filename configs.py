@@ -101,6 +101,7 @@ class Online_EGTB_Config:
 
 @dataclass
 class Online_Moves_Config:
+    dynamic_selection: bool  
     opening_explorer: Opening_Explorer_Config
     lichess_cloud: Lichess_Cloud_Config
     chessdb: ChessDB_Config
