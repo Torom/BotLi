@@ -919,10 +919,10 @@ class Lichess_Game:
             if not self.config.online_moves.lichess_cloud.only_without_book or not self.book_settings.readers:
                 if self.board.uci_variant == 'chess' or self.config.online_moves.lichess_cloud.use_for_variants:
                     if self.config.online_moves.dynamic_selection:
-                priority = self._calculate_dynamic_priority(
-                    self.config.online_moves.lichess_cloud.priority,
-                    self.cloud_success_count,
-                    self.cloud_total_attempts
+                        priority = self._calculate_dynamic_priority(
+                            self.config.online_moves.lichess_cloud.priority,
+                            self.cloud_success_count,
+                            self.cloud_total_attempts
                 )
             else:
                 priority = self.config.online_moves.lichess_cloud.priority
@@ -932,10 +932,10 @@ class Lichess_Game:
             if not self.config.online_moves.chessdb.only_without_book or not self.book_settings.readers:
                 if self.board.uci_variant == 'chess':
                     if self.config.online_moves.dynamic_selection:
-                priority = self._calculate_dynamic_priority(
-                    self.config.online_moves.chessdb.priority,
-                    self.chessdb_success_count,
-                    self.chessdb_total_attempts
+                        priority = self._calculate_dynamic_priority(
+                            self.config.online_moves.chessdb.priority,
+                            self.chessdb_success_count,
+                            self.chessdb_total_attempts
                 )
             else:
                 priority = self.config.online_moves.chessdb.priority
