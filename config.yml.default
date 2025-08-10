@@ -82,6 +82,7 @@ opening_books:
 #   Append '_white', '_black', '_human' and/or '_tournament' to use the book only as the specific color, against humans or in tournaments.
 
 online_moves:
+  dynamic_selection: false                # Enable dynamic priority adjustment based on success rates of online move sources
   opening_explorer:
     enabled: false                        # Activate online moves from Lichess opening explorer. The move that has performed best for this bot is played.
     priority: 300                         # Priority with which this move source is used. Higher priority is used first.
