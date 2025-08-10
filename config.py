@@ -369,6 +369,8 @@ class Config:
             ['chessdb', dict, '"chessdb" must be a dictionary with indented keys followed by colons.'],
             ['lichess_cloud', dict, '"lichess_cloud" must be a dictionary with indented keys followed by colons.'],
             ['online_egtb', dict, '"online_egtb" must be a dictionary with indented keys followed by colons.']]
+         if 'dynamic_selection' not in online_moves_section: 
+             raise RuntimeError('Your config does not have required `online_moves` field `dynamic_selection`.')  
 
         for subsection in online_moves_sections:
             if subsection[0] not in online_moves_section:
@@ -378,7 +380,8 @@ class Config:
             if not isinstance(online_moves_section[subsection[0]], subsection[1]):
                 raise TypeError(f'`online_moves` subsection {subsection[2]}')
 
-        return Online_Moves_Config(Config._get_opening_explorer_config(online_moves_section['opening_explorer']),
+        return Online_Moves_Config(online_moves_section['dynamic_selection'],
+                                   Config._get_opening_explorer_config(online_moves_section['opening_explorer']),
                                    Config._get_lichess_cloud_config(online_moves_section['lichess_cloud']),
                                    Config._get_chessdb_config(online_moves_section['chessdb']),
                                    Config._get_online_egtb_config(online_moves_section['online_egtb']))
