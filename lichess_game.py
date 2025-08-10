@@ -911,12 +911,28 @@ class Lichess_Game:
         if self.config.online_moves.lichess_cloud.enabled:
             if not self.config.online_moves.lichess_cloud.only_without_book or not self.book_settings.readers:
                 if self.board.uci_variant == 'chess' or self.config.online_moves.lichess_cloud.use_for_variants:
-                    opening_sources[self._make_cloud_move] = self.config.online_moves.lichess_cloud.priority
+                    if self.config.online_moves.dynamic_selection:  
+                priority = self._calculate_dynamic_priority(  
+                    self.config.online_moves.lichess_cloud.priority,  
+                    self.cloud_success_count,  
+                    self.cloud_total_attempts  
+                )  
+            else:  
+                priority = self.config.online_moves.lichess_cloud.priority  
+            opening_sources[self._make_cloud_move] = priority  
 
         if self.config.online_moves.chessdb.enabled:
             if not self.config.online_moves.chessdb.only_without_book or not self.book_settings.readers:
                 if self.board.uci_variant == 'chess':
-                    opening_sources[self._make_chessdb_move] = self.config.online_moves.chessdb.priority
+                    if self.config.online_moves.dynamic_selection:  
+                priority = self._calculate_dynamic_priority(  
+                    self.config.online_moves.chessdb.priority,  
+                    self.chessdb_success_count,  
+                    self.chessdb_total_attempts  
+                )  
+            else:  
+                priority = self.config.online_moves.chessdb.priority  
+            opening_sources[self._make_chessdb_move] = priority
 
         move_sources += [opening_source
                          for opening_source, _
