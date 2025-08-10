@@ -58,9 +58,9 @@ class Lichess_Game:
         self.scores: list[chess.engine.PovScore] = []
         self.last_message = 'No eval available yet.'
         self.last_pv: list[chess.Move] = []
-        self.cloud_success_count = 0  
-        self.cloud_total_attempts = 0  
-        self.chessdb_success_count = 0  
+        self.cloud_success_count = 0
+        self.cloud_total_attempts = 0
+        self.chessdb_success_count = 0
         self.chessdb_total_attempts = 0
 
     @classmethod
@@ -473,7 +473,7 @@ class Lichess_Game:
 
         if out_of_book or too_deep or too_many_moves or not has_time:
             return
-          
+
         self.cloud_total_attempts += 1
 
         start_time = time.perf_counter()
@@ -523,7 +523,7 @@ class Lichess_Game:
 
         if out_of_book or too_deep or too_many_moves or not has_time or is_endgame:
             return
-          
+
         self.chessdb_total_attempts += 1
         start_time = time.perf_counter()
         response = await self.api.get_chessdb_eval(fen := self.board.fen(), self.config.online_moves.chessdb.timeout)
@@ -882,12 +882,12 @@ class Lichess_Game:
             output += f'     WDL: {win:5.1f} % {draw:5.1f} % {loss:5.1f} %'
 
         return output
-      
-    def _calculate_dynamic_priority(self, base_priority: int, success_count: int, total_attempts: int) -> int:  
-    if total_attempts == 0:  
-        return base_priority  
-    success_rate = success_count / total_attempts    
-    multiplier = 0.5 + success_rate  
+
+    def _calculate_dynamic_priority(self, base_priority: int, success_count: int, total_attempts: int) -> int:
+    if total_attempts == 0:
+        return base_priority
+    success_rate = success_count / total_attempts
+    multiplier = 0.5 + success_rate
     return int(base_priority * multiplier)
 
     def _get_move_sources(self) -> list[Callable[[], Awaitable[Move_Response | None]]]:
@@ -918,27 +918,27 @@ class Lichess_Game:
         if self.config.online_moves.lichess_cloud.enabled:
             if not self.config.online_moves.lichess_cloud.only_without_book or not self.book_settings.readers:
                 if self.board.uci_variant == 'chess' or self.config.online_moves.lichess_cloud.use_for_variants:
-                    if self.config.online_moves.dynamic_selection:  
-                priority = self._calculate_dynamic_priority(  
-                    self.config.online_moves.lichess_cloud.priority,  
-                    self.cloud_success_count,  
-                    self.cloud_total_attempts  
-                )  
-            else:  
-                priority = self.config.online_moves.lichess_cloud.priority  
-            opening_sources[self._make_cloud_move] = priority  
+                    if self.config.online_moves.dynamic_selection:
+                priority = self._calculate_dynamic_priority(
+                    self.config.online_moves.lichess_cloud.priority,
+                    self.cloud_success_count,
+                    self.cloud_total_attempts
+                )
+            else:
+                priority = self.config.online_moves.lichess_cloud.priority
+            opening_sources[self._make_cloud_move] = priority
 
         if self.config.online_moves.chessdb.enabled:
             if not self.config.online_moves.chessdb.only_without_book or not self.book_settings.readers:
                 if self.board.uci_variant == 'chess':
-                    if self.config.online_moves.dynamic_selection:  
-                priority = self._calculate_dynamic_priority(  
-                    self.config.online_moves.chessdb.priority,  
-                    self.chessdb_success_count,  
-                    self.chessdb_total_attempts  
-                )  
-            else:  
-                priority = self.config.online_moves.chessdb.priority  
+                    if self.config.online_moves.dynamic_selection:
+                priority = self._calculate_dynamic_priority(
+                    self.config.online_moves.chessdb.priority,
+                    self.chessdb_success_count,
+                    self.chessdb_total_attempts
+                )
+            else:
+                priority = self.config.online_moves.chessdb.priority
             opening_sources[self._make_chessdb_move] = priority
 
         move_sources += [opening_source
