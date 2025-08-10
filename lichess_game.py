@@ -883,12 +883,12 @@ class Lichess_Game:
 
         return output
 
-    def _calculate_dynamic_priority(self, base_priority: int, success_count: int, total_attempts: int) -> int:
-    if total_attempts == 0:
-        return base_priority
-    success_rate = success_count / total_attempts
-    multiplier = 0.5 + success_rate
-    return int(base_priority * multiplier)
+    def _calculate_dynamic_priority(self, base_priority: int, success_count: int, total_attempts: int) -> int:  
+        if total_attempts == 0:  
+            return base_priority  
+        success_rate = success_count / total_attempts  
+        multiplier = 0.5 + success_rate  
+        return int(base_priority * multiplier)
 
     def _get_move_sources(self) -> list[Callable[[], Awaitable[Move_Response | None]]]:
         move_sources: list[Callable[[], Awaitable[Move_Response | None]]] = []
