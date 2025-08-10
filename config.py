@@ -363,8 +363,8 @@ class Config:
 
     @staticmethod
     def _get_online_moves_config(online_moves_section: dict[str, dict[str, Any]]) -> Online_Moves_Config:
-         if 'dynamic_selection' not in online_moves_section: 
-             raise RuntimeError('Your config does not have required `online_moves` field `dynamic_selection`.')  
+        if 'dynamic_selection' not in online_moves_section: 
+            raise RuntimeError('Your config does not have required `online_moves` field `dynamic_selection`.')  
            
         online_moves_sections = [
             ['opening_explorer', dict, ('"opening_explorer" must be a dictionary '
