@@ -1,0 +1,67 @@
+name: Run bot
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "lichessbot"
+    paths:
+      - "user_interface.py"
+  schedule:
+    - cron: "1 */5 * * *"  # Every 5 hours at minute 1
+
+jobs:
+  build:
+    concurrency:
+      group: bot-run
+      cancel-in-progress: false  # Keep this false for fastest restarts
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 355  # Just under 6-hour GitHub limit
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install GitHub CLI
+        run: sudo apt-get update && sudo apt-get install -y gh
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Inject Secret Token
+        run: sed -i "s/TokenTimeIsBackBuddyss/${{ secrets.LICHESS_KEY }}/g" config.yml
+
+      - name: Make Stockfish Executable
+        run: | 
+             chmod +x ./engines/supranova
+
+      - name: Run Bot
+        run: |
+          echo "Starting bot..."
+          python3 -u user_interface.py matchmaking &
+          PID=$!
+          
+          # Auto-exit after 350 minutes (so restart runs without overlap)
+          ( sleep 20700 && echo "Time up. Killing bot..." && kill -SIGTERM $PID ) &
+          
+          wait $PID
+          echo "Bot ended cleanly."
+
+      - name: 🔁 Self-Restart (Fire-and-Forget)
+        if: always()
+        run: gh workflow run bot.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+
+
+
+
