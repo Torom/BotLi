@@ -79,6 +79,7 @@ opening_books:
     
 
 online_moves:
+  dynamic_selection: true
   opening_explorer:
     enabled: true
     priority: 300
