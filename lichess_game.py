@@ -906,7 +906,7 @@ class Lichess_Game:
 
         if self.config.online_moves.chessdb.enabled:
             if not self.config.online_moves.chessdb.only_without_book or not self.book_settings.readers:
-                if self.board.uci_variant == 'chess':
+                if self.board.uci_variant == 'chess' and not self.board.chess960:
                     opening_sources[self._make_chessdb_move] = self.config.online_moves.chessdb.priority
 
         move_sources += [opening_source
