@@ -20,6 +20,7 @@ class Game:
         self.ejected_tournament: str | None = None
 
         self.move_task: asyncio.Task[None] | None = None
+        self.abortion_task: asyncio.Task[None] | None = None
 
     async def run(self) -> None:
         game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
@@ -44,9 +45,10 @@ class Game:
             await lichess_game.start_pondering()
 
         opponent_is_bot = info.white_title == 'BOT' and info.black_title == 'BOT'
-        abortion_seconds = 30 if opponent_is_bot else 60
-        abortion_task = asyncio.create_task(self._abortion_task(lichess_game, chatter, abortion_seconds))
         max_takebacks = 0 if opponent_is_bot else self.config.challenge.max_takebacks
+        if info.tournament_id is None:
+            abortion_seconds = 30 if opponent_is_bot else 60
+            self.abortion_task = asyncio.create_task(self._abortion_task(lichess_game, chatter, abortion_seconds))
 
         while event := await game_stream_queue.get():
             match event['type']:
@@ -86,7 +88,8 @@ class Game:
             if has_updated:
                 self.move_task = asyncio.create_task(self._make_move(lichess_game, chatter))
 
-        abortion_task.cancel()
+        if self.abortion_task:
+            self.abortion_task.cancel()
         await lichess_game.close()
 
     async def _make_move(self, lichess_game: Lichess_Game, chatter: Chatter) -> None:
@@ -105,6 +108,8 @@ class Game:
             print('Aborting game ...')
             await self.api.abort_game(self.game_id)
             await chatter.send_abortion_message()
+
+        self.abortion_task = None
 
     def _print_game_information(self, info: Game_Information) -> None:
         opponents_str = f'{info.white_str}   -   {info.black_str}'
