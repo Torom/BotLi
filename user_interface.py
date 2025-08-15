@@ -145,7 +145,7 @@ class User_Interface:
                 self._reset(command)
             case 'stop' | 's':
                 self._stop()
-            case 'tournament':
+            case 'tournament' | 't':
                 self._tournament(command)
             case 'whitelist':
                 self._whitelist(command)
