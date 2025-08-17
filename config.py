@@ -40,7 +40,7 @@ class Config:
                 print(f'There appears to be a syntax problem with your {yaml_path}', file=sys.stderr)
                 raise e
 
-        if 'token' not in yaml_config and 'LICHESS_BOT_TOKEN' in os.environ:
+        if not yaml_config.get('token') and 'LICHESS_BOT_TOKEN' in os.environ:
             yaml_config['token'] = os.environ['LICHESS_BOT_TOKEN']
 
         cls._check_sections(yaml_config)
