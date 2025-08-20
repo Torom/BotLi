@@ -201,6 +201,7 @@ class Game_Manager:
 
         del self.tournaments[tournament.id_]
         print(f'Tournament "{tournament.name}" has ended.')
+        self._set_next_matchmaking(self.config.matchmaking.delay)
         self.changed_event.set()
 
     def _set_next_matchmaking(self, delay: int) -> None:
