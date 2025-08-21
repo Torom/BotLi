@@ -33,11 +33,9 @@ jobs:
         mkdir dist/BotLi/engines
         mv LICENSE dist/BotLi/LICENSE
         mv config.yml.default dist/BotLi/config.yml
-        cd dist/
-        tar -cf BotLi-${{ matrix.os }}.tar BotLi/
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: BotLi-${{ matrix.os }}.tar
         path: |
-          dist/BotLi-${{ matrix.os }}.tar
+          dist/BotLi
