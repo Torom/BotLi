@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - "dist"
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v5
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    - name: Run pyinstaller
+      run: |
+        pyinstaller user_interface.py
+    - name: Prepare artifact
+      run: |
+        mv dist/user_interface dist/BotLi
+        mv dist/BotLi/user_interface dist/BotLi/BotLi
+        mkdir dist/BotLi/engines
+        mv LICENSE dist/BotLi/LICENSE
+        mv config.yml.default dist/BotLi/config.yml
+        cd dist/
+        tar -cf BotLi-${{ matrix.os }}.tar BotLi/
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: BotLi-${{ matrix.os }}.tar
+        path: |
+          BotLi-${{ matrix.os }}.tar
