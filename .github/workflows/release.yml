@@ -28,7 +28,7 @@ jobs:
     - name: Prepare artifact directory structure
       run: |
         mv dist/user_interface dist/BotLi
-        mkdir dist/BotLi/engines
+        mv engines dist/BotLi/
         mv LICENSE dist/BotLi/LICENSE
         mv config.yml.default dist/BotLi/config.yml
     - name: Rename executable (Unix)
