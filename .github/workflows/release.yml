@@ -40,4 +40,4 @@ jobs:
       with:
         name: BotLi-${{ matrix.os }}.tar
         path: |
-          BotLi-${{ matrix.os }}.tar
+          dist/BotLi-${{ matrix.os }}.tar
