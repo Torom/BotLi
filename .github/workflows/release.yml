@@ -33,10 +33,12 @@ jobs:
         mv config.yml.default dist/BotLi/config.yml
     - name: Rename executable (Unix)
       if: runner.os != 'Windows'
-      run: mv dist/BotLi/user_interface dist/BotLi/BotLi
+      run: |
+        mv dist/BotLi/user_interface dist/BotLi/BotLi
     - name: Rename executable (Windows)
       if: runner.os == 'Windows'
-      run: mv dist/BotLi/user_interface.exe dist/BotLi/BotLi.exe
+      run: |
+        mv dist/BotLi/user_interface.exe dist/BotLi/BotLi.exe
     - name: Create tar archive (Unix)
       if: runner.os != 'Windows'
       run: |
@@ -53,3 +55,4 @@ jobs:
       with:
         name: BotLi-${{ matrix.os }}
         path: dist/BotLi
+        include-hidden-files: true
