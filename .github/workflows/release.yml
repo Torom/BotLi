@@ -25,13 +25,18 @@ jobs:
     - name: Run pyinstaller
       run: |
         pyinstaller user_interface.py
-    - name: Prepare artifact
+    - name: Prepare artifact directory structure
       run: |
         mv dist/user_interface dist/BotLi
-        mv dist/BotLi/user_interface dist/BotLi/BotLi
         mkdir dist/BotLi/engines
         mv LICENSE dist/BotLi/LICENSE
         mv config.yml.default dist/BotLi/config.yml
+    - name: Rename executable (Unix)
+      if: runner.os != 'Windows'
+      run: mv dist/BotLi/user_interface dist/BotLi/BotLi
+    - name: Rename executable (Windows)
+      if: runner.os == 'Windows'
+      run: mv dist/BotLi/user_interface.exe dist/BotLi/BotLi.exe
     - name: Create tar archive (Unix)
       if: runner.os != 'Windows'
       run: |
@@ -40,7 +45,7 @@ jobs:
       if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4
       with:
-        name: BotLi-${{ matrix.os }}
+        name: BotLi-${{ matrix.os }}.tar
         path: BotLi-${{ matrix.os }}.tar
     - name: Upload .zip artifact (Windows)
       if: runner.os == 'Windows'
