@@ -816,7 +816,7 @@ class Lichess_Game:
         nps = f'NPS: {self._format_number(info_nps)}' if info_nps else 12 * ' '
 
         if info_time := info.get('time'):
-            minutes, seconds = divmod(info_time, 60)
+            minutes, seconds = divmod(round(info_time, 1), 60)
             time_str = f'MT: {minutes:02.0f}:{seconds:004.1f}'
         else:
             time_str = 11 * ' '
@@ -831,17 +831,16 @@ class Lichess_Game:
         return delimiter.join((score, depth, nodes, nps, time_str, hashfull, tbhits))
 
     def _format_number(self, number: int) -> str:
-        if number >= 1_000_000_000_000:
-            return f'{number / 1_000_000_000_000:5.1f} T'
+        units: list[tuple[str, int, int]] = [
+            ('T', 1_000_000_000_000, 999_950_000_000),
+            ('G', 1_000_000_000, 999_950_000),
+            ('M', 1_000_000, 999_950),
+            ('k', 1_000, 1_000)
+        ]
 
-        if number >= 1_000_000_000:
-            return f'{number / 1_000_000_000:5.1f} G'
-
-        if number >= 1_000_000:
-            return f'{number / 1_000_000:5.1f} M'
-
-        if number >= 1_000:
-            return f'{number / 1_000:5.1f} k'
+        for suffix, value, threshold in units:
+            if number >= threshold:
+                return f'{number / value:5.1f} {suffix}'
 
         return f'{number:5}  '
 
