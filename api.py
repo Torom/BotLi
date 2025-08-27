@@ -103,7 +103,7 @@ class API:
                                                  ) as response:
 
                 if response.status == 429:
-                    await queue.put(API_Challenge_Reponse(has_reached_rate_limit=True))
+                    queue.put_nowait(API_Challenge_Reponse(has_reached_rate_limit=True))
                     return
 
                 async for line in response.content:
@@ -111,17 +111,17 @@ class API:
                         continue
 
                     data: dict[str, Any] = json.loads(line)
-                    await queue.put(API_Challenge_Reponse(data.get('id'),
-                                                          data.get('done') == 'accepted',
-                                                          data.get('error'),
-                                                          data.get('done') == 'declined',
-                                                          'clock.limit' in data,
-                                                          'clock.increment' in data))
+                    queue.put_nowait(API_Challenge_Reponse(data.get('id'),
+                                                           data.get('done') == 'accepted',
+                                                           data.get('error'),
+                                                           data.get('done') == 'declined',
+                                                           'clock.limit' in data,
+                                                           'clock.increment' in data))
 
         except (aiohttp.ClientError, json.JSONDecodeError) as e:
-            await queue.put(API_Challenge_Reponse(error=str(e)))
+            queue.put_nowait(API_Challenge_Reponse(error=str(e)))
         except TimeoutError:
-            await queue.put(API_Challenge_Reponse(has_timed_out=True))
+            queue.put_nowait(API_Challenge_Reponse(has_timed_out=True))
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
@@ -189,14 +189,14 @@ class API:
         async with self.lichess_session.get('/api/stream/event', timeout=STREAM_TIMEOUT) as response:
             async for line in response.content:
                 if line.strip():
-                    await queue.put(json.loads(line))
+                    queue.put_nowait(json.loads(line))
 
     @retry(**GAME_STREAM_RETRY_CONDITIONS)
     async def get_game_stream(self, game_id: str, queue: asyncio.Queue[dict[str, Any]]) -> None:
         async with self.lichess_session.get(f'/api/bot/game/stream/{game_id}', timeout=STREAM_TIMEOUT) as response:
             async for line in response.content:
                 if line.strip():
-                    await queue.put(json.loads(line))
+                    queue.put_nowait(json.loads(line))
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_online_bots(self) -> list[dict[str, Any]]:
