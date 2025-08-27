@@ -34,11 +34,14 @@ class API:
                                                                           'User-Agent': f'BotLi/{config.version}'},
                                                      timeout=aiohttp.ClientTimeout(total=5.0))
         self.external_session = aiohttp.ClientSession(headers={'User-Agent': f'BotLi/{config.version}'})
+        self.chessdb_queue: asyncio.Queue[str] = asyncio.Queue()
+        self._chessdb_worker_task: asyncio.Task[None] = asyncio.create_task(self._chessdb_worker())
 
     async def __aenter__(self) -> 'API':
         return self
 
     async def __aexit__(self, *_) -> None:
+        self._chessdb_worker_task.cancel()
         await self.close()
 
     def append_user_agent(self, username: str) -> None:
@@ -48,6 +51,16 @@ class API:
     async def close(self) -> None:
         await self.lichess_session.close()
         await self.external_session.close()
+
+    async def _chessdb_worker(self) -> None:
+        while fen := await self.chessdb_queue.get():
+            try:
+                async with self.external_session.get('http://www.chessdb.cn/cdb.php',
+                                                     params={'action': 'queue', 'board': fen},
+                                                     timeout=aiohttp.ClientTimeout(total=5.0)):
+                    await asyncio.sleep(0.5)
+            except aiohttp.ClientError as e:
+                print(f'ChessDB Queue: {e}')
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def abort_game(self, game_id: str) -> bool:
@@ -280,14 +293,6 @@ class API:
                 print(f'Joining tournament "{tournament_id}" failed: {json_response["error"]}')
                 return False
             return True
-
-    async def queue_chessdb(self, fen: str) -> None:
-        try:
-            async with self.external_session.get('http://www.chessdb.cn/cdb.php',
-                                                 params={'action': 'queue', 'board': fen}):
-                pass
-        except aiohttp.ClientError as e:
-            print(f'ChessDB Queue: {e}')
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def resign_game(self, game_id: str) -> bool:
