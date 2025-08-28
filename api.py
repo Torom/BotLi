@@ -58,7 +58,7 @@ class API:
                 async with self.external_session.get('http://www.chessdb.cn/cdb.php',
                                                      params={'action': 'queue', 'board': fen},
                                                      timeout=aiohttp.ClientTimeout(total=5.0)):
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(1.0)
             except aiohttp.ClientError as e:
                 print(f'ChessDB Queue: {e}')
 
