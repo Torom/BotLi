@@ -1,5 +1,5 @@
 import itertools
-import rando
+import random
 import struct
 import time
 from collections.abc import Awaitable, Callable, Iterable
