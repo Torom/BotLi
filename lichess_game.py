@@ -233,6 +233,9 @@ class Lichess_Game:
 
         if not self.engine.opponent.is_engine and not self.config.offer_draw.against_humans:
             return False
+          
+        if self.board.uci_variant != 'chess' and not self.config.resign.use_for_variants:  
+            return False  
 
         if (
             self.config.offer_draw.min_rating is not None and
@@ -265,6 +268,9 @@ class Lichess_Game:
 
         if not self.engine.opponent.is_engine and not self.config.resign.against_humans:
             return False
+          
+        if self.board.uci_variant != 'chess' and not self.config.resign.use_for_variants:  
+            return False  
 
         if (
             self.config.resign.min_rating is not None and
