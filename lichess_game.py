@@ -14,8 +14,13 @@ import chess.syzygy
 from chess.variant import find_variant
 
 from api import API
-from botli_dataclasses import (Book_Settings, Game_Information, Gaviota_Result, Lichess_Move, Move_Response,
-                               Syzygy_Result)
+from botli_dataclasses import (
+    Book_Settings,
+    Game_Information,
+    Gaviota_Result,
+    Lichess_Move,
+    Move_Response,
+    Syzygy_Result)
 from config import Config
 from configs import Engine_Config, Syzygy_Config
 from engine import Engine
@@ -52,14 +57,20 @@ class Lichess_Game:
         self.out_of_cloud_counter = 0
         self.chessdb_counter = 0
         self.out_of_chessdb_counter = 0
-        self.move_overhead = self._get_move_overhead(config.engines[engine_key])
+        self.move_overhead = self._get_move_overhead(
+            config.engines[engine_key])
         self.engine = engine
         self.scores: list[chess.engine.PovScore] = []
         self.last_message = 'No eval available yet.'
         self.last_pv: list[chess.Move] = []
 
     @classmethod
-    async def acreate(cls, api: API, config: Config, username: str, game_info: Game_Information) -> 'Lichess_Game':
+    async def acreate(
+            cls,
+            api: API,
+            config: Config,
+            username: str,
+            game_info: Game_Information) -> 'Lichess_Game':
         board = cls._get_board(game_info)
         is_white = game_info.white_name == username
         engine_key = cls._get_engine_key(config, board, is_white, game_info)
@@ -67,7 +78,15 @@ class Lichess_Game:
         engine = await Engine.from_config(config.engines[engine_key],
                                           syzygy_config,
                                           game_info.black_opponent if is_white else game_info.white_opponent)
-        return cls(api, config, username, game_info, board, syzygy_config, engine_key, engine)
+        return cls(
+            api,
+            config,
+            username,
+            game_info,
+            board,
+            syzygy_config,
+            engine_key,
+            engine)
 
     @staticmethod
     def _get_board(game_info: Game_Information) -> chess.Board:
@@ -85,7 +104,11 @@ class Lichess_Game:
         return board
 
     @staticmethod
-    def _get_engine_key(config: Config, board: chess.Board, is_white: bool, game_info: Game_Information) -> str:
+    def _get_engine_key(
+            config: Config,
+            board: chess.Board,
+            is_white: bool,
+            game_info: Game_Information) -> str:
         suffixes: list[str] = []
         if game_info.white_title != 'BOT' or game_info.black_title != 'BOT':
             suffixes.append('human')
@@ -123,10 +146,15 @@ class Lichess_Game:
         if key := check_engine_key('standard'):
             return key
 
-        raise RuntimeError(f'No suitable engine for "{board.uci_variant}" configured.')
+        raise RuntimeError(
+            f'No suitable engine for "{
+                board.uci_variant}" configured.')
 
     @classmethod
-    def _get_syzygy_config(cls, config: Config, board: chess.Board) -> Syzygy_Config:
+    def _get_syzygy_config(
+            cls,
+            config: Config,
+            board: chess.Board) -> Syzygy_Config:
         match board.uci_variant:
             case 'chess':
                 return config.syzygy['standard']
@@ -146,10 +174,13 @@ class Lichess_Game:
 
             if 'score' in info:
                 self.scores.append(info['score'])
-            message = f'Engine:  {self._format_move(move):14} {self._format_engine_info(info)}'
-            move_response = Move_Response(move, message,
-                                          pv=info.get('pv', []),
-                                          is_engine_move=len(self.board.move_stack) > 1)
+            message = f'Engine:  {
+                self._format_move(move):14} {
+                self._format_engine_info(info)}'
+            move_response = Move_Response(
+                move, message, pv=info.get(
+                    'pv', []), is_engine_move=len(
+                    self.board.move_stack) > 1)
 
         self.board.push(move_response.move)
         if not move_response.is_engine_move:
@@ -159,7 +190,10 @@ class Lichess_Game:
         self.last_message = move_response.public_message
         self.last_pv = move_response.pv
 
-        return Lichess_Move(move_response.move.uci(), self._offer_draw(move_response), self._resign(move_response))
+        return Lichess_Move(
+            move_response.move.uci(),
+            self._offer_draw(move_response),
+            self._resign(move_response))
 
     def update(self, gameState_event: dict[str, Any]) -> bool:
         self.white_time = gameState_event['wtime'] / 1000
@@ -233,9 +267,9 @@ class Lichess_Game:
 
         if not self.engine.opponent.is_engine and not self.config.offer_draw.against_humans:
             return False
-          
-        if self.board.uci_variant != 'chess' and not self.config.resign.use_for_variants:  
-            return False  
+
+        if self.board.uci_variant != 'chess' and not self.config.resign.use_for_variants:
+            return False
 
         if (
             self.config.offer_draw.min_rating is not None and
@@ -250,14 +284,17 @@ class Lichess_Game:
         if not move_response.is_engine_move:
             return move_response.is_drawish
 
-        if self.board.fullmove_number - (not self.is_white) < self.config.offer_draw.min_game_length:
+        if self.board.fullmove_number - \
+                (not self.is_white) < self.config.offer_draw.min_game_length:
             return False
 
         if len(self.scores) < self.config.offer_draw.consecutive_moves:
             return False
 
-        for score in islice(self.scores, len(self.scores) - self.config.offer_draw.consecutive_moves, None):
-            if abs(score.relative.score(mate_score=40_000)) > self.config.offer_draw.score:
+        for score in islice(self.scores, len(self.scores) -
+                            self.config.offer_draw.consecutive_moves, None):
+            if abs(score.relative.score(mate_score=40_000)
+                   ) > self.config.offer_draw.score:
                 return False
 
         return True
@@ -268,9 +305,9 @@ class Lichess_Game:
 
         if not self.engine.opponent.is_engine and not self.config.resign.against_humans:
             return False
-          
-        if self.board.uci_variant != 'chess' and not self.config.resign.use_for_variants:  
-            return False  
+
+        if self.board.uci_variant != 'chess' and not self.config.resign.use_for_variants:
+            return False
 
         if (
             self.config.resign.min_rating is not None and
@@ -288,8 +325,10 @@ class Lichess_Game:
         if len(self.scores) < self.config.resign.consecutive_moves:
             return False
 
-        for score in islice(self.scores, len(self.scores) - self.config.resign.consecutive_moves, None):
-            if score.relative.score(mate_score=40_000) > self.config.resign.score:
+        for score in islice(self.scores, len(self.scores) -
+                            self.config.resign.consecutive_moves, None):
+            if score.relative.score(
+                    mate_score=40_000) > self.config.resign.score:
                 return False
 
         return True
@@ -310,7 +349,8 @@ class Lichess_Game:
 
             match self.book_settings.selection:
                 case 'weighted_random':
-                    entries.sort(key=lambda entry: random.random() ** (1.0 / entry.weight), reverse=True)
+                    entries.sort(key=lambda entry: random.random()
+                                 ** (1.0 / entry.weight), reverse=True)
                 case 'uniform_random':
                     random.shuffle(entries)
                 case 'best_move':
@@ -322,12 +362,18 @@ class Lichess_Game:
             else:
                 continue
 
-            weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
+            weight = entry.weight / \
+                sum(entry.weight for entry in entries) * 100.0
             learn = entry.learn if self.config.opening_books.read_learn else 0
             name = name if len(self.book_settings.readers) > 1 else ''
             public_message = f'Book:    {self._format_move(entry.move):14}'
-            private_message = f'{self._format_book_info(weight, learn)}     {name}'
-            return Move_Response(entry.move, public_message, private_message=private_message)
+            private_message = f'{
+                self._format_book_info(
+                    weight, learn)}     {name}'
+            return Move_Response(
+                entry.move,
+                public_message,
+                private_message=private_message)
 
     def _get_book_settings(self) -> Book_Settings:
         if not self.config.opening_books.enabled:
@@ -387,7 +433,8 @@ class Lichess_Game:
         too_many_moves = (False
                           if self.config.online_moves.opening_explorer.max_moves is None
                           else self.opening_explorer_counter >= self.config.online_moves.opening_explorer.max_moves)
-        has_time = self._has_time(self.config.online_moves.opening_explorer.min_time)
+        has_time = self._has_time(
+            self.config.online_moves.opening_explorer.min_time)
 
         if out_of_book or too_deep or out_of_range or too_many_moves or not has_time:
             return
@@ -419,7 +466,9 @@ class Lichess_Game:
             return
 
         game_count = response['white'] + response['draws'] + response['black']
-        if game_count < max(self.config.online_moves.opening_explorer.min_games, 1):
+        if game_count < max(
+                self.config.online_moves.opening_explorer.min_games,
+                1):
             self.out_of_opening_explorer_counter += 1
             return
 
@@ -428,7 +477,10 @@ class Lichess_Game:
             move['losses'] = move['black'] if self.board.turn else move['white']
 
         if self.config.online_moves.opening_explorer.only_with_wins:
-            response['moves'] = list(filter(lambda move: move['wins'] > 0, response['moves']))
+            response['moves'] = list(
+                filter(
+                    lambda move: move['wins'] > 0,
+                    response['moves']))
 
             if not response['moves']:
                 self.out_of_opening_explorer_counter += 1
@@ -442,17 +494,27 @@ class Lichess_Game:
 
         self.opening_explorer_counter += 1
         public_message = f'Explore: {self._format_move(move):14}'
-        private_message = (f'Performance: {top_move["performance"]}      '
-                           f'WDL: {top_move["wins"]}/{top_move["draws"]}/{top_move["losses"]}')
-        return Move_Response(move, public_message, private_message=private_message)
+        private_message = (
+            f'Performance: {
+                top_move["performance"]}      ' f'WDL: {
+                top_move["wins"]}/{
+                top_move["draws"]}/{
+                    top_move["losses"]}')
+        return Move_Response(
+            move,
+            public_message,
+            private_message=private_message)
 
-    def _get_opening_explorer_top_move(self, moves: list[dict[str, Any]]) -> dict[str, Any]:
+    def _get_opening_explorer_top_move(
+            self, moves: list[dict[str, Any]]) -> dict[str, Any]:
         if self.config.online_moves.opening_explorer.selection == 'win_rate':
             def win_rate(move: dict[str, Any]) -> float:
-                return move['wins'] / (move['white'] + move['draws'] + move['black'])
+                return move['wins'] / \
+                    (move['white'] + move['draws'] + move['black'])
 
             def win_performance(move: dict[str, Any]) -> float:
-                return (move['wins'] - move['losses']) / (move['white'] + move['draws'] + move['black'])
+                return (move['wins'] - move['losses']) / \
+                    (move['white'] + move['draws'] + move['black'])
 
             moves.sort(key=win_rate, reverse=True)
             return max(moves, key=win_performance)
@@ -470,7 +532,8 @@ class Lichess_Game:
         too_many_moves = (False
                           if self.config.online_moves.lichess_cloud.max_moves is None
                           else self.cloud_counter >= self.config.online_moves.lichess_cloud.max_moves)
-        has_time = self._has_time(self.config.online_moves.lichess_cloud.min_time)
+        has_time = self._has_time(
+            self.config.online_moves.lichess_cloud.min_time)
 
         if out_of_book or too_deep or too_many_moves or not has_time:
             return
@@ -493,7 +556,8 @@ class Lichess_Game:
             return
 
         self.out_of_cloud_counter = 0
-        pv = [chess.Move.from_uci(uci_move) for uci_move in response['pvs'][0]['moves'].split()]
+        pv = [chess.Move.from_uci(uci_move)
+              for uci_move in response['pvs'][0]['moves'].split()]
         if self._is_repetition(pv[0]):
             return
 
@@ -503,9 +567,15 @@ class Lichess_Game:
             score = chess.engine.Cp(response['pvs'][0]['cp'])
 
         self.cloud_counter += 1
-        message = (f'Cloud:   {self._format_move(pv[0]):14} '
-                   f'{self._format_score(chess.engine.PovScore(score, chess.WHITE))}     '
-                   f'Depth: {response["depth"]}')
+        message = (
+            f'Cloud:   {
+                self._format_move(
+                    pv[0]):14} ' f'{
+                self._format_score(
+                    chess.engine.PovScore(
+                        score,
+                        chess.WHITE))}     ' f'Depth: {
+                            response["depth"]}')
         return Move_Response(pv[0], message, pv=pv)
 
     async def _make_chessdb_move(self) -> Move_Response | None:
@@ -539,7 +609,8 @@ class Lichess_Game:
             return
 
         self.out_of_chessdb_counter = 0
-        if self.config.online_moves.chessdb.selection == 'optimal' or response['moves'][0]['rank'] == 0:
+        if self.config.online_moves.chessdb.selection == 'optimal' or response[
+                'moves'][0]['rank'] == 0:
             candidate_moves = [chessdb_move for chessdb_move in response['moves']
                                if chessdb_move['score'] == response['moves'][0]['score']]
         elif self.config.online_moves.chessdb.selection == 'best':
@@ -561,10 +632,15 @@ class Lichess_Game:
             return
 
         self.chessdb_counter += 1
-        pov_score = chess.engine.PovScore(chess.engine.Cp(chessdb_move['score']), self.board.turn)
+        pov_score = chess.engine.PovScore(
+            chess.engine.Cp(
+                chessdb_move['score']),
+            self.board.turn)
         candidates = (f'Candidates: {", ".join(chessdb_move["san"] for chessdb_move in candidate_moves)}'
                       if len(candidate_moves) > 1 else '')
-        message = f'ChessDB: {self._format_move(move):14} {self._format_score(pov_score)}     {candidates}'
+        message = f'ChessDB: {
+            self._format_move(move):14} {
+            self._format_score(pov_score)}     {candidates}'
         return Move_Response(move, message)
 
     def _probe_gaviota(self, moves: Iterable[chess.Move]) -> Gaviota_Result:
@@ -609,7 +685,8 @@ class Lichess_Game:
                     return
 
                 try:
-                    result = self._probe_gaviota(self.board.generate_legal_captures())
+                    result = self._probe_gaviota(
+                        self.board.generate_legal_captures())
                 except KeyError:
                     return
 
@@ -617,7 +694,8 @@ class Lichess_Game:
                     return
             case _:
                 try:
-                    result = self._probe_gaviota(self.board.generate_legal_moves())
+                    result = self._probe_gaviota(
+                        self.board.generate_legal_moves())
                 except KeyError:
                     return
 
@@ -639,7 +717,11 @@ class Lichess_Game:
 
         await self.engine.stop_pondering(self.board)
         message = f'Gaviota: {self._format_move(result.move):14} {egtb_info}'
-        return Move_Response(result.move, message, is_drawish=offer_draw, is_resignable=resign)
+        return Move_Response(
+            result.move,
+            message,
+            is_drawish=offer_draw,
+            is_resignable=resign)
 
     def _probe_syzygy(self, moves: Iterable[chess.Move]) -> Syzygy_Result:
         assert self.syzygy_tablebase
@@ -688,7 +770,8 @@ class Lichess_Game:
                 return
             case pieces if pieces == self.syzygy_config.max_pieces + 1:
                 try:
-                    result = self._probe_syzygy(self.board.generate_legal_captures())
+                    result = self._probe_syzygy(
+                        self.board.generate_legal_captures())
                 except KeyError:
                     return
 
@@ -696,7 +779,8 @@ class Lichess_Game:
                     return
             case _:
                 try:
-                    result = self._probe_syzygy(self.board.generate_legal_moves())
+                    result = self._probe_syzygy(
+                        self.board.generate_legal_moves())
                 except KeyError:
                     return
 
@@ -706,7 +790,8 @@ class Lichess_Game:
                 offer_draw = False
                 resign = False
             case 1:
-                egtb_info = self._format_egtb_info('cursed win', dtz=result.dtz)
+                egtb_info = self._format_egtb_info(
+                    'cursed win', dtz=result.dtz)
                 offer_draw = False
                 resign = False
             case 0:
@@ -714,7 +799,8 @@ class Lichess_Game:
                 offer_draw = True
                 resign = False
             case -1:
-                egtb_info = self._format_egtb_info('blessed loss', dtz=result.dtz)
+                egtb_info = self._format_egtb_info(
+                    'blessed loss', dtz=result.dtz)
                 offer_draw = True
                 resign = False
             case -2:
@@ -724,9 +810,14 @@ class Lichess_Game:
 
         await self.engine.stop_pondering(self.board)
         message = f'Syzygy:  {self._format_move(result.move):14} {egtb_info}'
-        return Move_Response(result.move, message, is_drawish=offer_draw, is_resignable=resign)
+        return Move_Response(
+            result.move,
+            message,
+            is_drawish=offer_draw,
+            is_resignable=resign)
 
-    def _value_to_wdl(self, value: int, halfmove_clock: int) -> Literal[-2, -1, 0, 1, 2]:
+    def _value_to_wdl(self, value: int,
+                      halfmove_clock: int) -> Literal[-2, -1, 0, 1, 2]:
         if value > 0:
             if value + halfmove_clock <= 100:
                 return 2
@@ -745,14 +836,16 @@ class Lichess_Game:
         if not (self.syzygy_config.enabled and self.syzygy_config.instant_play):
             return
 
-        tablebase = chess.syzygy.open_tablebase(self.syzygy_config.paths[0], VariantBoard=type(self.board))
+        tablebase = chess.syzygy.open_tablebase(
+            self.syzygy_config.paths[0], VariantBoard=type(self.board))
 
         for path in self.syzygy_config.paths[1:]:
             tablebase.add_directory(path)
 
         return tablebase
 
-    def _get_gaviota_tablebase(self) -> chess.gaviota.PythonTablebase | chess.gaviota.NativeTablebase | None:
+    def _get_gaviota_tablebase(
+            self) -> chess.gaviota.PythonTablebase | chess.gaviota.NativeTablebase | None:
         if not self.config.gaviota.enabled:
             return
 
@@ -772,7 +865,8 @@ class Lichess_Game:
                 if not any(self.board.generate_legal_captures()):
                     return
 
-        if not self._has_time(self.config.online_moves.online_egtb.min_time) or self._has_mate_score():
+        if not self._has_time(
+                self.config.online_moves.online_egtb.min_time) or self._has_mate_score():
             return
 
         variant = 'standard' if self.board.uci_variant == 'chess' else self.board.uci_variant
@@ -794,8 +888,17 @@ class Lichess_Game:
         offer_draw = outcome in ['draw', 'blessed loss']
         resign = outcome == 'loss'
         move = chess.Move.from_uci(uci_move)
-        message = f'EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}'
-        return Move_Response(move, message, is_drawish=offer_draw, is_resignable=resign)
+        message = f'EGTB:    {
+            self._format_move(move):14} {
+            self._format_egtb_info(
+                outcome,
+                dtz,
+                dtm)}'
+        return Move_Response(
+            move,
+            message,
+            is_drawish=offer_draw,
+            is_resignable=resign)
 
     def _format_move(self, move: chess.Move) -> str:
         if self.board.turn:
@@ -807,7 +910,8 @@ class Lichess_Game:
 
     def _format_engine_info(self, info: chess.engine.InfoDict) -> str:
         info_score = info.get('score')
-        score = f'{self._format_score(info_score):7}' if info_score else 7 * ' '
+        score = f'{
+            self._format_score(info_score):7}' if info_score else 7 * ' '
 
         info_depth = info.get('depth')
         info_seldepth = info.get('seldepth')
@@ -815,7 +919,8 @@ class Lichess_Game:
         depth = f'{depth_str:6}' if info_depth and info_seldepth else 6 * ' '
 
         info_nodes = info.get('nodes')
-        nodes = f'Nodes: {self._format_number(info_nodes)}' if info_nodes else 14 * ' '
+        nodes = f'Nodes: {
+            self._format_number(info_nodes)}' if info_nodes else 14 * ' '
 
         info_nps = info.get('nps')
         nps = f'NPS: {self._format_number(info_nps)}' if info_nps else 12 * ' '
@@ -827,13 +932,16 @@ class Lichess_Game:
             time_str = 11 * ' '
 
         info_hashfull = info.get('hashfull')
-        hashfull = 13 * ' ' if info_hashfull is None else f'Hash: {info_hashfull / 10:5.1f} %'
+        hashfull = 13 * \
+            ' ' if info_hashfull is None else f'Hash: {info_hashfull / 10:5.1f} %'
 
         info_tbhits = info.get('tbhits')
-        tbhits = f'TB: {self._format_number(info_tbhits)}' if info_tbhits else ''
+        tbhits = f'TB: {
+            self._format_number(info_tbhits)}' if info_tbhits else ''
         delimiter = 5 * ' '
 
-        return delimiter.join((score, depth, nodes, nps, time_str, hashfull, tbhits))
+        return delimiter.join(
+            (score, depth, nodes, nps, time_str, hashfull, tbhits))
 
     def _format_number(self, number: int) -> str:
         units: list[tuple[str, int, int]] = [
@@ -859,7 +967,11 @@ class Lichess_Game:
 
         return str(score.pov(self.board.turn))
 
-    def _format_egtb_info(self, outcome: str, dtz: int | None = None, dtm: int | None = None) -> str:
+    def _format_egtb_info(
+            self,
+            outcome: str,
+            dtz: int | None = None,
+            dtm: int | None = None) -> str:
         outcome_str = f'{outcome:>7}'
         dtz_str = f'DTZ: {dtz}' if dtz else ''
         dtm_str = f'DTM: {dtm}' if dtm else ''
@@ -878,7 +990,8 @@ class Lichess_Game:
 
         return output
 
-    def _get_move_sources(self) -> list[Callable[[], Awaitable[Move_Response | None]]]:
+    def _get_move_sources(
+            self) -> list[Callable[[], Awaitable[Move_Response | None]]]:
         move_sources: list[Callable[[], Awaitable[Move_Response | None]]] = []
 
         if self.config.gaviota.enabled:
@@ -892,7 +1005,8 @@ class Lichess_Game:
             if self.board.uci_variant in ['chess', 'antichess', 'atomic']:
                 move_sources.append(self._make_egtb_move)
 
-        opening_sources: dict[Callable[[], Awaitable[Move_Response | None]], int] = {}
+        opening_sources: dict[Callable[[],
+                                       Awaitable[Move_Response | None]], int] = {}
 
         if self.config.opening_books.enabled:
             opening_sources[self._make_book_move] = self.config.opening_books.priority
@@ -913,14 +1027,16 @@ class Lichess_Game:
                 if self.board.uci_variant == 'chess':
                     opening_sources[self._make_chessdb_move] = self.config.online_moves.chessdb.priority
 
-        move_sources += [opening_source
-                         for opening_source, _
-                         in sorted(opening_sources.items(), key=lambda item: item[1], reverse=True)]
+        move_sources += [opening_source for opening_source,
+                         _ in sorted(opening_sources.items(),
+                                     key=lambda item: item[1],
+                                     reverse=True)]
 
         return move_sources
 
     def _get_move_overhead(self, engine_config: Engine_Config) -> float:
-        return max(self.game_info.initial_time_ms / 60_000 * engine_config.move_overhead_multiplier, 1.0)
+        return max(self.game_info.initial_time_ms / 60_000 *
+                   engine_config.move_overhead_multiplier, 1.0)
 
     def _has_time(self, min_time: float) -> bool:
         if len(self.board.move_stack) < 2:
