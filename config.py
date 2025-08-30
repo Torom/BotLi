@@ -390,7 +390,7 @@ class Config:
             ['score', int, '"score" must be an integer.'],
             ['consecutive_moves', int, '"consecutive_moves" must be an integer.'],
             ['min_game_length', int, '"min_game_length" must be an integer.'],
-            ['against_humans', bool, '"against_humans" must be a bool.']
+            ['against_humans', bool, '"against_humans" must be a bool.'],
             ['use_for_variants', bool, '"use_for_variants" must be a bool.']]
 
         for subsection in offer_draw_sections:
@@ -414,7 +414,7 @@ class Config:
             ['enabled', bool, '"enabled" must be a bool.'],
             ['score', int, '"score" must be an integer.'],
             ['consecutive_moves', int, '"consecutive_moves" must be an integer.'],
-            ['against_humans', bool, '"against_humans" must be a bool.']
+            ['against_humans', bool, '"against_humans" must be a bool.'],
             ['use_for_variants', bool, '"use_for_variants" must be a bool.']]
 
         for subsection in resign_sections:
