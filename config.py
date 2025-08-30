@@ -1,4 +1,4 @@
-import os 
+import os
 import os.path
 import subprocess
 import sys
@@ -391,8 +391,7 @@ class Config:
             ['consecutive_moves', int, '"consecutive_moves" must be an integer.'],
             ['min_game_length', int, '"min_game_length" must be an integer.'],
             ['against_humans', bool, '"against_humans" must be a bool.']
-            ['use_for_variants', bool, '"use_for_variants" must be a bool.']
-        ]
+            ['use_for_variants', bool, '"use_for_variants" must be a bool.']]
 
         for subsection in offer_draw_sections:
             if subsection[0] not in offer_draw_section:
@@ -406,6 +405,7 @@ class Config:
                                  offer_draw_section['consecutive_moves'],
                                  offer_draw_section['min_game_length'],
                                  offer_draw_section['against_humans'],
+                                 offer_draw_section['use_for_variants'],
                                  offer_draw_section.get('min_rating'))
 
     @staticmethod
@@ -415,8 +415,7 @@ class Config:
             ['score', int, '"score" must be an integer.'],
             ['consecutive_moves', int, '"consecutive_moves" must be an integer.'],
             ['against_humans', bool, '"against_humans" must be a bool.']
-            ['use_for_variants', bool, '"use_for_variants" must be a bool.']
-        ]
+            ['use_for_variants', bool, '"use_for_variants" must be a bool.']]
 
         for subsection in resign_sections:
             if subsection[0] not in resign_section:
@@ -429,6 +428,7 @@ class Config:
                              resign_section['score'],
                              resign_section['consecutive_moves'],
                              resign_section['against_humans'],
+                             resign_section['use_for_variants'],
                              resign_section.get('min_rating'))
 
     @staticmethod
