@@ -33,7 +33,12 @@ class Engine:
         await cls._configure_engine(engine, engine_config, syzygy_config)
         await engine.send_opponent_information(opponent=opponent)
 
-        return cls(transport, engine, engine_config.ponder, opponent, engine_config.limits)
+        return cls(
+            transport,
+            engine,
+            engine_config.ponder,
+            opponent,
+            engine_config.limits)
 
     @classmethod
     async def test(cls, engine_config: Engine_Config) -> None:
@@ -55,11 +60,13 @@ class Engine:
                                 syzygy_config: Syzygy_Config) -> None:
         for name, value in engine_config.uci_options.items():
             if name.lower() in chess.engine.MANAGED_OPTIONS:
-                print(f'UCI option "{name}" ignored as it is managed by the bot.')
+                print(
+                    f'UCI option "{name}" ignored as it is managed by the bot.')
             elif name in engine.options:
                 await engine.configure({name: value})
             else:
-                print(f'UCI option "{name}" ignored as it is not supported by the engine.')
+                print(
+                    f'UCI option "{name}" ignored as it is not supported by the engine.')
 
         if not syzygy_config.enabled:
             return
@@ -86,14 +93,20 @@ class Engine:
             if self.limit_config.time:
                 time_limit = min(time_limit, self.limit_config.time)
 
-            limit = chess.engine.Limit(time=time_limit, depth=self.limit_config.depth, nodes=self.limit_config.nodes)
+            limit = chess.engine.Limit(
+                time=time_limit,
+                depth=self.limit_config.depth,
+                nodes=self.limit_config.nodes)
             ponder = False
         else:
-            limit = chess.engine.Limit(white_clock=white_time, white_inc=increment,
-                                       black_clock=black_time, black_inc=increment,
-                                       time=self.limit_config.time,
-                                       depth=self.limit_config.depth,
-                                       nodes=self.limit_config.nodes)
+            limit = chess.engine.Limit(
+                white_clock=white_time,
+                white_inc=increment,
+                black_clock=black_time,
+                black_inc=increment,
+                time=self.limit_config.time,
+                depth=self.limit_config.depth,
+                nodes=self.limit_config.nodes)
             ponder = self.ponder
 
         result = await self.engine.play(board, limit, info=chess.engine.INFO_ALL, ponder=ponder)
