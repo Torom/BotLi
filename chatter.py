@@ -1,6 +1,7 @@
 import os
 import platform
 from collections import defaultdict
+import ping3  
 
 import psutil
 
@@ -81,6 +82,15 @@ class Chatter:
                                                                         'Feel free to challenge me again, '
                                                                         'I will accept the challenge if possible.'))
 
+    def _get_ping(self) -> str:
+        try:
+            ping_ms = ping3.ping("lichess.org", unit="ms", timeout=2)
+            if ping_ms is None:
+                return "Ping to lichess.org failed."
+            return f"Ping to lichess.org: {ping_ms:.0f} ms"
+        except Exception as e:
+            return f"Ping error: {e}"
+
     async def _handle_command(self, chat_message: Chat_Message, takeback_count: int, max_takebacks: int) -> None:
         match chat_message.text[1:].lower():
             case 'cpu':
@@ -120,12 +130,14 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.ram_message)
             case 'takeback':
                 await self._send_takeback_message(chat_message.room, takeback_count, max_takebacks)
+            case 'ping':
+                ping_message = self._get_ping()
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, ping_message)
             case 'help' | 'commands':
                 if chat_message.room == 'player':
-                    message = 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval, !ram, !takeback'
+                    message = 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval, !ram, !takeback, !ping'
                 else:
-                    message = 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval, !pv, !ram, !takeback'
-
+                    message = 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval, !pv, !ram, !takeback, !ping'
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
 
     async def _send_last_message(self, room: str) -> None:
@@ -213,16 +225,4 @@ class Chatter:
         if board.turn:
             initial_message += 'PV:'
         else:
-            initial_message += f'PV: {board.fullmove_number}...'
-
-        final_message = initial_message
-        for move in self.lichess_game.last_pv[1:]:
-            if board.turn:
-                initial_message += f' {board.fullmove_number}.'
-            initial_message += f' {board.san(move)}'
-            if len(initial_message) > 140:
-                break
-            board.push(move)
-            final_message = initial_message
-
-        return final_message
+                initial_message += f'PV: {board.fullmove_number}...'
