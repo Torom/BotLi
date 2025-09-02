@@ -93,6 +93,12 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.lichess_game.engine.name)
             case 'name':
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.name_message)
+            case 'ping':
+                if not self.game_info.increment_ms and self.lichess_game.own_time < 10.0:
+                    return
+
+                ping = await self.api.ping()
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, f'Ping: {ping:.1f}')
             case 'printeval':
                 if not self.game_info.increment_ms and self.game_info.initial_time_ms < 180_000:
                     await self._send_last_message(chat_message.room)
@@ -122,9 +128,11 @@ class Chatter:
                 await self._send_takeback_message(chat_message.room, takeback_count, max_takebacks)
             case 'help' | 'commands':
                 if chat_message.room == 'player':
-                    message = 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval, !ram, !takeback'
+                    message = ('Supported commands: !cpu, !draw, !eval, !motor, '
+                               '!name, !ping, !printeval, !ram, !takeback')
                 else:
-                    message = 'Supported commands: !cpu, !draw, !eval, !motor, !name, !printeval, !pv, !ram, !takeback'
+                    message = ('Supported commands: !cpu, !draw, !eval, !motor, '
+                               '!name, !ping, !printeval, !pv, !ram, !takeback')
 
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
 

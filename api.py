@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 from typing import Any
 
 import aiohttp
@@ -293,6 +294,14 @@ class API:
                 print(f'Joining tournament "{tournament_id}" failed: {json_response["error"]}')
                 return False
             return True
+
+    async def ping(self) -> float:
+        try:
+            start_time = time.perf_counter()
+            async with self.lichess_session.get('/__ping'):
+                return time.perf_counter() - start_time
+        except (aiohttp.ClientError, TimeoutError):
+            return float('NaN')
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def resign_game(self, game_id: str) -> bool:
