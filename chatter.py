@@ -184,7 +184,10 @@ class Chatter:
         return f'{mem_gib:.1f} GiB'
 
     def _get_draw_message(self, config: Config) -> str:
-        if not config.offer_draw.enabled:
+        too_low_rating = (config.offer_draw.min_rating is not None and
+                          self.lichess_game.engine.opponent.rating is not None and
+                          self.lichess_game.engine.opponent.rating < config.offer_draw.min_rating)
+        if not config.offer_draw.enabled or too_low_rating:
             return f'{self.username} will neither accept nor offer draws.'
 
         max_score = config.offer_draw.score / 100
