@@ -12,31 +12,56 @@ from config import Config
 from enums import Decline_Reason, Variant
 
 logger = logging.getLogger(__name__)
-BASIC_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.ClientError, TimeoutError)),
-                          'wait': wait_fixed(5.0),
-                          'before_sleep': before_sleep_log(logger, logging.DEBUG)}
-JSON_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.ClientError, json.JSONDecodeError, TimeoutError)),
-                         'wait': wait_fixed(5.0),
-                         'before_sleep': before_sleep_log(logger, logging.DEBUG)}
-GAME_STREAM_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.ClientError,
-                                                                  json.JSONDecodeError,
-                                                                  TimeoutError)),
-                                'wait': wait_fixed(1.0),
-                                'before_sleep': before_sleep_log(logger, logging.DEBUG)}
-MOVE_RETRY_CONDITIONS = {'retry': retry_if_exception_type((aiohttp.ClientError, TimeoutError)),
-                         'wait': wait_fixed(1.0),
-                         'before_sleep': before_sleep_log(logger, logging.DEBUG)}
+BASIC_RETRY_CONDITIONS = {
+    'retry': retry_if_exception_type(
+        (aiohttp.ClientError,
+         TimeoutError)),
+    'wait': wait_fixed(5.0),
+    'before_sleep': before_sleep_log(
+        logger,
+        logging.DEBUG)}
+JSON_RETRY_CONDITIONS = {
+    'retry': retry_if_exception_type(
+        (aiohttp.ClientError,
+         json.JSONDecodeError,
+         TimeoutError)),
+    'wait': wait_fixed(5.0),
+    'before_sleep': before_sleep_log(
+        logger,
+        logging.DEBUG)}
+GAME_STREAM_RETRY_CONDITIONS = {
+    'retry': retry_if_exception_type(
+        (aiohttp.ClientError,
+         json.JSONDecodeError,
+         TimeoutError)),
+    'wait': wait_fixed(1.0),
+    'before_sleep': before_sleep_log(
+        logger,
+        logging.DEBUG)}
+MOVE_RETRY_CONDITIONS = {
+    'retry': retry_if_exception_type(
+        (aiohttp.ClientError,
+         TimeoutError)),
+    'wait': wait_fixed(1.0),
+    'before_sleep': before_sleep_log(
+        logger,
+        logging.DEBUG)}
 STREAM_TIMEOUT = aiohttp.ClientTimeout(sock_connect=5.0, sock_read=9.0)
 
 
 class API:
     def __init__(self, config: Config) -> None:
-        self.lichess_session = aiohttp.ClientSession(config.url, headers={'Authorization': f'Bearer {config.token}',
-                                                                          'User-Agent': f'BotLi/{config.version}'},
-                                                     timeout=aiohttp.ClientTimeout(total=5.0))
-        self.external_session = aiohttp.ClientSession(headers={'User-Agent': f'BotLi/{config.version}'})
+        self.lichess_session = aiohttp.ClientSession(
+            config.url, headers={
+                'Authorization': f'Bearer {
+                    config.token}', 'User-Agent': f'BotLi/{
+                    config.version}'}, timeout=aiohttp.ClientTimeout(
+                total=5.0))
+        self.external_session = aiohttp.ClientSession(
+            headers={'User-Agent': f'BotLi/{config.version}'})
         self.chessdb_queue: asyncio.Queue[str] = asyncio.Queue()
-        self._chessdb_worker_task: asyncio.Task[None] = asyncio.create_task(self._chessdb_worker())
+        self._chessdb_worker_task: asyncio.Task[None] = asyncio.create_task(
+            self._chessdb_worker())
 
     async def __aenter__(self) -> 'API':
         return self
@@ -78,7 +103,9 @@ class API:
         async with self.lichess_session.post(f'/api/challenge/{challenge_id}/accept') as response:
             json_response = await response.json()
             if 'error' in json_response:
-                print(f'Challenge "{challenge_id}" could not be accepted: {json_response["error"]}')
+                print(
+                    f'Challenge "{challenge_id}" could not be accepted: {
+                        json_response["error"]}')
                 return False
             return True
 
@@ -102,9 +129,10 @@ class API:
             print(e)
             return False
 
-    async def create_challenge(self,
-                               challenge_request: Challenge_Request,
-                               queue: asyncio.Queue[API_Challenge_Reponse]) -> None:
+    async def create_challenge(
+            self,
+            challenge_request: Challenge_Request,
+            queue: asyncio.Queue[API_Challenge_Reponse]) -> None:
         try:
             async with self.lichess_session.post(f'/api/challenge/{challenge_request.opponent_username}',
                                                  data={'rated': 'true' if challenge_request.rated else 'false',
@@ -117,7 +145,9 @@ class API:
                                                  ) as response:
 
                 if response.status == 429:
-                    queue.put_nowait(API_Challenge_Reponse(has_reached_rate_limit=True))
+                    queue.put_nowait(
+                        API_Challenge_Reponse(
+                            has_reached_rate_limit=True))
                     return
 
                 async for line in response.content:
@@ -125,12 +155,14 @@ class API:
                         continue
 
                     data: dict[str, Any] = json.loads(line)
-                    queue.put_nowait(API_Challenge_Reponse(data.get('id'),
-                                                           data.get('done') == 'accepted',
-                                                           data.get('error'),
-                                                           data.get('done') == 'declined',
-                                                           'clock.limit' in data,
-                                                           'clock.increment' in data))
+                    queue.put_nowait(
+                        API_Challenge_Reponse(
+                            data.get('id'),
+                            data.get('done') == 'accepted',
+                            data.get('error'),
+                            data.get('done') == 'declined',
+                            'clock.limit' in data,
+                            'clock.increment' in data))
 
         except (aiohttp.ClientError, json.JSONDecodeError) as e:
             queue.put_nowait(API_Challenge_Reponse(error=str(e)))
@@ -138,7 +170,10 @@ class API:
             queue.put_nowait(API_Challenge_Reponse(has_timed_out=True))
 
     @retry(**BASIC_RETRY_CONDITIONS)
-    async def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
+    async def decline_challenge(
+            self,
+            challenge_id: str,
+            reason: Decline_Reason) -> bool:
         try:
             async with self.lichess_session.post(f'/api/challenge/{challenge_id}/decline',
                                                  data={'reason': reason}) as response:
@@ -158,7 +193,8 @@ class API:
 
             return json_response
 
-    async def get_chessdb_eval(self, fen: str, timeout: int) -> dict[str, Any] | None:
+    async def get_chessdb_eval(
+            self, fen: str, timeout: int) -> dict[str, Any] | None:
         try:
             async with self.external_session.get('http://www.chessdb.cn/cdb.php',
                                                  params={'action': 'queryall',
@@ -172,7 +208,11 @@ class API:
         except TimeoutError:
             print(f'ChessDB: Timed out after {timeout} second(s).')
 
-    async def get_cloud_eval(self, fen: str, variant: Variant, timeout: int) -> dict[str, Any] | None:
+    async def get_cloud_eval(self,
+                             fen: str,
+                             variant: Variant,
+                             timeout: int) -> dict[str,
+                                                   Any] | None:
         try:
             async with self.lichess_session.get('/api/cloud-eval', params={'fen': fen, 'variant': variant},
                                                 timeout=aiohttp.ClientTimeout(total=timeout)) as response:
@@ -185,7 +225,8 @@ class API:
         except TimeoutError:
             print(f'Cloud: Timed out after {timeout} second(s).')
 
-    async def get_egtb(self, fen: str, variant: str, timeout: int) -> dict[str, Any] | None:
+    async def get_egtb(self, fen: str, variant: str,
+                       timeout: int) -> dict[str, Any] | None:
         try:
             async with self.external_session.get(f'https://tablebase.lichess.ovh/{variant}',
                                                  params={'fen': fen},
@@ -199,14 +240,16 @@ class API:
             print(f'EGTB: Timed out after {timeout} second(s).')
 
     @retry(**JSON_RETRY_CONDITIONS)
-    async def get_event_stream(self, queue: asyncio.Queue[dict[str, Any]]) -> None:
+    async def get_event_stream(
+            self, queue: asyncio.Queue[dict[str, Any]]) -> None:
         async with self.lichess_session.get('/api/stream/event', timeout=STREAM_TIMEOUT) as response:
             async for line in response.content:
                 if line.strip():
                     queue.put_nowait(json.loads(line))
 
     @retry(**GAME_STREAM_RETRY_CONDITIONS)
-    async def get_game_stream(self, game_id: str, queue: asyncio.Queue[dict[str, Any]]) -> None:
+    async def get_game_stream(
+            self, game_id: str, queue: asyncio.Queue[dict[str, Any]]) -> None:
         async with self.lichess_session.get(f'/api/bot/game/stream/{game_id}', timeout=STREAM_TIMEOUT) as response:
             async for line in response.content:
                 if line.strip():
@@ -226,7 +269,12 @@ class API:
                                    speeds: str | None,
                                    timeout: int
                                    ) -> dict[str, Any] | None:
-        params = {'player': username, 'variant': variant, 'fen': fen, 'color': color, 'recentGames': 0}
+        params = {
+            'player': username,
+            'variant': variant,
+            'fen': fen,
+            'color': color,
+            'recentGames': 0}
         if speeds:
             params['speeds'] = speeds
         if modes:
@@ -277,12 +325,18 @@ class API:
         async with self.lichess_session.post(f'/team/{team.lower()}/join', data=data) as response:
             json_response = await response.json()
             if 'error' in json_response:
-                print(f'Joining team "{team}" failed: {json_response["error"]}')
+                print(
+                    f'Joining team "{team}" failed: {
+                        json_response["error"]}')
                 return False
             return True
 
     @retry(**JSON_RETRY_CONDITIONS)
-    async def join_tournament(self, tournament_id: str, team: str | None, password: str | None) -> bool:
+    async def join_tournament(
+            self,
+            tournament_id: str,
+            team: str | None,
+            password: str | None) -> bool:
         data: dict[str, str] = {}
         if team:
             data['team'] = team.lower()
@@ -291,7 +345,9 @@ class API:
         async with self.lichess_session.post(f'/api/tournament/{tournament_id}/join', data=data) as response:
             json_response = await response.json()
             if 'error' in json_response:
-                print(f'Joining tournament "{tournament_id}" failed: {json_response["error"]}')
+                print(
+                    f'Joining tournament "{tournament_id}" failed: {
+                        json_response["error"]}')
                 return False
             return True
 
@@ -313,7 +369,11 @@ class API:
             print(e)
             return False
 
-    async def send_chat_message(self, game_id: str, room: str, text: str) -> bool:
+    async def send_chat_message(
+            self,
+            game_id: str,
+            room: str,
+            text: str) -> bool:
         try:
             async with self.lichess_session.post(f'/api/bot/game/{game_id}/chat',
                                                  data={'room': room, 'text': text},
@@ -324,7 +384,11 @@ class API:
             return False
 
     @retry(**MOVE_RETRY_CONDITIONS)
-    async def send_move(self, game_id: str, uci_move: str, offer_draw: bool) -> bool:
+    async def send_move(
+            self,
+            game_id: str,
+            uci_move: str,
+            offer_draw: bool) -> bool:
         try:
             async with self.lichess_session.post(f'/api/bot/game/{game_id}/move/{uci_move}',
                                                  params={'offeringDraw': 'true' if offer_draw else 'false'},

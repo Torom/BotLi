@@ -29,11 +29,17 @@ class Chatter:
         self.ram_message = self._get_ram()
         self.player_greeting = self._format_message(config.messages.greeting)
         self.player_goodbye = self._format_message(config.messages.goodbye)
-        self.spectator_greeting = self._format_message(config.messages.greeting_spectators)
-        self.spectator_goodbye = self._format_message(config.messages.goodbye_spectators)
+        self.spectator_greeting = self._format_message(
+            config.messages.greeting_spectators)
+        self.spectator_goodbye = self._format_message(
+            config.messages.goodbye_spectators)
         self.print_eval_rooms: set[str] = set()
 
-    async def handle_chat_message(self, chatLine_Event: dict, takeback_count: int, max_takebacks: int) -> None:
+    async def handle_chat_message(
+            self,
+            chatLine_Event: dict,
+            takeback_count: int,
+            max_takebacks: int) -> None:
         chat_message = Chat_Message.from_chatLine_event(chatLine_Event)
 
         if chat_message.username == 'lichess':
@@ -81,7 +87,11 @@ class Chatter:
                                                                         'Feel free to challenge me again, '
                                                                         'I will accept the challenge if possible.'))
 
-    async def _handle_command(self, chat_message: Chat_Message, takeback_count: int, max_takebacks: int) -> None:
+    async def _handle_command(
+            self,
+            chat_message: Chat_Message,
+            takeback_count: int,
+            max_takebacks: int) -> None:
         match chat_message.text[1:].lower():
             case 'cpu':
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
@@ -128,16 +138,19 @@ class Chatter:
                 await self._send_takeback_message(chat_message.room, takeback_count, max_takebacks)
             case 'help' | 'commands':
                 if chat_message.room == 'player':
-                    message = ('Supported commands: !cpu, !draw, !eval, !motor, '
-                               '!name, !ping, !printeval, !ram, !takeback')
+                    message = (
+                        'Supported commands: !cpu, !draw, !eval, !motor, '
+                        '!name, !ping, !printeval, !ram, !takeback')
                 else:
-                    message = ('Supported commands: !cpu, !draw, !eval, !motor, '
-                               '!name, !ping, !printeval, !pv, !ram, !takeback')
+                    message = (
+                        'Supported commands: !cpu, !draw, !eval, !motor, '
+                        '!name, !ping, !printeval, !pv, !ram, !takeback')
 
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
 
     async def _send_last_message(self, room: str) -> None:
-        last_message = self.lichess_game.last_message.replace('Engine', 'Evaluation')
+        last_message = self.lichess_game.last_message.replace(
+            'Engine', 'Evaluation')
         last_message = ' '.join(last_message.split())
 
         if room == 'spectator':
@@ -145,7 +158,11 @@ class Chatter:
 
         await self.api.send_chat_message(self.game_info.id_, room, last_message)
 
-    async def _send_takeback_message(self, room: str, takeback_count: int, max_takebacks: int) -> None:
+    async def _send_takeback_message(
+            self,
+            room: str,
+            takeback_count: int,
+            max_takebacks: int) -> None:
         if not max_takebacks:
             message = f'{self.username} does not accept takebacks.'
         else:
@@ -197,15 +214,19 @@ class Chatter:
                 f'{config.offer_draw.consecutive_moves} moves.')
 
     def _get_name_message(self, version: str) -> str:
-        return (f'{self.username} running {self.lichess_game.engine.name} (BotLi {version})')
+        return (
+            f'{self.username} running {self.lichess_game.engine.name} (BotLi {version})')
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:
             return
 
-        mapping = defaultdict(str, {'opponent': self.opponent_username, 'me': self.username,
-                                    'engine': self.lichess_game.engine.name, 'cpu': self.cpu_message,
-                                    'ram': self.ram_message})
+        mapping = defaultdict(str,
+                              {'opponent': self.opponent_username,
+                               'me': self.username,
+                               'engine': self.lichess_game.engine.name,
+                               'cpu': self.cpu_message,
+                               'ram': self.ram_message})
         return message.format_map(mapping)
 
     def _append_pv(self, initial_message: str = '') -> str:
