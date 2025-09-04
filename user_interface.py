@@ -46,10 +46,11 @@ class User_Interface:
         self.config = Config.from_yaml(config_path)
 
         async with API(self.config) as self.api:
-            print(f'{LOGO} {self.config.version}\n')
-
             account = await self.api.get_account()
             username: str = account['username']
+
+            print(f'{LOGO} • {self.config.version} • {username}\n')
+
             self.api.append_user_agent(username)
             await self._handle_bot_status(account.get('title'), allow_upgrade)
             await self._test_engines()
