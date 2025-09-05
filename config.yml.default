@@ -104,6 +104,7 @@ online_moves:
     only_without_book: false              # Whether the cloud should only be used if there is no matching book.
     use_for_variants: false               # Whether the cloud should be used for other variants than standard and chess960.
     allow_repetitions: false              # Whether the cloud can create repetitions on the board. Can lead to unintentional draws.
+    trust_eval: false                     # Whether the cloud eval should be trusted for draw offers and resignations.
     min_eval_depth: 10                    # Minimum evaluation depth.
     min_time: 10                          # Time the bot must have at least to use the online move. +10 seconds in games without increment.
     timeout: 5                            # Time the server has to respond.
@@ -114,6 +115,7 @@ online_moves:
     priority: 100                         # Priority with which this move source is used. Higher priority is used first.
     only_without_book: false              # Whether the chessdb should only be used if there is no matching book.
     allow_repetitions: false              # Whether the chessdb can create repetitions on the board. Can lead to unintentional draws.
+    trust_eval: false                     # Whether the chessdb eval should be trusted for draw offers and resignations.
     min_candidates: 1                     # Minimum number of candidate moves.
     min_time: 10                          # Time the bot must have at least to use the online move. +10 seconds in games without increment.
     timeout: 5                            # Time the server has to respond.

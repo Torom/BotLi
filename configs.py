@@ -75,6 +75,7 @@ class Lichess_Cloud_Config:
     only_without_book: bool
     use_for_variants: bool
     allow_repetitions: bool
+    trust_eval: bool
     min_eval_depth: int
     min_time: int
     timeout: int
@@ -88,6 +89,7 @@ class ChessDB_Config:
     priority: int
     only_without_book: bool
     allow_repetitions: bool
+    trust_eval: bool
     min_candidates: int
     min_time: int
     timeout: int
