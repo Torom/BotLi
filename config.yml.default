@@ -124,8 +124,8 @@ online_moves:
 offer_draw:
   enabled: true                           # Activate whether the bot should offer draw.
   score: 10                               # If the absolute value of the score is less than or equal to this value, the bot offers/accepts draw (in cp)
-  consecutive_moves: 10                   # How many moves in a row the absolute value of the score has to be below the draw value
-  min_game_length: 35                     # Earliest move in which draw is offered.
+  consecutive_moves: 5                    # How many moves in a row the absolute value of the score has to be below the draw value
+  min_game_length: 30                     # Earliest move in which draw is offered.
   against_humans: true                    # Activate whether these settings should apply against humans.
 # min_rating: 2300                        # Minimum rating of opponent to offer draw.
 
