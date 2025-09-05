@@ -241,7 +241,10 @@ class Config:
 
                 names[book_name] = config['books'][book_name]
 
-            books[section] = Books_Config(settings['selection'], settings.get('max_depth'), names)
+            books[section] = Books_Config(settings['selection'],
+                                          settings.get('max_depth'),
+                                          settings.get('allow_repetitions'),
+                                          names)
 
         return Opening_Books_Config(config['opening_books']['enabled'],
                                     config['opening_books']['priority'],
@@ -255,6 +258,7 @@ class Config:
             ['priority', int, '"priority" must be an integer.'],
             ['only_without_book', bool, '"only_without_book" must be a bool.'],
             ['use_for_variants', bool, '"use_for_variants" must be a bool.'],
+            ['allow_repetitions', bool, '"allow_repetitions" must be a bool.'],
             ['min_time', int, '"min_time" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.'],
             ['min_games', int, '"min_games" must be an integer.'],
@@ -275,6 +279,7 @@ class Config:
                                        opening_explorer_section.get('player'),
                                        opening_explorer_section['only_without_book'],
                                        opening_explorer_section['use_for_variants'],
+                                       opening_explorer_section['allow_repetitions'],
                                        opening_explorer_section['min_time'],
                                        opening_explorer_section['timeout'],
                                        opening_explorer_section['min_games'],
@@ -291,6 +296,7 @@ class Config:
             ['priority', int, '"priority" must be an integer.'],
             ['only_without_book', bool, '"only_without_book" must be a bool.'],
             ['use_for_variants', bool, '"use_for_variants" must be a bool.'],
+            ['allow_repetitions', bool, '"allow_repetitions" must be a bool.'],
             ['min_eval_depth', int, '"min_eval_depth" must be an integer.'],
             ['min_time', int, '"min_time" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.']]
@@ -307,6 +313,7 @@ class Config:
                                     lichess_cloud_section['priority'],
                                     lichess_cloud_section['only_without_book'],
                                     lichess_cloud_section['use_for_variants'],
+                                    lichess_cloud_section['allow_repetitions'],
                                     lichess_cloud_section['min_eval_depth'],
                                     lichess_cloud_section['min_time'],
                                     lichess_cloud_section['timeout'],
@@ -319,6 +326,7 @@ class Config:
             ['enabled', bool, '"enabled" must be a bool.'],
             ['priority', int, '"priority" must be an integer.'],
             ['only_without_book', bool, '"only_without_book" must be a bool.'],
+            ['allow_repetitions', bool, '"allow_repetitions" must be a bool.'],
             ['min_candidates', int, '"min_candidates" must be an integer.'],
             ['min_time', int, '"min_time" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.'],
@@ -335,6 +343,7 @@ class Config:
         return ChessDB_Config(chessdb_section['enabled'],
                               chessdb_section['priority'],
                               chessdb_section['only_without_book'],
+                              chessdb_section['allow_repetitions'],
                               chessdb_section['min_candidates'],
                               chessdb_section['min_time'],
                               chessdb_section['timeout'],

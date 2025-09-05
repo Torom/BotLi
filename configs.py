@@ -38,6 +38,7 @@ class Gaviota_Config:
 class Books_Config:
     selection: Literal['weighted_random', 'uniform_random', 'best_move']
     max_depth: int | None
+    allow_repetitions: bool | None
     names: dict[str, str]
 
 
@@ -56,6 +57,7 @@ class Opening_Explorer_Config:
     player: str | None
     only_without_book: bool
     use_for_variants: bool
+    allow_repetitions: bool
     min_time: int
     timeout: int
     min_games: int
@@ -72,6 +74,7 @@ class Lichess_Cloud_Config:
     priority: int
     only_without_book: bool
     use_for_variants: bool
+    allow_repetitions: bool
     min_eval_depth: int
     min_time: int
     timeout: int
@@ -84,6 +87,7 @@ class ChessDB_Config:
     enabled: bool
     priority: int
     only_without_book: bool
+    allow_repetitions: bool
     min_candidates: int
     min_time: int
     timeout: int

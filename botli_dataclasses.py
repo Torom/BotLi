@@ -26,6 +26,7 @@ class API_Challenge_Reponse:
 class Book_Settings:
     selection: Literal['weighted_random', 'uniform_random', 'best_move'] = 'best_move'
     max_depth: int | None = None
+    allow_repetitions: bool | None = None
     readers: dict[str, MemoryMappedReader] = field(default_factory=dict)
 
 

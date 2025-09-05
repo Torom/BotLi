@@ -320,7 +320,7 @@ class Lichess_Game:
                     entries.sort(key=lambda entry: entry.weight, reverse=True)
 
             for entry in entries:
-                if not self._is_repetition(entry.move):
+                if self.book_settings.allow_repetitions or not self._is_repetition(entry.move):
                     break
             else:
                 continue
@@ -343,6 +343,7 @@ class Lichess_Game:
         books_config = self.config.opening_books.books[key]
         return Book_Settings(books_config.selection,
                              books_config.max_depth,
+                             books_config.allow_repetitions,
                              {name: chess.polyglot.open_reader(path)
                               for name, path in books_config.names.items()})
 
@@ -440,7 +441,7 @@ class Lichess_Game:
         self.out_of_opening_explorer_counter = 0
         top_move = self._get_opening_explorer_top_move(response['moves'])
         move = chess.Move.from_uci(top_move['uci'])
-        if self._is_repetition(move):
+        if not self.config.online_moves.opening_explorer.allow_repetitions and self._is_repetition(move):
             return
 
         self.opening_explorer_counter += 1
@@ -497,7 +498,7 @@ class Lichess_Game:
 
         self.out_of_cloud_counter = 0
         pv = [chess.Move.from_uci(uci_move) for uci_move in response['pvs'][0]['moves'].split()]
-        if self._is_repetition(pv[0]):
+        if not self.config.online_moves.lichess_cloud.allow_repetitions and self._is_repetition(pv[0]):
             return
 
         if 'mate' in response['pvs'][0]:
@@ -558,7 +559,7 @@ class Lichess_Game:
         random.shuffle(candidate_moves)
         for chessdb_move in candidate_moves:
             move = chess.Move.from_uci(chessdb_move['uci'])
-            if not self._is_repetition(move):
+            if self.config.online_moves.chessdb.allow_repetitions or not self._is_repetition(move):
                 break
         else:
             return
