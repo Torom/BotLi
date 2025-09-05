@@ -39,6 +39,8 @@ class Lichess_Game:
         self.syzygy_config = syzygy_config
         self.white_time: float = self.game_info.state['wtime'] / 1000
         self.black_time: float = self.game_info.state['btime'] / 1000
+        self.white_offered_draw: bool = False
+        self.black_offered_draw: bool = False
         self.increment = self.game_info.increment_ms / 1000
         self.is_white = self.game_info.white_name == username
         self.book_settings = self._get_book_settings()
@@ -164,6 +166,8 @@ class Lichess_Game:
     def update(self, gameState_event: dict[str, Any]) -> bool:
         self.white_time = gameState_event['wtime'] / 1000
         self.black_time = gameState_event['btime'] / 1000
+        self.white_offered_draw = gameState_event.get('wdraw', False)
+        self.black_offered_draw = gameState_event.get('bdraw', False)
 
         moves = gameState_event['moves'].split()
         if len(moves) > len(self.board.move_stack):
@@ -194,6 +198,10 @@ class Lichess_Game:
     @property
     def opponent_time(self) -> float:
         return self.black_time if self.is_white else self.white_time
+
+    @property
+    def opponent_offered_draw(self) -> bool:
+        return self.black_offered_draw if self.is_white else self.white_offered_draw
 
     @property
     def engine_times(self) -> tuple[float, float, float]:
@@ -247,7 +255,8 @@ class Lichess_Game:
         if not move_response.is_engine_move:
             return move_response.is_drawish
 
-        if self.board.fullmove_number - (not self.is_white) < self.config.offer_draw.min_game_length:
+        subtrahend = not self.is_white or self.opponent_offered_draw
+        if self.board.fullmove_number - subtrahend < self.config.offer_draw.min_game_length:
             return False
 
         if len(self.scores) < self.config.offer_draw.consecutive_moves:
