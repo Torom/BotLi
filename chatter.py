@@ -187,7 +187,9 @@ class Chatter:
         too_low_rating = (config.offer_draw.min_rating is not None and
                           self.lichess_game.engine.opponent.rating is not None and
                           self.lichess_game.engine.opponent.rating < config.offer_draw.min_rating)
-        if not config.offer_draw.enabled or too_low_rating:
+        no_draw_against_humans = (not self.lichess_game.engine.opponent.is_engine and
+                                  not config.offer_draw.against_humans)
+        if not config.offer_draw.enabled or too_low_rating or no_draw_against_humans:
             return f'{self.username} will neither accept nor offer draws.'
 
         max_score = config.offer_draw.score / 100
