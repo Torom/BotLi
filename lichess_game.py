@@ -263,8 +263,8 @@ class Lichess_Game:
         if not is_trusted:
             return False
 
-        subtrahend = not self.is_white or self.opponent_offered_draw
-        if self.board.fullmove_number - subtrahend < self.config.offer_draw.min_game_length:
+        subtrahend = not self.is_white and self.opponent_offered_draw
+        if self.board.fullmove_number - subtrahend <= self.config.offer_draw.min_game_length:
             return False
 
         if len(self.scores) < self.config.offer_draw.consecutive_moves:
