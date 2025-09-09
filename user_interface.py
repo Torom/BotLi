@@ -8,13 +8,14 @@ from enum import StrEnum
 from typing import TypeVar
 
 from api import API
-from botli_dataclasses import Challenge_Request, parse_time_control
+from botli_dataclasses import Challenge_Request
 from config import Config
 from engine import Engine
 from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
 from logo import LOGO
+from utils import parse_time_control
 
 try:
     import readline
