@@ -169,10 +169,8 @@ class User_Interface:
 
         try:
             opponent_username = command[1]
-            time_control = command[2] if len(command) > 2 else '1+1'
-            initial_time_str, increment_str = time_control.split('+')
-            initial_time = int(float(initial_time_str) * 60)
-            increment = int(increment_str)
+            time_control = command[2] if len(command) > 2 else '1+1'  
+            initial_time, increment = self._parse_time_control(time_control)
             color = Challenge_Color(command[3].lower()) if len(command) > 3 else Challenge_Color.RANDOM
             rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
             variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
@@ -198,10 +196,8 @@ class User_Interface:
             opponent_username = command[2]
             time_control = command[3] if len(command) > 3 else '1+1'
             initial_time_str, increment_str = time_control.split('+')
-            initial_time = int(float(initial_time_str) * 60)
-            increment = int(increment_str)
-            rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
-            variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
+            time_control = command[3] if len(command) > 3 else '1+1'  
+            initial_time, increment = self._parse_time_control(time_control)
         except ValueError as e:
             print(e)
             return
@@ -308,6 +304,12 @@ class User_Interface:
 
         self.config.whitelist.append(command[1].lower())
         print(f'Added {command[1]} to the whitelist.')
+
+    def _parse_time_control(self, time_control: str) -> tuple[int, int]:  
+    initial_time_str, increment_str = time_control.split('+')  
+    initial_time = int(float(initial_time_str) * 60)  
+    increment = int(increment_str)  
+    return initial_time, increment
 
     def _help(self) -> None:
         print('These commands are supported by BotLi:\n')
