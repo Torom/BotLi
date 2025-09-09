@@ -44,10 +44,9 @@ class Game:
         else:
             await lichess_game.start_pondering()
 
-        opponent_is_bot = info.white_title == 'BOT' and info.black_title == 'BOT'
-        max_takebacks = 0 if opponent_is_bot else self.config.challenge.max_takebacks
+        max_takebacks = 0 if info.opponent_is_bot else self.config.challenge.max_takebacks
         if info.tournament_id is None:
-            abortion_seconds = 30 if opponent_is_bot else 60
+            abortion_seconds = 30 if info.opponent_is_bot else 60
             self.abortion_task = asyncio.create_task(self._abortion_task(lichess_game, chatter, abortion_seconds))
 
         while event := await game_stream_queue.get():

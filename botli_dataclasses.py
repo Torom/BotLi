@@ -212,6 +212,14 @@ class Game_Information:
     def black_opponent(self) -> chess.engine.Opponent:
         return chess.engine.Opponent(self.black_name, self.black_title, self.black_rating, self.black_title == 'BOT')
 
+    @property
+    def opponent_is_bot(self) -> bool:
+        return self.white_title == 'BOT' and self.black_title == 'BOT'
+
+    @property
+    def opponent_is_human(self) -> bool:
+        return self.white_title != 'BOT' or self.black_title != 'BOT'
+
 
 @dataclass
 class Gaviota_Result:

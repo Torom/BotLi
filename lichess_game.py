@@ -89,11 +89,11 @@ class Lichess_Game:
     @staticmethod
     def _get_engine_key(config: Config, board: chess.Board, is_white: bool, game_info: Game_Information) -> str:
         suffixes: list[str] = []
-        if game_info.white_title != 'BOT' or game_info.black_title != 'BOT':
-            suffixes.append('human')
         if game_info.tournament_id is not None:
             suffixes.append('tournament')
+        suffixes.append('human' if game_info.opponent_is_human else 'bot')
         suffixes.append('white' if is_white else 'black')
+        suffixes.append('rated' if game_info.rated else 'casual')
 
         def check_engine_key(base_name: str) -> str | None:
             for i in range(len(suffixes), -1, -1):
@@ -360,11 +360,11 @@ class Lichess_Game:
 
     def _get_book_key(self) -> str | None:
         suffixes: list[str] = []
-        if self.game_info.white_title != 'BOT' or self.game_info.black_title != 'BOT':
-            suffixes.append('human')
         if self.game_info.tournament_id is not None:
             suffixes.append('tournament')
+        suffixes.append('human' if self.game_info.opponent_is_human else 'bot')
         suffixes.append('white' if self.is_white else 'black')
+        suffixes.append('rated' if self.game_info.rated else 'casual')
 
         def check_book_key(base_name: str) -> str | None:
             for i in range(len(suffixes), -1, -1):
