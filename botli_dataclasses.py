@@ -9,6 +9,11 @@ from chess.polyglot import MemoryMappedReader
 
 from enums import Challenge_Color, Perf_Type, Variant
 
+def parse_time_control(time_control: str) -> tuple[int, int]:  
+    initial_time_str, increment_str = time_control.split('+')  
+    initial_time = int(float(initial_time_str) * 60)  
+    increment = int(increment_str)  
+    return initial_time, increment
 
 @dataclass
 class API_Challenge_Reponse:
