@@ -3,7 +3,7 @@ from typing import Any
 from config import Config
 from enums import Decline_Reason
 from game_manager import Game_Manager
-from botli_dataclasses import parse_time_control
+from utils import parse_time_control
 
 
 class Challenge_Validator:
