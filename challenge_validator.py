@@ -101,6 +101,5 @@ class Challenge_Validator:
         time_controls: list[tuple[int, int]] = []
         for speed in speeds:
             if '+' in speed:
-                initial_time, increment = parse_time_control(speed)  
-                time_controls.append((initial_time, increment))  
+                time_controls.append(parse_time_control(speed))
         return time_controls

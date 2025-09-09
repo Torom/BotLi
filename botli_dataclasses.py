@@ -9,6 +9,7 @@ from chess.polyglot import MemoryMappedReader
 
 from enums import Challenge_Color, Perf_Type, Variant
 
+
 @dataclass
 class API_Challenge_Reponse:
     challenge_id: str | None = None

@@ -170,7 +170,7 @@ class User_Interface:
 
         try:
             opponent_username = command[1]
-            time_control = command[2] if len(command) > 2 else '1+1'  
+            time_control = command[2] if len(command) > 2 else '1+1'
             initial_time, increment = parse_time_control(time_control)
             color = Challenge_Color(command[3].lower()) if len(command) > 3 else Challenge_Color.RANDOM
             rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
@@ -195,9 +195,9 @@ class User_Interface:
         try:
             count = int(command[1])
             opponent_username = command[2]
-            time_control = command[3] if len(command) > 3 else '1+1'  
-            initial_time, increment = parse_time_control(time_control)  
-            rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True  
+            time_control = command[3] if len(command) > 3 else '1+1'
+            initial_time, increment = parse_time_control(time_control)
+            rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
             variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
         except ValueError as e:
             print(e)
