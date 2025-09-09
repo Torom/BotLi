@@ -15,6 +15,7 @@ from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
 from logo import LOGO
+from utils import parse_time_control
 
 try:
     import readline
@@ -170,9 +171,7 @@ class User_Interface:
         try:
             opponent_username = command[1]
             time_control = command[2] if len(command) > 2 else '1+1'
-            initial_time_str, increment_str = time_control.split('+')
-            initial_time = int(float(initial_time_str) * 60)
-            increment = int(increment_str)
+            initial_time, increment = parse_time_control(time_control)
             color = Challenge_Color(command[3].lower()) if len(command) > 3 else Challenge_Color.RANDOM
             rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
             variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
@@ -197,9 +196,7 @@ class User_Interface:
             count = int(command[1])
             opponent_username = command[2]
             time_control = command[3] if len(command) > 3 else '1+1'
-            initial_time_str, increment_str = time_control.split('+')
-            initial_time = int(float(initial_time_str) * 60)
-            increment = int(increment_str)
+            initial_time, increment = parse_time_control(time_control)
             rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
             variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
         except ValueError as e:

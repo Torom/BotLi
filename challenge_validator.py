@@ -3,6 +3,7 @@ from typing import Any
 from config import Config
 from enums import Decline_Reason
 from game_manager import Game_Manager
+from utils import parse_time_control
 
 
 class Challenge_Validator:
@@ -100,7 +101,5 @@ class Challenge_Validator:
         time_controls: list[tuple[int, int]] = []
         for speed in speeds:
             if '+' in speed:
-                initial_str, increment_str = speed.split('+')
-                time_controls.append((int(float(initial_str) * 60), int(increment_str)))
-
+                time_controls.append(parse_time_control(speed))
         return time_controls
