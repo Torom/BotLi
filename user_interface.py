@@ -8,7 +8,7 @@ from enum import StrEnum
 from typing import TypeVar
 
 from api import API
-from botli_dataclasses import Challenge_Request
+from botli_dataclasses import Challenge_Request, parse_time_control
 from config import Config
 from engine import Engine
 from enums import Challenge_Color, Perf_Type, Variant
@@ -170,7 +170,7 @@ class User_Interface:
         try:
             opponent_username = command[1]
             time_control = command[2] if len(command) > 2 else '1+1'  
-            initial_time, increment = self._parse_time_control(time_control)
+            initial_time, increment = parse_time_control(time_control)
             color = Challenge_Color(command[3].lower()) if len(command) > 3 else Challenge_Color.RANDOM
             rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
             variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
@@ -195,7 +195,7 @@ class User_Interface:
             count = int(command[1])
             opponent_username = command[2]
             time_control = command[3] if len(command) > 3 else '1+1'  
-            initial_time, increment = self._parse_time_control(time_control)  
+            initial_time, increment = parse_time_control(time_control)  
             rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True  
             variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
         except ValueError as e:
