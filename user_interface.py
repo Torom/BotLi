@@ -305,12 +305,6 @@ class User_Interface:
         self.config.whitelist.append(command[1].lower())
         print(f'Added {command[1]} to the whitelist.')
 
-    def _parse_time_control(self, time_control: str) -> tuple[int, int]:  
-        initial_time_str, increment_str = time_control.split('+')  
-        initial_time = int(float(initial_time_str) * 60)  
-        increment = int(increment_str)  
-        return initial_time, increment
-
     def _help(self) -> None:
         print('These commands are supported by BotLi:\n')
         for key, value in COMMANDS.items():
