@@ -1,0 +1,40 @@
+name: Lint and AutoFix user_interface.py
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "user_interface.py"
+
+jobs:
+  lint-and-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install tools
+        run: |
+          pip install pylint autopep8
+
+      - name: Run pylint (report only)
+        run: pylint user_interface.py || true
+
+      - name: Run autopep8 (minimal aggressiveness)
+        run: |
+          autopep8 --in-place --aggressive --aggressive user_interface.py
+
+      - name: Commit changes if needed
+        run: |
+          if ! git diff --exit-code; then
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add user_interface.py
+            git commit -m "Auto-format user_interface.py with autopep8"
+            git push
+          fi
