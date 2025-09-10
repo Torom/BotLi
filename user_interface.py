@@ -352,9 +352,8 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.DEBUG)
 
     asyncio.run(User_Interface().main(args.commands, args.config, args.upgrade), debug=args.debug)
-
-    try:
-        asyncio.run(User_Interface().main(args.commands, args.config, args.upgrade), debug=args.debug)
-    except KeyboardInterrupt:
-        print("\nInterrupted by user. Exiting cleanly...")
+    try:  
+        asyncio.run(User_Interface().main(args.commands, args.config, args.upgrade), debug=args.debug)  
+    except KeyboardInterrupt:  
+        print("\nInterrupted by user. Exiting cleanly...")  
         sys.exit(0)
