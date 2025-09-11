@@ -32,16 +32,20 @@ class Matchmaking:
 
         if self.current_type is None:
             if self.config.matchmaking.selection == 'weighted_random':
-                self.current_type, = random.choices(self.types, [type.weight for type in self.types])
+                self.current_type, = random.choices(
+                    self.types, [type.weight for type in self.types])
             else:
                 self.current_type = self.types[0]
 
             print(f'Matchmaking type: {self.current_type}')
 
         try:
-            next_opponent = self.opponents.get_opponent(self.online_bots, self.current_type)
+            next_opponent = self.opponents.get_opponent(
+                self.online_bots, self.current_type)
         except NoOpponentException:
-            print(f'Suspending matchmaking type {self.current_type.name} because no suitable opponent is available.')
+            print(
+                f'Suspending matchmaking type {
+                    self.current_type.name} because no suitable opponent is available.')
             self.suspended_types.append(self.current_type)
             self.types.remove(self.current_type)
             self.current_type = None
@@ -52,7 +56,9 @@ class Matchmaking:
             return Challenge_Response(no_opponent=True)
 
         if next_opponent is None:
-            print(f'No opponent available for matchmaking type {self.current_type.name}.')
+            print(
+                f'No opponent available for matchmaking type {
+                    self.current_type.name}.')
             if self.config.matchmaking.selection == 'weighted_random':
                 self.current_type = None
             else:
@@ -68,7 +74,10 @@ class Matchmaking:
         match await self._get_busy_reason(opponent):
             case Busy_Reason.PLAYING:
                 rating_diff = opponent.rating_diffs[self.current_type.perf_type]
-                print(f'Skipping {opponent.username} ({rating_diff:+}) as {color} ...')
+                print(
+                    f'Skipping {
+                        opponent.username} ({
+                        rating_diff:+}) as {color} ...')
                 self.opponents.busy_bots.append(opponent)
                 return
 
@@ -78,16 +87,26 @@ class Matchmaking:
                 return
 
         rating_diff = opponent.rating_diffs[self.current_type.perf_type]
-        print(f'Challenging {opponent.username} ({rating_diff:+}) as {color} to {self.current_type.name} ...')
-        challenge_request = Challenge_Request(opponent.username, self.current_type.initial_time,
-                                              self.current_type.increment, self.current_type.rated, color,
-                                              self.current_type.variant, self.timeout)
+        print(
+            f'Challenging {
+                opponent.username} ({
+                rating_diff:+}) as {color} to {
+                self.current_type.name} ...')
+        challenge_request = Challenge_Request(
+            opponent.username,
+            self.current_type.initial_time,
+            self.current_type.increment,
+            self.current_type.rated,
+            color,
+            self.current_type.variant,
+            self.timeout)
 
         response = await self.challenger.create(challenge_request)
         if response.success:
             self.game_start_time = datetime.now()
         elif not (response.has_reached_rate_limit or response.is_misconfigured):
-            self.opponents.add_timeout(False, self.current_type.estimated_game_duration)
+            self.opponents.add_timeout(
+                False, self.current_type.estimated_game_duration)
         else:
             self.current_type = None
 
@@ -124,19 +143,34 @@ class Matchmaking:
             initial_time = int(float(initial_time) * 60) if initial_time else 0
             increment = int(increment) if increment else 0
             rated = True if type_config.rated is None else type_config.rated
-            variant = Variant.STANDARD if type_config.variant is None else Variant(type_config.variant)
-            perf_type = self._variant_to_perf_type(variant, initial_time, increment)
+            variant = Variant.STANDARD if type_config.variant is None else Variant(
+                type_config.variant)
+            perf_type = self._variant_to_perf_type(
+                variant, initial_time, increment)
             weight = 1.0 if type_config.weight is None else type_config.weight
 
-            matchmaking_types.append(Matchmaking_Type(name, initial_time, increment, rated, variant,
-                                                      perf_type, type_config.multiplier, -1, weight,
-                                                      type_config.min_rating_diff, type_config.max_rating_diff))
+            matchmaking_types.append(
+                Matchmaking_Type(
+                    name,
+                    initial_time,
+                    increment,
+                    rated,
+                    variant,
+                    perf_type,
+                    type_config.multiplier,
+                    -1,
+                    weight,
+                    type_config.min_rating_diff,
+                    type_config.max_rating_diff))
 
-        for matchmaking_type, type_config in zip(matchmaking_types, self.config.matchmaking.types.values()):
+        for matchmaking_type, type_config in zip(
+                matchmaking_types, self.config.matchmaking.types.values()):
             if type_config.weight is None:
                 matchmaking_type.weight /= matchmaking_type.estimated_game_duration.total_seconds()
 
-        matchmaking_types.sort(key=lambda matchmaking_type: matchmaking_type.weight, reverse=True)
+        matchmaking_types.sort(
+            key=lambda matchmaking_type: matchmaking_type.weight,
+            reverse=True)
 
         return matchmaking_types
 
@@ -169,7 +203,8 @@ class Matchmaking:
                 if perf_type not in bot['perfs']:
                     continue
 
-                rating_diffs[perf_type] = bot['perfs'][perf_type]['rating'] - user_ratings[perf_type]
+                rating_diffs[perf_type] = bot['perfs'][perf_type]['rating'] - \
+                    user_ratings[perf_type]
 
             online_bots.append(Bot(bot['username'], rating_diffs))
 
@@ -199,11 +234,17 @@ class Matchmaking:
                 min_rating_diff = matchmaking_type.min_rating_diff if matchmaking_type.min_rating_diff else 0
                 max_rating_diff = matchmaking_type.max_rating_diff if matchmaking_type.max_rating_diff else 600
 
-                bot_count = self._get_bot_count(matchmaking_type.perf_type, min_rating_diff, max_rating_diff)
-                perf_type_count = len({matchmaking_type.perf_type for matchmaking_type in self.types})
+                bot_count = self._get_bot_count(
+                    matchmaking_type.perf_type, min_rating_diff, max_rating_diff)
+                perf_type_count = len(
+                    {matchmaking_type.perf_type for matchmaking_type in self.types})
                 matchmaking_type.multiplier = bot_count * perf_type_count
 
-    def _get_bot_count(self, perf_type: Perf_Type, min_rating_diff: int, max_rating_diff: int) -> int:
+    def _get_bot_count(
+            self,
+            perf_type: Perf_Type,
+            min_rating_diff: int,
+            max_rating_diff: int) -> int:
         def bot_filter(bot: Bot) -> bool:
             if perf_type not in bot.rating_diffs:
                 return False
@@ -221,7 +262,11 @@ class Matchmaking:
 
         return sum(map(bot_filter, self.online_bots))
 
-    def _variant_to_perf_type(self, variant: Variant, initial_time: int, increment: int) -> Perf_Type:
+    def _variant_to_perf_type(
+            self,
+            variant: Variant,
+            initial_time: int,
+            increment: int) -> Perf_Type:
         if variant != Variant.STANDARD:
             return Perf_Type(variant)
 
@@ -238,7 +283,11 @@ class Matchmaking:
         return Perf_Type.CLASSICAL
 
     def _perf_type_to_variant(self, perf_type: Perf_Type) -> Variant:
-        if perf_type in [Perf_Type.BULLET, Perf_Type.BLITZ, Perf_Type.RAPID, Perf_Type.CLASSICAL]:
+        if perf_type in [
+                Perf_Type.BULLET,
+                Perf_Type.BLITZ,
+                Perf_Type.RAPID,
+                Perf_Type.CLASSICAL]:
             return Variant.STANDARD
 
         return Variant(perf_type)

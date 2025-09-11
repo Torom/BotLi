@@ -151,8 +151,15 @@ class Challenge_Config:
 class Matchmaking_Type_Config:
     tc: str
     rated: bool | None
-    variant: Literal['standard', 'chess960', 'crazyhouse', 'antichess', 'atomic',
-                     'horde', 'kingOfTheHill', 'racingKings', 'threeCheck'] | None
+    variant: Literal['standard',
+                     'chess960',
+                     'crazyhouse',
+                     'antichess',
+                     'atomic',
+                     'horde',
+                     'kingOfTheHill',
+                     'racingKings',
+                     'threeCheck'] | None
     weight: int | None
     multiplier: int | None
     min_rating_diff: int | None
