@@ -90,10 +90,9 @@ class ChessDB_Config:
     only_without_book: bool
     allow_repetitions: bool
     trust_eval: bool
-    min_candidates: int
     min_time: int
     timeout: int
-    selection: Literal['optimal', 'best', 'good']
+    best_move: bool
     max_depth: int | None
     max_moves: int | None
 

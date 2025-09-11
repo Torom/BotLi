@@ -541,14 +541,13 @@ class Lichess_Game:
             return
 
         start_time = time.perf_counter()
-        response = await self.api.get_chessdb_eval(fen := self.board.fen(shredder=self.board.chess960),
+        response = await self.api.get_chessdb_eval(self.board.fen(shredder=self.board.chess960),
+                                                   self.config.online_moves.chessdb.best_move,
                                                    self.config.online_moves.chessdb.timeout)
         if response is None:
             self.out_of_chessdb_counter += 1
             self._reduce_own_time(time.perf_counter() - start_time)
             return
-
-        self.api.chessdb_queue.put_nowait(fen)
 
         if response['status'] != 'ok':
             if response['status'] != 'unknown':
@@ -557,36 +556,17 @@ class Lichess_Game:
             return
 
         self.out_of_chessdb_counter = 0
-        if self.config.online_moves.chessdb.selection == 'optimal' or response['moves'][0]['rank'] == 0:
-            candidate_moves = [chessdb_move for chessdb_move in response['moves']
-                               if chessdb_move['score'] == response['moves'][0]['score']]
-        elif self.config.online_moves.chessdb.selection == 'best':
-            candidate_moves = [chessdb_move for chessdb_move in response['moves']
-                               if chessdb_move['rank'] == response['moves'][0]['rank']]
-        else:
-            candidate_moves = [chessdb_move for chessdb_move in response['moves']
-                               if chessdb_move['rank'] > 0]
-
-        if len(candidate_moves) < self.config.online_moves.chessdb.min_candidates:
-            return
-
-        random.shuffle(candidate_moves)
-        for chessdb_move in candidate_moves:
-            move = chess.Move.from_uci(chessdb_move['uci'])
-            if self.config.online_moves.chessdb.allow_repetitions or not self._is_repetition(move):
-                break
-        else:
+        pv = [chess.Move.from_uci(uci_move) for uci_move in response['pv']]
+        if not self.config.online_moves.chessdb.allow_repetitions and self._is_repetition(pv[0]):
             return
 
         self.chessdb_counter += 1
-        score = chess.engine.PovScore(chess.engine.Cp(chessdb_move['score']), self.board.turn)
+        score = chess.engine.PovScore(chess.engine.Cp(response['score']), self.board.turn)
         if self.config.online_moves.chessdb.trust_eval:
             self.scores.append(score)
 
-        candidates = (f'Candidates: {", ".join(chessdb_move["san"] for chessdb_move in candidate_moves)}'
-                      if len(candidate_moves) > 1 else '')
-        message = f'ChessDB: {self._format_move(move):14} {self._format_score(score)}     {candidates}'
-        return Move_Response(move, message, trusted_eval=self.config.online_moves.chessdb.trust_eval)
+        message = f'ChessDB: {self._format_move(pv[0]):14} {self._format_score(score)}     Depth: {response["depth"]}'
+        return Move_Response(pv[0], message, pv=pv, trusted_eval=self.config.online_moves.chessdb.trust_eval)
 
     def _probe_gaviota(self, moves: Iterable[chess.Move]) -> Gaviota_Result:
         assert self.gaviota_tablebase

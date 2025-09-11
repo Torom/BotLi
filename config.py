@@ -330,10 +330,9 @@ class Config:
             ['only_without_book', bool, '"only_without_book" must be a bool.'],
             ['allow_repetitions', bool, '"allow_repetitions" must be a bool.'],
             ['trust_eval', bool, '"trust_eval" must be a bool.'],
-            ['min_candidates', int, '"min_candidates" must be an integer.'],
             ['min_time', int, '"min_time" must be an integer.'],
             ['timeout', int, '"timeout" must be an integer.'],
-            ['selection', str, '"selection" must be one of "optimal", "best" or "good".']]
+            ['best_move', bool, '"best_move" must be a bool.']]
 
         for subsection in chessdb_sections:
             if subsection[0] not in chessdb_section:
@@ -348,10 +347,9 @@ class Config:
                               chessdb_section['only_without_book'],
                               chessdb_section['allow_repetitions'],
                               chessdb_section['trust_eval'],
-                              chessdb_section['min_candidates'],
                               chessdb_section['min_time'],
                               chessdb_section['timeout'],
-                              chessdb_section['selection'],
+                              chessdb_section['best_move'],
                               chessdb_section.get('max_depth'),
                               chessdb_section.get('max_moves'))
 
