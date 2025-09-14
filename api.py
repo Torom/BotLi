@@ -139,10 +139,8 @@ class API:
     async def get_account(self) -> dict[str, Any]:
         async with self.lichess_session.get('/api/account') as response:
             json_response = await response.json()
-
             if 'error' in json_response:
                 raise RuntimeError(f'Account error: {json_response["error"]}')
-
             return json_response
 
     async def get_chessdb_eval(self, fen: str, best_move: bool, timeout: int) -> dict[str, Any] | None:
@@ -302,6 +300,9 @@ class API:
             return False
 
     async def send_chat_message(self, game_id: str, room: str, text: str) -> bool:
+        if len(text) > 140:
+            print(f'Chat message "{text}" is too long: {len(text)}/140 characters.')
+            return False
         try:
             async with self.lichess_session.post(f'/api/bot/game/{game_id}/chat',
                                                  data={'room': room, 'text': text},
