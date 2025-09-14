@@ -9,6 +9,22 @@ from botli_dataclasses import Chat_Message, Game_Information
 from config import Config
 from lichess_game import Lichess_Game
 
+COMMANDS = {
+    'cpu': 'Shows information about the bot\'s CPU (processor, cores, threads, frequency).',
+    'draw': 'Explains the bot\'s draw offering/accepting policy based on evaluation and game length.',
+    'eval': 'Shows the latest position evaluation.',
+    'motor': 'Displays the name of the chess motor currently being used.',
+    'name': 'Shows the bot\'s name and motor information.',
+    'ping': 'Tests the network connection latency to Lichess servers.',
+    'printeval': 'Enables automatic printing of evaluations after each move (use !quiet to stop).',
+    'quiet': 'Stops automatic evaluation printing (use after !printeval).',
+    'ram': 'Displays the amount of system memory (RAM).',
+    'takeback': 'Shows how many takebacks are allowed and how many the opponent has used.'
+}
+SPECTATOR_COMMANDS = {
+    'pv': 'Shows the principal variation (best line of play) from the latest position.'
+}
+
 
 class Chatter:
     def __init__(self,
@@ -126,13 +142,19 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.ram_message)
             case 'takeback':
                 await self._send_takeback_message(chat_message.room, takeback_count, max_takebacks)
-            case 'help' | 'commands':
-                if chat_message.room == 'player':
-                    message = ('Supported commands: !cpu, !draw, !eval, !motor, '
-                               '!name, !ping, !printeval, !ram, !takeback')
+            case command if command.startswith('help'):
+                commands = COMMANDS if chat_message.room == 'player' else COMMANDS | SPECTATOR_COMMANDS
+                words = chat_message.text.split()
+                if len(words) == 1:
+                    message = f'Commands: !{", !".join(commands)}. Type !help <command> for more information.'
+                    await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
+                    return
+
+                command = words[1].lstrip('!').lower()
+                if command in commands:
+                    message = f'!{command}: {commands[command]}'
                 else:
-                    message = ('Supported commands: !cpu, !draw, !eval, !motor, '
-                               '!name, !ping, !printeval, !pv, !ram, !takeback')
+                    message = f'Unknown command: "!{command}". Type !help for a list of available commands.'
 
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
 
