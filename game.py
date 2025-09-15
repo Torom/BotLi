@@ -55,7 +55,7 @@ class Game:
                     await chatter.handle_chat_message(event, self.takeback_count, max_takebacks)
                     continue
                 case 'opponentGone':
-                    if event.get('claimWinInSeconds') == 0:
+                    if not self.move_task and event.get('claimWinInSeconds') == 0:
                         await self.api.claim_victory(self.game_id)
                     continue
                 case 'gameFull':
