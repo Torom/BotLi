@@ -16,7 +16,7 @@ from event_handler import Event_Handler
 from game_manager import Game_Manager
 from logo import LOGO
 from utils import parse_time_control
-from console import cprint   
+from console import cprint
 
 try:
     import readline
@@ -46,13 +46,13 @@ EnumT = TypeVar('EnumT', bound=StrEnum)
 class User_Interface:
     async def main(self, commands: list[str], config_path: str, allow_upgrade: bool) -> None:
         self.config = Config.from_yaml(config_path)
-        cprint(f'{LOGO} • {self.config.version}',)  
-        
+        cprint(f'{LOGO} • {self.config.version}',)
+
         async with API(self.config) as self.api:
             account = await self.api.get_account()
             username: str = account['username']
 
-            cprint(f' • {username}\n')  
+            cprint(f' • {username}\n')
 
             self.api.append_user_agent(username)
             await self._handle_bot_status(account.get('title'), allow_upgrade)
@@ -118,7 +118,7 @@ class User_Interface:
 
     async def _test_engines(self) -> None:
         for engine_name, engine_config in self.config.engines.items():
-            cprint(f'Testing engine "{engine_name}" ... ',)  
+            cprint(f'Testing engine "{engine_name}" ... ',)
             await Engine.test(engine_config)
             cprint('OK')
 
