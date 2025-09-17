@@ -6,6 +6,7 @@ from botli_dataclasses import Game_Information
 from chatter import Chatter
 from config import Config
 from lichess_game import Lichess_Game
+from console import cprint  
 
 
 class Game:
@@ -104,7 +105,7 @@ class Game:
         await asyncio.sleep(abortion_seconds)
 
         if not lichess_game.is_our_turn and lichess_game.is_abortable:
-            print('Aborting game ...')
+            cprint('Aborting game ...')  
             await self.api.abort_game(self.game_id)
             await chatter.send_abortion_message()
 
@@ -115,7 +116,7 @@ class Game:
         message = (5 * ' ').join([info.id_str, opponents_str, info.tc_format,
                                   info.rated_str, info.variant_str])
 
-        print(f'\n{message}\n{128 * "‾"}')
+        cprint(f'\n{message}\n{128 * "‾"}')  
 
     def _print_result_message(self,
                               game_state: dict[str, Any],
@@ -181,4 +182,4 @@ class Game:
         opponents_str = f'{info.white_str} {white_result} - {black_result} {info.black_str}'
         message = (5 * ' ').join([info.id_str, opponents_str, message])
 
-        print(f'{message}\n{128 * "‾"}')
+        cprint(f'{message}\n{128 * "‾"}')    
