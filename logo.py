@@ -1,5 +1,5 @@
+from rich.text import Text 
 from console import console
-from rich.text import Text
 
 LOGO = r'''
 ______       _   _     _
