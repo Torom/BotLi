@@ -20,7 +20,7 @@ from config import Config
 from configs import Engine_Config, Syzygy_Config
 from engine import Engine
 from enums import Variant
-from console import cprint
+from utils import game_print
 
 
 class Lichess_Game:
@@ -146,7 +146,7 @@ class Lichess_Game:
                 self.board.push(move_response.move)
                 await self.engine.start_pondering(self.board)
 
-                cprint(f'{move_response.public_message} {move_response.private_message}'.strip())
+                game_print(f'{move_response.public_message} {move_response.private_message}'.strip(), game_id=self.game_info.id)
                 self.last_message = move_response.public_message
                 self.last_pv = move_response.pv
                 return Lichess_Move(move_response.move.uci(),
@@ -159,7 +159,7 @@ class Lichess_Game:
             self.scores.append(info['score'])
 
         message = f'Engine:  {self._format_move(move):14} {self._format_engine_info(info)}'
-        cprint(message)
+        game_print(message)
         self.last_message = message
         self.last_pv = info.get('pv', [])
 
@@ -317,7 +317,7 @@ class Lichess_Game:
             try:
                 entries = list(book_reader.find_all(self.board))
             except struct.error:
-                cprint(f'Skipping book "{name}" due to error.')
+                game_print(f'Skipping book "{name}" due to error.')
                 continue
 
             if not entries:
@@ -552,7 +552,7 @@ class Lichess_Game:
 
         if response['status'] != 'ok':
             if response['status'] != 'unknown':
-                cprint(f'ChessDB: {response["status"]}')
+                game_print(f'ChessDB: {response["status"]}')
             self.out_of_chessdb_counter += 1
             return
 
