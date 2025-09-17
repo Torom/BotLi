@@ -16,7 +16,7 @@ from event_handler import Event_Handler
 from game_manager import Game_Manager
 from logo import LOGO
 from utils import parse_time_control
-from console import cprint
+from utils import cprint
 
 try:
     import readline
