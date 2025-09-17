@@ -9,7 +9,7 @@ from challenger import Challenger
 from config import Config
 from game import Game
 from matchmaking import Matchmaking
-from console import cprint
+from utils import cprint
 
 
 class Game_Manager:
