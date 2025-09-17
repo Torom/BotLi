@@ -1,4 +1,6 @@
 from rich.text import Text
+from itertools import cycle
+from rich.console import Console
 
 def parse_time_control(time_control: str) -> tuple[int, int]:
     initial_time_str, increment_str = time_control.split('+')
@@ -20,3 +22,12 @@ def get_game_color(game_id: str) -> str:
 
 def game_colour(game_id: str, message: str) -> Text:
     return Text(message, style=get_game_color(game_id))
+
+console = Console()
+
+COLORS = ["cyan", "magenta", "green", "yellow", "blue", "bright_white"]
+_color_cycle = cycle(COLORS)
+
+def cprint(msg: str) -> None:
+    color = next(_color_cycle)
+    console.print(f"[{color}]{msg}[/{color}]")
