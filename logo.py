@@ -1,4 +1,4 @@
-from rich.text import Text 
+from rich.text import Text
 from console import console
 
 LOGO = r'''
