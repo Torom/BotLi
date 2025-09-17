@@ -6,7 +6,7 @@ from botli_dataclasses import Game_Information
 from chatter import Chatter
 from config import Config
 from lichess_game import Lichess_Game
-from console import cprint
+from utils import cprint
 
 class Game:
     def __init__(self, api: API, config: Config, username: str, game_id: str) -> None:
