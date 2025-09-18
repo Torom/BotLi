@@ -228,10 +228,10 @@ class API:
             async with self.external_session.get(url,
                                                  params=params,
                                                  timeout=aiohttp.ClientTimeout(total=timeout)) as response:
-            response.raise_for_status()
-            async for line in response.content:
-                if line.strip():
-                    return json.loads(line)
+                response.raise_for_status()
+                async for line in response.content:
+                    if line.strip():
+                        return json.loads(line)
         except (aiohttp.ClientError, json.JSONDecodeError) as e:
             print(f'Explore: {e}')
         except TimeoutError:
