@@ -159,7 +159,7 @@ class Lichess_Game:
             self.scores.append(info['score'])
 
         message = f'Engine:  {self._format_move(move):14} {self._format_engine_info(info)}'
-        game_print(message)
+        game_print(message, game_id=self.game_info.id)
         self.last_message = message
         self.last_pv = info.get('pv', [])
 
@@ -317,7 +317,7 @@ class Lichess_Game:
             try:
                 entries = list(book_reader.find_all(self.board))
             except struct.error:
-                game_print(f'Skipping book "{name}" due to error.')
+                game_print(f'Skipping book "{name}" due to error.', game_id=self.game_info.id)
                 continue
 
             if not entries:
@@ -552,7 +552,7 @@ class Lichess_Game:
 
         if response['status'] != 'ok':
             if response['status'] != 'unknown':
-                game_print(f'ChessDB: {response["status"]}')
+                game_print(f'ChessDB: {response["status"]}', game_id=self.game_info.id)
             self.out_of_chessdb_counter += 1
             return
 
