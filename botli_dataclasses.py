@@ -118,6 +118,10 @@ class Game_Information:
     state: dict[str, Any]
     tournament_id: str | None
 
+    @property
+    def id(self) -> str:
+        return self.id_
+
     @classmethod
     def from_gameFull_event(cls, gameFull_event: dict[str, Any]) -> 'Game_Information':
         assert gameFull_event['type'] == 'gameFull'
