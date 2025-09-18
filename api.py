@@ -204,25 +204,24 @@ class API:
             return [json.loads(line) async for line in response.content if line.strip()]
 
     async def get_opening_explorer(self,
-                               username: str,
-                               fen: str,
-                               variant: Variant,
-                               color: str,
-                               modes: str | None,
-                               speeds: str | None,
-                               timeout: int
-                               ) -> dict[str, Any] | None:
-        if username == "masters":
+                                   username: str,
+                                   fen: str,
+                                   variant: Variant,
+                                   color: str,
+                                   modes: str | None,
+                                   speeds: str | None,
+                                   timeout: int
+                                   ) -> dict[str, Any] | None:
+        if username == 'masters':
             url = 'https://explorer.lichess.ovh/masters'
-            params = {'fen': fen}
+            params = {'fen': fen, 'topGames': 0}
         else:
             url = 'https://explorer.lichess.ovh/player'
             params = {'player': username, 'variant': variant, 'fen': fen, 'color': color, 'recentGames': 0}
-
-        if speeds:
-            params['speeds'] = speeds
-        if modes:
-            params['modes'] = modes
+            if speeds:
+                params['speeds'] = speeds
+            if modes:
+                params['modes'] = modes
 
         try:
             async with self.external_session.get(url,

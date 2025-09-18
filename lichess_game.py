@@ -902,7 +902,8 @@ class Lichess_Game:
         if opening_explorer_config.enabled:
             if not opening_explorer_config.only_without_book or not self.book_settings.readers:
                 if self.board.uci_variant == 'chess' or opening_explorer_config.use_for_variants:
-                    opening_sources[self._make_opening_explorer_move] = opening_explorer_config.priority
+                    if self.board.uci_variant == 'chess' or opening_explorer_config.player != 'masters':
+                        opening_sources[self._make_opening_explorer_move] = opening_explorer_config.priority
 
         if self.config.online_moves.lichess_cloud.enabled:
             if not self.config.online_moves.lichess_cloud.only_without_book or not self.book_settings.readers:
