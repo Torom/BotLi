@@ -203,39 +203,39 @@ class API:
         async with self.lichess_session.get('/api/bot/online', timeout=STREAM_TIMEOUT) as response:
             return [json.loads(line) async for line in response.content if line.strip()]
 
-    async def get_opening_explorer(self,  
-                               username: str,  
-                               fen: str,  
-                               variant: Variant,  
-                               color: str,  
-                               modes: str | None,  
-                               speeds: str | None,  
-                               timeout: int  
-                               ) -> dict[str, Any] | None:  
-    if username == "masters":  
-        url = 'https://explorer.lichess.ovh/masters'  
-        params = {'variant': variant, 'fen': fen, 'color': color, 'recentGames': 0}  
-    else:  
-        url = 'https://explorer.lichess.ovh/player'  
-        params = {'player': username, 'variant': variant, 'fen': fen, 'color': color, 'recentGames': 0}  
-      
-    if speeds:  
-        params['speeds'] = speeds  
-    if modes:  
-        params['modes'] = modes  
-      
-    try:  
-        async with self.external_session.get(url,  
-                                             params=params,  
-                                             timeout=aiohttp.ClientTimeout(total=timeout)) as response:  
-            response.raise_for_status()  
-            async for line in response.content:  
-                if line.strip():  
-                    return json.loads(line)  
-    except (aiohttp.ClientError, json.JSONDecodeError) as e:  
-        print(f'Explore: {e}')  
-    except TimeoutError:  
-        print(f'Explore: Timed out after {timeout} second(s).')
+    async def get_opening_explorer(self,
+                               username: str,
+                               fen: str,
+                               variant: Variant,
+                               color: str,
+                               modes: str | None,
+                               speeds: str | None,
+                               timeout: int
+                               ) -> dict[str, Any] | None:
+        if username == "masters":
+            url = 'https://explorer.lichess.ovh/masters'
+            params = {'variant': variant, 'fen': fen, 'color': color, 'recentGames': 0}
+        else:
+            url = 'https://explorer.lichess.ovh/player'
+            params = {'player': username, 'variant': variant, 'fen': fen, 'color': color, 'recentGames': 0}
+
+        if speeds:
+            params['speeds'] = speeds
+        if modes:
+            params['modes'] = modes
+
+        try:
+            async with self.external_session.get(url,
+                                                 params=params,
+                                                 timeout=aiohttp.ClientTimeout(total=timeout)) as response:
+            response.raise_for_status()
+            async for line in response.content:
+                if line.strip():
+                    return json.loads(line)
+        except (aiohttp.ClientError, json.JSONDecodeError) as e:
+            print(f'Explore: {e}')
+        except TimeoutError:
+            print(f'Explore: Timed out after {timeout} second(s).')
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_token_scopes(self, token: str) -> str:
