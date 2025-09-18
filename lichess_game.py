@@ -15,7 +15,7 @@ from chess.variant import find_variant
 
 from api import API
 from botli_dataclasses import (Book_Settings, Game_Information, Gaviota_Result, Lichess_Move, Move_Response,
-                               Syzygy_Result)
+                               Move_Source, Syzygy_Result)
 from config import Config
 from configs import Engine_Config, Syzygy_Config
 from engine import Engine
@@ -880,46 +880,67 @@ class Lichess_Game:
         return output
 
     def _get_move_sources(self) -> list[Callable[[], Awaitable[Move_Response | None]]]:
-        move_sources: list[Callable[[], Awaitable[Move_Response | None]]] = []
+        sources: list[Callable[[], Awaitable[Move_Response | None]]] = []
 
-        if self.config.gaviota.enabled:
-            if self.board.uci_variant == 'chess':
-                move_sources.append(self._make_gaviota_move)
+        sources.extend(self._get_endgame_sources())
+
+        opening_sources = self._get_opening_sources()
+        opening_sources.sort(key=lambda source: source.priority, reverse=True)
+
+        sources.extend([source.method for source in opening_sources if source.is_available])
+
+        return sources
+
+    def _get_endgame_sources(self) -> list[Callable[[], Awaitable[Move_Response | None]]]:
+        sources: list[Callable[[], Awaitable[Move_Response | None]]] = []
+
+        if self.config.gaviota.enabled and self.board.uci_variant == 'chess':
+            sources.append(self._make_gaviota_move)
 
         if self.syzygy_config.enabled and self.syzygy_config.instant_play:
-            move_sources.append(self._make_syzygy_move)
+            sources.append(self._make_syzygy_move)
 
-        if self.config.online_moves.online_egtb.enabled:
-            if self.board.uci_variant in ['chess', 'antichess', 'atomic']:
-                move_sources.append(self._make_egtb_move)
+        if self.config.online_moves.online_egtb.enabled and self.board.uci_variant in ['chess', 'antichess', 'atomic']:
+            sources.append(self._make_egtb_move)
 
-        opening_sources: dict[Callable[[], Awaitable[Move_Response | None]], int] = {}
+        return sources
+
+    def _get_opening_sources(self) -> list[Move_Source]:
+        sources: list[Move_Source] = []
 
         if self.config.opening_books.enabled:
-            opening_sources[self._make_book_move] = self.config.opening_books.priority
+            sources.append(Move_Source(method=self._make_book_move,
+                                       priority=self.config.opening_books.priority))
 
-        opening_explorer_config = self.config.online_moves.opening_explorer
-        if opening_explorer_config.enabled:
-            if not opening_explorer_config.only_without_book or not self.book_settings.readers:
-                if self.board.uci_variant == 'chess' or opening_explorer_config.use_for_variants:
-                    if self.board.uci_variant == 'chess' or opening_explorer_config.player != 'masters':
-                        opening_sources[self._make_opening_explorer_move] = opening_explorer_config.priority
+        explorer_config = self.config.online_moves.opening_explorer
+        if explorer_config.enabled:
+            sources.append(Move_Source(method=self._make_opening_explorer_move,
+                                       priority=explorer_config.priority,
+                                       conditions=[self._check_book_condition(explorer_config.only_without_book),
+                                                   self._check_variant_condition(explorer_config.use_for_variants),
+                                                   self._check_variant_condition(explorer_config.player != 'masters')]))
 
-        if self.config.online_moves.lichess_cloud.enabled:
-            if not self.config.online_moves.lichess_cloud.only_without_book or not self.book_settings.readers:
-                if self.board.uci_variant == 'chess' or self.config.online_moves.lichess_cloud.use_for_variants:
-                    opening_sources[self._make_cloud_move] = self.config.online_moves.lichess_cloud.priority
+        cloud_config = self.config.online_moves.lichess_cloud
+        if cloud_config.enabled:
+            sources.append(Move_Source(method=self._make_cloud_move,
+                                       priority=cloud_config.priority,
+                                       conditions=[self._check_book_condition(cloud_config.only_without_book),
+                                                   self._check_variant_condition(cloud_config.use_for_variants)]))
 
-        if self.config.online_moves.chessdb.enabled:
-            if not self.config.online_moves.chessdb.only_without_book or not self.book_settings.readers:
-                if self.board.uci_variant == 'chess':
-                    opening_sources[self._make_chessdb_move] = self.config.online_moves.chessdb.priority
+        chessdb_config = self.config.online_moves.chessdb
+        if chessdb_config.enabled:
+            sources.append(Move_Source(method=self._make_chessdb_move,
+                                       priority=chessdb_config.priority,
+                                       conditions=[self._check_book_condition(chessdb_config.only_without_book),
+                                                   self.board.uci_variant == 'chess']))
 
-        move_sources += [opening_source
-                         for opening_source, _
-                         in sorted(opening_sources.items(), key=lambda item: item[1], reverse=True)]
+        return sources
 
-        return move_sources
+    def _check_book_condition(self, only_without_book: bool) -> bool:
+        return not only_without_book or not self.book_settings.readers
+
+    def _check_variant_condition(self, variant_condition: bool) -> bool:
+        return self.board.uci_variant == 'chess' or variant_condition
 
     def _get_move_overhead(self, engine_config: Engine_Config) -> float:
         return max(self.game_info.initial_time_ms / 60_000 * engine_config.move_overhead_multiplier, 1.0)

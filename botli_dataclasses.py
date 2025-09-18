@@ -1,4 +1,5 @@
 from asyncio import Task
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
@@ -315,6 +316,17 @@ class Move_Response:
     is_draw: bool | None = field(default=None, kw_only=True)
     is_lost: bool | None = field(default=None, kw_only=True)
     trusted_eval: bool = field(default=False, kw_only=True)
+
+
+@dataclass
+class Move_Source:
+    method: Callable[[], Awaitable[Move_Response | None]]
+    priority: int
+    conditions: list[bool] = []
+
+    @property
+    def is_available(self) -> bool:
+        return all(self.conditions)
 
 
 @dataclass
