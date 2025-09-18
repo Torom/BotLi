@@ -322,7 +322,7 @@ class Move_Response:
 class Move_Source:
     method: Callable[[], Awaitable[Move_Response | None]]
     priority: int
-    conditions: list[bool] = []
+    conditions: list[bool] = field(default_factory=list)
 
     @property
     def is_available(self) -> bool:
