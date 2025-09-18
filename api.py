@@ -214,7 +214,7 @@ class API:
                                ) -> dict[str, Any] | None:
         if username == "masters":
             url = 'https://explorer.lichess.ovh/masters'
-            params = {'variant': variant, 'fen': fen, 'color': color, 'recentGames': 0}
+            params = {'fen': fen}
         else:
             url = 'https://explorer.lichess.ovh/player'
             params = {'player': username, 'variant': variant, 'fen': fen, 'color': color, 'recentGames': 0}
