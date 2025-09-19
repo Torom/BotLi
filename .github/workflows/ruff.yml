@@ -17,6 +17,8 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.head_ref }}
     - uses: astral-sh/ruff-action@v3
       with:
         args: '--version'
