@@ -19,3 +19,12 @@ def validate_time_limits(initial: int, increment: int, min_initial: int, max_ini
         return False, f'Initial time {initial} is too long according to config.'  
       
     return True, None  
+
+def validate_config_section(config: dict, section_name: str, required_fields: list[tuple[str, type, str]]) -> None:  
+    
+    for field_name, field_type, error_msg in required_fields:  
+        if field_name not in config:  
+            raise RuntimeError(f'Your config does not have required `{section_name}` subsection `{field_name}`.')  
+          
+        if not isinstance(config[field_name], field_type):  
+            raise TypeError(f'`{section_name}` subsection {error_msg}')
