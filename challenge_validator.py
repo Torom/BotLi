@@ -17,50 +17,51 @@ class Challenge_Validator:
         self.max_initial = 315360000 if config.challenge.max_initial is None else config.challenge.max_initial
 
     def get_decline_reason(self, challenge_event: dict[str, Any]) -> Decline_Reason | None:
-        speed: str = challenge_event['speed']
-        if speed == 'ultraBullet':
+        speed: str = challenge_event["speed"]
+        if speed == "ultraBullet":
             print('Time control "UltraBullet" is not allowed for bots.')
             return Decline_Reason.TIME_CONTROL
 
-        if speed == 'correspondence':
+        if speed == "correspondence":
             print('Time control "Correspondence" is not supported by BotLi.')
             return Decline_Reason.TIME_CONTROL
 
-        variant: str = challenge_event['variant']['key']
+        variant: str = challenge_event["variant"]["key"]
         if variant not in self.config.challenge.variants:
             print(f'Variant "{variant}" is not allowed according to config.')
             return Decline_Reason.VARIANT
 
-        if (len(self.game_manager.tournaments) +
-                len(self.game_manager.tournaments_to_join)) >= self.config.challenge.concurrency:
-            print('Concurrency exhausted due to tournaments.')
+        if (
+            len(self.game_manager.tournaments) + len(self.game_manager.tournaments_to_join)
+        ) >= self.config.challenge.concurrency:
+            print("Concurrency exhausted due to tournaments.")
             return Decline_Reason.LATER
 
-        if challenge_event['challenger']['id'] in self.config.whitelist:
+        if challenge_event["challenger"]["id"] in self.config.whitelist:
             return
 
-        if challenge_event['challenger']['id'] in self.config.blacklist:
-            print('Challenger is blacklisted.')
+        if challenge_event["challenger"]["id"] in self.config.blacklist:
+            print("Challenger is blacklisted.")
             return Decline_Reason.GENERIC
 
         if not (self.config.challenge.bot_modes or self.config.challenge.human_modes):
-            print('Neither bots nor humans are allowed according to config.')
+            print("Neither bots nor humans are allowed according to config.")
             return Decline_Reason.GENERIC
 
-        is_bot: bool = challenge_event['challenger']['title'] == 'BOT'
+        is_bot: bool = challenge_event["challenger"]["title"] == "BOT"
         modes = self.config.challenge.bot_modes if is_bot else self.config.challenge.human_modes
         if modes is None:
             if is_bot:
-                print('Bots are not allowed according to config.')
+                print("Bots are not allowed according to config.")
                 return Decline_Reason.NO_BOT
 
-            print('Only bots are allowed according to config.')
+            print("Only bots are allowed according to config.")
             return Decline_Reason.ONLY_BOT
 
-        increment: int = challenge_event['timeControl']['increment']
-        initial: int = challenge_event['timeControl']['limit']
+        increment: int = challenge_event["timeControl"]["increment"]
+        initial: int = challenge_event["timeControl"]["limit"]
         if not self.config.challenge.time_controls:
-            print('No time control is allowed according to config.')
+            print("No time control is allowed according to config.")
             return Decline_Reason.GENERIC
 
         if speed not in self.config.challenge.time_controls and (initial, increment) not in self.time_controls:
@@ -68,38 +69,34 @@ class Challenge_Validator:
             return Decline_Reason.TIME_CONTROL
 
         if increment < self.min_increment:
-            print(f'Increment {increment} is too short according to config.')
+            print(f"Increment {increment} is too short according to config.")
             return Decline_Reason.TOO_FAST
 
         if increment > self.max_increment:
-            print(f'Increment {increment} is too long according to config.')
+            print(f"Increment {increment} is too long according to config.")
             return Decline_Reason.TOO_SLOW
 
         if initial < self.min_initial:
-            print(f'Initial time {initial} is too short according to config.')
+            print(f"Initial time {initial} is too short according to config.")
             return Decline_Reason.TOO_FAST
 
         if initial > self.max_initial:
-            print(f'Initial time {initial} is too long according to config.')
+            print(f"Initial time {initial} is too long according to config.")
             return Decline_Reason.TOO_SLOW
 
-        if is_bot and speed == 'bullet' and increment == 0 and self.config.challenge.bullet_with_increment_only:
-            print('Bullet against bots is only allowed with increment according to config.')
+        if is_bot and speed == "bullet" and increment == 0 and self.config.challenge.bullet_with_increment_only:
+            print("Bullet against bots is only allowed with increment according to config.")
             return Decline_Reason.TOO_FAST
 
-        is_rated: bool = challenge_event['rated']
+        is_rated: bool = challenge_event["rated"]
         is_casual = not is_rated
-        if is_rated and 'rated' not in modes:
-            print('Rated is not allowed according to config.')
+        if is_rated and "rated" not in modes:
+            print("Rated is not allowed according to config.")
             return Decline_Reason.CASUAL
 
-        if is_casual and 'casual' not in modes:
-            print('Casual is not allowed according to config.')
+        if is_casual and "casual" not in modes:
+            print("Casual is not allowed according to config.")
             return Decline_Reason.RATED
 
     def _get_time_controls(self, speeds: list[str]) -> list[tuple[int, int]]:
-        time_controls: list[tuple[int, int]] = []
-        for speed in speeds:
-            if '+' in speed:
-                time_controls.append(parse_time_control(speed))
-        return time_controls
+        return [parse_time_control(speed) for speed in speeds if "+" in speed]
