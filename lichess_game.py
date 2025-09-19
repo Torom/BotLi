@@ -156,7 +156,6 @@ class Lichess_Game:
             if move_response := await move_source():
                 self.board.push(move_response.move)
                 await self.engine.start_pondering(self.board)
-
                 game_print(f"{move_response.public_message} {move_response.private_message}".strip(), game_id=self.game_info.id)
                 self.last_message = move_response.public_message
                 self.last_pv = move_response.pv
