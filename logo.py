@@ -1,13 +1,13 @@
 from rich.text import Text
 from utils import console
 
-LOGO = r'''
+LOGO = r"""
 ______       _   _     _
 | ___ \     | | | |   (_)
 | |_/ / ___ | |_| |    _
 | ___ \/ _ \| __| |   | |
 | |_/ / (_) | |_| |___| |
-\____/ \___/ \__\_____/_|'''
+\____/ \___/ \__\_____/_|"""
 
 def show_logo(version: str | None = None):
     colors = ["magenta", "cyan", "green", "yellow", "blue", "red"]
