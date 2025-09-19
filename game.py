@@ -6,7 +6,7 @@ from botli_dataclasses import Game_Information
 from chatter import Chatter
 from config import Config
 from lichess_game import Lichess_Game
-from utils import cprint
+
 
 class Game:
     def __init__(self, api: API, config: Config, username: str, game_id: str) -> None:
@@ -24,14 +24,14 @@ class Game:
 
     async def run(self) -> None:
         game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
-        asyncio.create_task(self.api.get_game_stream(self.game_id, game_stream_queue))
+        self._task = asyncio.create_task(self.api.get_game_stream(self.game_id, game_stream_queue))
         info = Game_Information.from_gameFull_event(await game_stream_queue.get())
         lichess_game = await Lichess_Game.acreate(self.api, self.config, self.username, info)
         chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
 
         self._print_game_information(info)
 
-        if info.state['status'] != 'started':
+        if info.state["status"] != "started":
             self._print_result_message(info.state, lichess_game, info)
             await chatter.send_goodbyes()
             await lichess_game.close()
@@ -50,18 +50,18 @@ class Game:
             self.abortion_task = asyncio.create_task(self._abortion_task(lichess_game, chatter, abortion_seconds))
 
         while event := await game_stream_queue.get():
-            match event['type']:
-                case 'chatLine':
+            match event["type"]:
+                case "chatLine":
                     await chatter.handle_chat_message(event, self.takeback_count, max_takebacks)
                     continue
-                case 'opponentGone':
-                    if not self.move_task and event.get('claimWinInSeconds') == 0:
+                case "opponentGone":
+                    if not self.move_task and event.get("claimWinInSeconds") == 0:
                         await self.api.claim_victory(self.game_id)
                     continue
-                case 'gameFull':
-                    event = event['state']
+                case "gameFull":
+                    event = event["state"]
 
-            if event.get('wtakeback') or event.get('btakeback'):
+            if event.get("wtakeback") or event.get("btakeback"):
                 if self.takeback_count >= max_takebacks:
                     await self.api.handle_takeback(self.game_id, False)
                     continue
@@ -76,7 +76,7 @@ class Game:
 
             has_updated = lichess_game.update(event)
 
-            if event['status'] != 'started':
+            if event["status"] != "started":
                 if self.move_task:
                     self.move_task.cancel()
 
@@ -104,81 +104,79 @@ class Game:
         await asyncio.sleep(abortion_seconds)
 
         if not lichess_game.is_our_turn and lichess_game.is_abortable:
-            cprint('Aborting game ...')
+            print("Aborting game ...")
             await self.api.abort_game(self.game_id)
             await chatter.send_abortion_message()
 
         self.abortion_task = None
 
     def _print_game_information(self, info: Game_Information) -> None:
-        opponents_str = f'{info.white_str}   -   {info.black_str}'
-        message = (5 * ' ').join([info.id_str, opponents_str, info.tc_format,
-                                  info.rated_str, info.variant_str])
+        opponents_str = f"{info.white_str}   -   {info.black_str}"
+        message = (5 * " ").join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
 
-        cprint(f'\n{message}\n{128 * "‾"}')
+        print(f"\n{message}\n{128 * '‾'}")
 
-    def _print_result_message(self,
-                              game_state: dict[str, Any],
-                              lichess_game: Lichess_Game,
-                              info: Game_Information) -> None:
-        if winner := game_state.get('winner'):
-            if winner == 'white':
-                message = f'{info.white_name} won'
+    def _print_result_message(
+        self, game_state: dict[str, Any], lichess_game: Lichess_Game, info: Game_Information
+    ) -> None:
+        if winner := game_state.get("winner"):
+            if winner == "white":
+                message = f"{info.white_name} won"
                 loser = info.black_name
-                white_result = '1'
-                black_result = '0'
+                white_result = "1"
+                black_result = "0"
             else:
-                message = f'{info.black_name} won'
+                message = f"{info.black_name} won"
                 loser = info.white_name
-                white_result = '0'
-                black_result = '1'
+                white_result = "0"
+                black_result = "1"
 
-            match game_state['status']:
-                case 'mate':
-                    message += ' by checkmate!'
-                case 'outoftime':
-                    message += f'! {loser} ran out of time.'
-                case 'resign':
-                    message += f'! {loser} resigned.'
-                case 'variantEnd':
-                    message += ' by variant rules!'
-                case 'timeout':
-                    message += f'! {loser} timed out.'
-                case 'noStart':
+            match game_state["status"]:
+                case "mate":
+                    message += " by checkmate!"
+                case "outoftime":
+                    message += f"! {loser} ran out of time."
+                case "resign":
+                    message += f"! {loser} resigned."
+                case "variantEnd":
+                    message += " by variant rules!"
+                case "timeout":
+                    message += f"! {loser} timed out."
+                case "noStart":
                     if loser == self.username:
                         self.ejected_tournament = info.tournament_id
-                    message += f'! {loser} has not started the game.'
+                    message += f"! {loser} has not started the game."
         else:
-            white_result = '½'
-            black_result = '½'
+            white_result = "½"
+            black_result = "½"
 
-            match game_state['status']:
-                case 'draw':
+            match game_state["status"]:
+                case "draw":
                     if lichess_game.board.is_fifty_moves():
-                        message = 'Game drawn by 50-move rule.'
+                        message = "Game drawn by 50-move rule."
                     elif lichess_game.board.is_repetition():
-                        message = 'Game drawn by threefold repetition.'
+                        message = "Game drawn by threefold repetition."
                     elif lichess_game.board.is_insufficient_material():
-                        message = 'Game drawn due to insufficient material.'
+                        message = "Game drawn due to insufficient material."
                     elif lichess_game.board.is_variant_draw():
-                        message = 'Game drawn by variant rules.'
+                        message = "Game drawn by variant rules."
                     else:
-                        message = 'Game drawn by agreement.'
-                case 'stalemate':
-                    message = 'Game drawn by stalemate.'
-                case 'outoftime':
-                    out_of_time_player = info.black_name if game_state['wtime'] else info.white_name
-                    message = f'Game drawn. {out_of_time_player} ran out of time.'
-                case 'insufficientMaterialClaim':
-                    message = 'Game drawn due to insufficient material claim.'
+                        message = "Game drawn by agreement."
+                case "stalemate":
+                    message = "Game drawn by stalemate."
+                case "outoftime":
+                    out_of_time_player = info.black_name if game_state["wtime"] else info.white_name
+                    message = f"Game drawn. {out_of_time_player} ran out of time."
+                case "insufficientMaterialClaim":
+                    message = "Game drawn due to insufficient material claim."
                 case _:
                     self.was_aborted = True
-                    message = 'Game aborted.'
+                    message = "Game aborted."
 
-                    white_result = 'X'
-                    black_result = 'X'
+                    white_result = "X"
+                    black_result = "X"
 
-        opponents_str = f'{info.white_str} {white_result} - {black_result} {info.black_str}'
-        message = (5 * ' ').join([info.id_str, opponents_str, message])
+        opponents_str = f"{info.white_str} {white_result} - {black_result} {info.black_str}"
+        message = (5 * " ").join([info.id_str, opponents_str, message])
 
-        cprint(f'{message}\n{128 * "‾"}')
+        print(f"{message}\n{128 * '‾'}")
