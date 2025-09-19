@@ -15,8 +15,7 @@ from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
 from logo import LOGO
-from utils import parse_time_control
-from utils import cprint
+from utils import parse_time_control, cprint
 
 try:
     import readline
@@ -24,38 +23,38 @@ except ImportError:
     readline = None
 
 COMMANDS = {
-    'blacklist': 'Temporarily blacklists a user. Use config for permanent blacklisting. Usage: blacklist USERNAME',
-    'challenge': 'Challenges a player. Usage: challenge USERNAME [TIMECONTROL] [COLOR] [RATED] [VARIANT]',
-    'clear': 'Clears the challenge queue.',
-    'create': 'Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]',
-    'help': 'Prints this message.',
-    'join': 'Joins a team. Usage: join TEAM_ID [PASSWORD]',
-    'leave': 'Leaves tournament. Usage: leave ID',
-    'matchmaking': 'Starts matchmaking mode.',
-    'quit': 'Exits the bot.',
-    'rechallenge': 'Challenges the opponent to the last received challenge.',
-    'reset': 'Resets matchmaking. Usage: reset PERF_TYPE',
-    'stop': 'Stops matchmaking mode.',
-    'tournament': 'Joins tournament. Usage: tournament ID [TEAM_ID] [PASSWORD]',
-    'whitelist': 'Temporarily whitelists a user. Use config for permanent whitelisting. Usage: whitelist USERNAME'
+    "blacklist": "Temporarily blacklists a user. Use config for permanent blacklisting. Usage: blacklist USERNAME",
+    "challenge": "Challenges a player. Usage: challenge USERNAME [TIMECONTROL] [COLOR] [RATED] [VARIANT]",
+    "clear": "Clears the challenge queue.",
+    "create": "Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]",
+    "help": "Prints this message.",
+    "join": "Joins a team. Usage: join TEAM_ID [PASSWORD]",
+    "leave": "Leaves tournament. Usage: leave ID",
+    "matchmaking": "Starts matchmaking mode.",
+    "quit": "Exits the bot.",
+    "rechallenge": "Challenges the opponent to the last received challenge.",
+    "reset": "Resets matchmaking. Usage: reset PERF_TYPE",
+    "stop": "Stops matchmaking mode.",
+    "tournament": "Joins tournament. Usage: tournament ID [TEAM_ID] [PASSWORD]",
+    "whitelist": "Temporarily whitelists a user. Use config for permanent whitelisting. Usage: whitelist USERNAME",
 }
 
-EnumT = TypeVar('EnumT', bound=StrEnum)
+EnumT = TypeVar("EnumT", bound=StrEnum)
 
 
 class User_Interface:
     async def main(self, commands: list[str], config_path: str, allow_upgrade: bool) -> None:
         self.config = Config.from_yaml(config_path)
-        cprint(f'{LOGO} • {self.config.version}',)
+        cprint(f"{LOGO} • {self.config.version}", end="", flush=True)
 
         async with API(self.config) as self.api:
             account = await self.api.get_account()
-            username: str = account['username']
+            username: str = account["username"]
 
-            cprint(f' • {username}\n')
+            cprint(f" • {username}\n")
 
             self.api.append_user_agent(username)
-            await self._handle_bot_status(account.get('title'), allow_upgrade)
+            await self._handle_bot_status(account.get("title"), allow_upgrade)
             await self._test_engines()
 
             self.game_manager = Game_Manager(self.api, self.config, username)
@@ -67,7 +66,9 @@ class User_Interface:
             signal.signal(signal.SIGTERM, self.signal_handler)
 
             if commands:
+                # Short timeout to receive ongoing games first
                 await asyncio.sleep(0.5)
+
                 for command in commands:
                     await self._handle_command(command.split())
 
@@ -75,10 +76,10 @@ class User_Interface:
                 await self.game_manager_task
                 return
 
-            if readline and not os.name == 'nt':
+            if readline and os.name != "nt":
                 completer = Autocompleter(list(COMMANDS.keys()))
                 readline.set_completer(completer.complete)
-                readline.parse_and_bind('tab: complete')
+                readline.parse_and_bind("tab: complete")
 
             while True:
                 command = (await asyncio.to_thread(input)).split()
@@ -86,209 +87,221 @@ class User_Interface:
                     await self._handle_command(command)
 
     async def _handle_bot_status(self, title: str | None, allow_upgrade: bool) -> None:
-        if 'bot:play' not in await self.api.get_token_scopes(self.config.token):
-            cprint('Your token is missing the bot:play scope. This is mandatory to use BotLi.\n'
-                   'You can create such a token by following this link:\n'
-                   'https://lichess.org/account/oauth/token/create?scopes[]=bot:play&description=BotLi')
+        if "bot:play" not in await self.api.get_token_scopes(self.config.token):
+            print(
+                "Your token is missing the bot:play scope. This is mandatory to use BotLi.\n"
+                "You can create such a token by following this link:\n"
+                "https://lichess.org/account/oauth/token/create?scopes[]=bot:play&description=BotLi"
+            )
             sys.exit(1)
 
-        if title == 'BOT':
+        if title == "BOT":
             return
 
-        cprint('\nBotLi can only be used by BOT accounts!\n')
+        print("\nBotLi can only be used by BOT accounts!\n")
 
         if not sys.stdin.isatty() and not allow_upgrade:
-            cprint('Start BotLi with the "--upgrade" flag if you are sure you want to upgrade this account.\n'
-                   'WARNING: This is irreversible. The account will only be able to play as a BOT.')
+            print(
+                'Start BotLi with the "--upgrade" flag if you are sure you want to upgrade this account.\n'
+                "WARNING: This is irreversible. The account will only be able to play as a BOT."
+            )
             sys.exit(1)
         elif sys.stdin.isatty():
-            cprint('This will upgrade your account to a BOT account.\n'
-                   'WARNING: This is irreversible. The account will only be able to play as a BOT.')
-            approval = input('Do you want to continue? [y/N]: ')
+            print(
+                "This will upgrade your account to a BOT account.\n"
+                "WARNING: This is irreversible. The account will only be able to play as a BOT."
+            )
+            approval = input("Do you want to continue? [y/N]: ")
 
-            if approval.lower() not in ['y', 'yes']:
-                cprint('Upgrade aborted.')
+            if approval.lower() not in ["y", "yes"]:
+                print("Upgrade aborted.")
                 sys.exit()
 
         if await self.api.upgrade_account():
-            cprint('Upgrade successful.')
+            print("Upgrade successful.")
         else:
-            cprint('Upgrade failed.')
+            print("Upgrade failed.")
             sys.exit(1)
 
     async def _test_engines(self) -> None:
         for engine_name, engine_config in self.config.engines.items():
-            cprint(f'Testing engine "{engine_name}" ... ',)
+            print(f'Testing engine "{engine_name}" ... ', end="", flush=True)
             await Engine.test(engine_config)
-            cprint('OK')
+            print("OK")
 
     async def _handle_command(self, command: list[str]) -> None:
         match command[0]:
-            case 'blacklist':
+            case "blacklist":
                 self._blacklist(command)
-            case 'challenge':
+            case "challenge":
                 self._challenge(command)
-            case 'clear':
+            case "clear":
                 self._clear()
-            case 'create':
+            case "create":
                 self._create(command)
-            case 'join':
+            case "join":
                 await self._join(command)
-            case 'leave':
+            case "leave":
                 self._leave(command)
-            case 'matchmaking' | 'm':
+            case "matchmaking" | "m":
                 self._matchmaking()
-            case 'quit' | 'exit' | 'q':
+            case "quit" | "exit" | "q":
                 await self._quit()
                 sys.exit()
-            case 'rechallenge':
+            case "rechallenge":
                 self._rechallenge()
-            case 'reset':
+            case "reset":
                 self._reset(command)
-            case 'stop' | 's':
+            case "stop" | "s":
                 self._stop()
-            case 'tournament' | 't':
+            case "tournament" | "t":
                 self._tournament(command)
-            case 'whitelist':
+            case "whitelist":
                 self._whitelist(command)
             case _:
                 self._help()
 
     def _blacklist(self, command: list[str]) -> None:
         if len(command) != 2:
-            cprint(COMMANDS['blacklist'])
+            print(COMMANDS["blacklist"])
             return
 
         self.config.blacklist.append(command[1].lower())
-        cprint(f'Added {command[1]} to the blacklist.')
+        print(f"Added {command[1]} to the blacklist.")
 
     def _challenge(self, command: list[str]) -> None:
         if len(command) < 2 or len(command) > 6:
-            cprint(COMMANDS['challenge'])
+            print(COMMANDS["challenge"])
             return
 
         try:
             opponent_username = command[1]
-            time_control = command[2] if len(command) > 2 else '1+1'
+            time_control = command[2] if len(command) > 2 else "1+1"
             initial_time, increment = parse_time_control(time_control)
             color = Challenge_Color(command[3].lower()) if len(command) > 3 else Challenge_Color.RANDOM
-            rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
+            rated = command[4].lower() in ["true", "yes", "rated"] if len(command) > 4 else True
             variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
         except ValueError as e:
-            cprint(str(e))
+            print(e)
             return
 
         challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 300)
         self.game_manager.request_challenge(challenge_request)
-        cprint(f'Challenge against {challenge_request.opponent_username} added to the queue.')
+        print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 
     def _clear(self) -> None:
         self.game_manager.challenge_requests.clear()
-        cprint('Challenge queue cleared.')
+        print("Challenge queue cleared.")
 
     def _create(self, command: list[str]) -> None:
         if len(command) < 3 or len(command) > 6:
-            cprint(COMMANDS['create'])
+            print(COMMANDS["create"])
             return
 
         try:
             count = int(command[1])
             opponent_username = command[2]
-            time_control = command[3] if len(command) > 3 else '1+1'
+            time_control = command[3] if len(command) > 3 else "1+1"
             initial_time, increment = parse_time_control(time_control)
-            rated = command[4].lower() in ['true', 'yes', 'rated'] if len(command) > 4 else True
+            rated = command[4].lower() in ["true", "yes", "rated"] if len(command) > 4 else True
             variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
         except ValueError as e:
-            cprint(str(e))
+            print(e)
             return
 
         challenges: list[Challenge_Request] = []
         for _ in range(count):
-            challenges.append(Challenge_Request(opponent_username, initial_time,
-                              increment, rated, Challenge_Color.WHITE, variant, 300))
-            challenges.append(Challenge_Request(opponent_username, initial_time,
-                              increment, rated, Challenge_Color.BLACK, variant, 300))
+            challenges.append(
+                Challenge_Request(
+                    opponent_username, initial_time, increment, rated, Challenge_Color.WHITE, variant, 300
+                )
+            )
+            challenges.append(
+                Challenge_Request(
+                    opponent_username, initial_time, increment, rated, Challenge_Color.BLACK, variant, 300
+                )
+            )
 
         self.game_manager.request_challenge(*challenges)
-        cprint(f'Challenges for {count} game pairs against {opponent_username} added to the queue.')
+        print(f"Challenges for {count} game pairs against {opponent_username} added to the queue.")
 
     async def _join(self, command: list[str]) -> None:
         if len(command) < 2 or len(command) > 3:
-            cprint(COMMANDS['join'])
+            print(COMMANDS["join"])
             return
 
         password = command[2] if len(command) > 2 else None
         if await self.api.join_team(command[1], password):
-            cprint(f'Joined team "{command[1]}" successfully.')
+            print(f'Joined team "{command[1]}" successfully.')
 
     def _leave(self, command: list[str]) -> None:
         if len(command) != 2:
-            cprint(COMMANDS['leave'])
+            print(COMMANDS["leave"])
             return
 
         self.game_manager.request_tournament_leaving(command[1])
 
     def _matchmaking(self) -> None:
-        cprint('Starting matchmaking ...')
+        print("Starting matchmaking ...")
         self.game_manager.start_matchmaking()
 
     async def _quit(self) -> None:
         self.game_manager.stop()
-        cprint('Terminating program ...')
+        print("Terminating program ...")
         self.event_handler_task.cancel()
         await self.game_manager_task
 
     def _rechallenge(self) -> None:
         last_challenge_event = self.event_handler.last_challenge_event
         if last_challenge_event is None:
-            cprint('No last challenge available.')
+            print("No last challenge available.")
             return
 
-        if last_challenge_event['speed'] == 'correspondence':
-            cprint('Correspondence is not supported by BotLi.')
+        if last_challenge_event["speed"] == "correspondence":
+            print("Correspondence is not supported by BotLi.")
             return
 
-        opponent_username: str = last_challenge_event['challenger']['name']
-        initial_time: int = last_challenge_event['timeControl']['limit']
-        increment: int = last_challenge_event['timeControl']['increment']
-        rated: bool = last_challenge_event['rated']
-        event_color: str = last_challenge_event['color']
-        variant = Variant(last_challenge_event['variant']['key'])
+        opponent_username: str = last_challenge_event["challenger"]["name"]
+        initial_time: int = last_challenge_event["timeControl"]["limit"]
+        increment: int = last_challenge_event["timeControl"]["increment"]
+        rated: bool = last_challenge_event["rated"]
+        event_color: str = last_challenge_event["color"]
+        variant = Variant(last_challenge_event["variant"]["key"])
 
-        if event_color == 'white':
+        if event_color == "white":
             color = Challenge_Color.BLACK
-        elif event_color == 'black':
+        elif event_color == "black":
             color = Challenge_Color.WHITE
         else:
             color = Challenge_Color.RANDOM
 
         challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 300)
         self.game_manager.request_challenge(challenge_request)
-        cprint(f'Challenge against {challenge_request.opponent_username} added to the queue.')
+        print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 
     def _reset(self, command: list[str]) -> None:
         if len(command) != 2:
-            cprint(COMMANDS['reset'])
+            print(COMMANDS["reset"])
             return
 
         try:
             perf_type = self._find_enum(command[1], Perf_Type)
         except ValueError as e:
-            cprint(str(e))
+            print(e)
             return
 
         self.game_manager.matchmaking.opponents.reset_release_time(perf_type)
-        cprint('Matchmaking has been reset.')
+        print("Matchmaking has been reset.")
 
     def _stop(self) -> None:
         if self.game_manager.stop_matchmaking():
-            cprint('Stopping matchmaking ...')
+            print("Stopping matchmaking ...")
         else:
-            cprint('Matchmaking isn\'t currently running ...')
+            print("Matchmaking isn't currently running ...")
 
     def _tournament(self, command: list[str]) -> None:
         if len(command) < 2 or len(command) > 4:
-            cprint(COMMANDS['tournament'])
+            print(COMMANDS["tournament"])
             return
 
         tournament_id = command[1]
@@ -299,26 +312,26 @@ class User_Interface:
 
     def _whitelist(self, command: list[str]) -> None:
         if len(command) != 2:
-            cprint(COMMANDS['whitelist'])
+            print(COMMANDS["whitelist"])
             return
 
         self.config.whitelist.append(command[1].lower())
-        cprint(f'Added {command[1]} to the whitelist.')
+        print(f"Added {command[1]} to the whitelist.")
 
     def _help(self) -> None:
-        cprint('These commands are supported by BotLi:\n')
+        print("These commands are supported by BotLi:\n")
         for key, value in COMMANDS.items():
-            cprint(f'{key:11}\t\t# {value}')
+            print(f"{key:11}\t\t# {value}")
 
     def _find_enum(self, name: str, enum_type: type[EnumT]) -> EnumT:
         for enum in enum_type:
             if enum.lower() == name.lower():
                 return enum
 
-        raise ValueError(f'{name} is not a valid {enum_type}')
+        raise ValueError(f"{name} is not a valid {enum_type}")
 
     def signal_handler(self, *_) -> None:
-        asyncio.create_task(self._quit())
+        self._quit_task = asyncio.create_task(self._quit())
 
 
 class Autocompleter:
@@ -339,12 +352,12 @@ class Autocompleter:
             return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('commands', nargs='*', help='Commands that BotLi executes.')
-    parser.add_argument('--config', '-c', default='config.yml', help='Path to config.yml.')
-    parser.add_argument('--upgrade', '-u', action='store_true', help='Upgrade account to BOT account.')
-    parser.add_argument('--debug', '-d', action='store_true', help='Enable debug logging.')
+    parser.add_argument("commands", nargs="*", help="Commands that BotLi executes.")
+    parser.add_argument("--config", "-c", default="config.yml", help="Path to config.yml.")
+    parser.add_argument("--upgrade", "-u", action="store_true", help="Upgrade account to BOT account.")
+    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug logging.")
     args = parser.parse_args()
 
     if args.debug:
