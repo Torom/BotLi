@@ -68,14 +68,14 @@ class Challenge_Validator:
             print(f'Time control "{speed}" is not allowed according to config.')
             return Decline_Reason.TIME_CONTROL
 
-        is_valid, error_msg = validate_time_limits(  
-            initial, increment,   
-            self.min_initial, self.max_initial,  
-            self.min_increment, self.max_increment  
-        )  
-        if not is_valid:  
-            print(error_msg)  
-           return Decline_Reason.TOO_FAST if 'short' in error_msg else Decline_Reason.TOO_SLOW
+         is_valid, error_msg = validate_time_limits(  
+             initial, increment,   
+             self.min_initial, self.max_initial,  
+             self.min_increment, self.max_increment  
+         )  
+         if not is_valid:  
+             print(error_msg)  
+             return Decline_Reason.TOO_FAST if 'short' in error_msg else Decline_Reason.TOO_SLOW
 
         if is_bot and speed == "bullet" and increment == 0 and self.config.challenge.bullet_with_increment_only:
             print("Bullet against bots is only allowed with increment according to config.")
