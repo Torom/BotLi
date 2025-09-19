@@ -9,7 +9,6 @@ from challenger import Challenger
 from config import Config
 from game import Game
 from matchmaking import Matchmaking
-from utils import cprint
 
 
 class Game_Manager:
@@ -100,10 +99,10 @@ class Game_Manager:
             self.changed_event.set()
 
     def on_game_started(self, game_event: dict[str, Any]) -> None:
-        if game_event['id'] in {started_game_event['id'] for started_game_event in self.started_game_events}:
+        if game_event["id"] in {started_game_event["id"] for started_game_event in self.started_game_events}:
             return
 
-        if game_event['id'] in {game.game_id for game in self.tasks.values()}:
+        if game_event["id"] in {game.game_id for game in self.tasks.values()}:
             return
 
         self.started_game_events.append(game_event)
@@ -143,7 +142,7 @@ class Game_Manager:
 
         tournament_info = await self.api.get_tournament_info(tournament_request.id_)
         if not tournament_info:
-            cprint(f'Tournament "{tournament_request.id_}" not found.')
+            print(f'Tournament "{tournament_request.id_}" not found.')
             return
 
         tournament = Tournament.from_tournament_info(tournament_info)
@@ -151,7 +150,7 @@ class Game_Manager:
         tournament.password = tournament_request.password
 
         if not tournament.bots_allowed:
-            cprint(f'BOTs are not allowed in tournament "{tournament.name}".')
+            print(f'BOTs are not allowed in tournament "{tournament.name}".')
             return
 
         if tournament.seconds_to_start <= 0.0:
@@ -160,32 +159,32 @@ class Game_Manager:
 
         tournament.start_task = asyncio.create_task(self._tournament_start_task(tournament))
         self.unstarted_tournaments[tournament.id_] = tournament
-        cprint(f'Added tournament "{tournament.name}". Waiting for its start time to join.')
+        print(f'Added tournament "{tournament.name}". Waiting for its start time to join.')
 
     async def _join_tournament(self, tournament: Tournament) -> None:
         if tournament.seconds_to_finish <= 0.0:
-            cprint(f'Tournament "{tournament.name}" is already finished.')
+            print(f'Tournament "{tournament.name}" is already finished.')
             return
 
         if await self.api.join_tournament(tournament.id_, tournament.team, tournament.password):
             tournament.end_task = asyncio.create_task(self._tournament_end_task(tournament))
             self.tournaments[tournament.id_] = tournament
-            cprint(f'Joined tournament "{tournament.name}". Awaiting games ...')
+            print(f'Joined tournament "{tournament.name}". Awaiting games ...')
 
     async def _leave_tournament_id(self, tournament_id: str) -> None:
         if tournament := self.unstarted_tournaments.pop(tournament_id, None):
             tournament.cancel()
-            cprint(f'Removed unstarted tournament "{tournament.name}".')
+            print(f'Removed unstarted tournament "{tournament.name}".')
 
         if tournament := self.tournaments.pop(tournament_id, None):
             await self.api.withdraw_tournament(tournament_id)
             tournament.cancel()
-            cprint(f'Left tournament "{tournament.name}".')
+            print(f'Left tournament "{tournament.name}".')
 
         for tournament in list(self.tournaments_to_join):
             if tournament.id_ == tournament_id:
                 self.tournaments_to_join.remove(tournament)
-                cprint(f'Removed unjoined tournament "{tournament.name}".')
+                print(f'Removed unjoined tournament "{tournament.name}".')
 
         self._set_next_matchmaking(1)
 
@@ -194,14 +193,14 @@ class Game_Manager:
 
         del self.unstarted_tournaments[tournament.id_]
         self.tournaments_to_join.append(tournament)
-        cprint(f'Tournament "{tournament.name}" has started.')
+        print(f'Tournament "{tournament.name}" has started.')
         self.changed_event.set()
 
     async def _tournament_end_task(self, tournament: Tournament) -> None:
         await asyncio.sleep(tournament.seconds_to_finish)
 
         del self.tournaments[tournament.id_]
-        cprint(f'Tournament "{tournament.name}" has ended.')
+        print(f'Tournament "{tournament.name}" has ended.')
         self._set_next_matchmaking(self.config.matchmaking.delay)
         self.changed_event.set()
 
@@ -224,7 +223,7 @@ class Game_Manager:
         if game.ejected_tournament in self.tournaments:
             self.tournaments[game.ejected_tournament].cancel()
             del self.tournaments[game.ejected_tournament]
-            cprint(f'Ignoring tournament "{game.ejected_tournament}" after failure to start the game.')
+            print(f'Ignoring tournament "{game.ejected_tournament}" after failure to start the game.')
 
         self._set_next_matchmaking(self.config.matchmaking.delay)
         self.changed_event.set()
@@ -233,14 +232,14 @@ class Game_Manager:
         if self.reserved_game_spots > 0:
             self.reserved_game_spots -= 1
 
-        if 'tournamentId' in game_event and game_event['tournamentId'] not in self.tournaments:
-            tournament_info = await self.api.get_tournament_info(game_event['tournamentId'])
+        if "tournamentId" in game_event and game_event["tournamentId"] not in self.tournaments:
+            tournament_info = await self.api.get_tournament_info(game_event["tournamentId"])
             tournament = Tournament.from_tournament_info(tournament_info)
             tournament.end_task = asyncio.create_task(self._tournament_end_task(tournament))
             self.tournaments[tournament.id_] = tournament
-            cprint(f'External joined tournament "{tournament.name}" detected.')
+            print(f'External joined tournament "{tournament.name}" detected.')
 
-        game = Game(self.api, self.config, self.username, game_event['id'])
+        game = Game(self.api, self.config, self.username, game_event["id"])
         task = asyncio.create_task(game.run())
         task.add_done_callback(self._task_callback)
         self.tasks[task] = game
@@ -282,10 +281,10 @@ class Game_Manager:
             self._set_next_matchmaking(self.config.matchmaking.delay)
         elif challenge_response.has_reached_rate_limit:
             self._set_next_matchmaking(3600)
-            cprint('Matchmaking has reached rate limit, next attempt in one hour.')
+            print("Matchmaking has reached rate limit, next attempt in one hour.")
             self.is_rate_limited = True
         elif challenge_response.is_misconfigured:
-            cprint('Matchmaking stopped due to misconfiguration.')
+            print("Matchmaking stopped due to misconfiguration.")
             self.stop_matchmaking()
         else:
             self._set_next_matchmaking(1)
@@ -304,7 +303,7 @@ class Game_Manager:
             return
 
         if len(self.tasks) >= self.config.challenge.concurrency:
-            cprint('Max number of concurrent games exceeded. Ignoring already started game for now.')
+            print("Max number of concurrent games exceeded. Ignoring already started game for now.")
             return
 
         return self.started_game_events.popleft()
@@ -319,15 +318,15 @@ class Game_Manager:
         return self.tournaments_to_join.popleft()
 
     async def _create_challenge(self, challenge_request: Challenge_Request) -> None:
-        cprint(f'Challenging {challenge_request.opponent_username} ...')
+        print(f"Challenging {challenge_request.opponent_username} ...")
         response = await self.challenger.create(challenge_request)
 
         if response.success:
             self.reserved_game_spots += 1
         elif response.has_reached_rate_limit and self.challenge_requests:
-            cprint('Challenge queue cleared due to rate limiting.')
+            print("Challenge queue cleared due to rate limiting.")
             self.challenge_requests.clear()
         elif challenge_request in self.challenge_requests:
-            cprint(f'Challenges against {challenge_request.opponent_username} removed from queue.')
+            print(f"Challenges against {challenge_request.opponent_username} removed from queue.")
             while challenge_request in self.challenge_requests:
                 self.challenge_requests.remove(challenge_request)
