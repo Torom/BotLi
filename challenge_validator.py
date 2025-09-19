@@ -75,7 +75,7 @@ class Challenge_Validator:
         )  
         if not is_valid:  
             print(error_msg)  
-            return Decline_Reason.TOO_FAST if 'short' in error_msg else Decline_Reason.TOO_SLOW
+            return Decline_Reason.TOO_FAST if error_msg and 'short' in error_msg else Decline_Reason.TOO_SLOW
 
         if is_bot and speed == "bullet" and increment == 0 and self.config.challenge.bullet_with_increment_only:
             print("Bullet against bots is only allowed with increment according to config.")
