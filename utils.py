@@ -5,7 +5,6 @@ from rich.text import Text
 
 console = Console()
 
-
 def parse_time_control(time_control: str) -> tuple[int, int]:
     initial_time_str, increment_str = time_control.split("+")
     initial_time = int(float(initial_time_str) * 60)
