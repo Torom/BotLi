@@ -3,6 +3,7 @@ import os.path
 import subprocess
 import sys
 from dataclasses import dataclass
+from utils import validate_config_section
 from typing import Any
 
 import yaml
@@ -448,135 +449,97 @@ class Config:
         )
 
     @staticmethod
-    def _get_offer_draw_config(offer_draw_section: dict[str, Any]) -> Offer_Draw_Config:
-        offer_draw_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["score", int, '"score" must be an integer.'],
-            ["consecutive_moves", int, '"consecutive_moves" must be an integer.'],
-            ["min_game_length", int, '"min_game_length" must be an integer.'],
-            ["against_humans", bool, '"against_humans" must be a bool.'],
-        ]
-
-        for subsection in offer_draw_sections:
-            if subsection[0] not in offer_draw_section:
-                raise RuntimeError(f"Your config does not have required `offer_draw` subsection `{subsection[0]}`.")
-
-            if not isinstance(offer_draw_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`offer_draw` subsection {subsection[2]}")
-
-        return Offer_Draw_Config(
-            offer_draw_section["enabled"],
-            offer_draw_section["score"],
-            offer_draw_section["consecutive_moves"],
-            offer_draw_section["min_game_length"],
-            offer_draw_section["against_humans"],
-            offer_draw_section.get("min_rating"),
-        )
+    def _get_offer_draw_config(offer_draw_section: dict[str, Any]) -> Offer_Draw_Config:  
+        offer_draw_sections = [  
+            ['enabled', bool, '"enabled" must be a bool.'],  
+            ['score', int, '"score" must be an integer.'],  
+            ['consecutive_moves', int, '"consecutive_moves" must be an integer.'],  
+            ['min_game_length', int, '"min_game_length" must be an integer.'],  
+            ['against_humans', bool, '"against_humans" must be a bool.']]  
+  
+        validate_config_section(offer_draw_section, 'offer_draw', offer_draw_sections)  
+  
+        return Offer_Draw_Config(offer_draw_section['enabled'],  
+                                 offer_draw_section['score'],  
+                                 offer_draw_section['consecutive_moves'],  
+                                 offer_draw_section['min_game_length'],  
+                                 offer_draw_section['against_humans'],  
+                                 offer_draw_section.get('min_rating'))
 
     @staticmethod
-    def _get_resign_config(resign_section: dict[str, Any]) -> Resign_Config:
-        resign_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["score", int, '"score" must be an integer.'],
-            ["consecutive_moves", int, '"consecutive_moves" must be an integer.'],
-            ["against_humans", bool, '"against_humans" must be a bool.'],
-        ]
-
-        for subsection in resign_sections:
-            if subsection[0] not in resign_section:
-                raise RuntimeError(f"Your config does not have required `resign` subsection `{subsection[0]}`.")
-
-            if not isinstance(resign_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`resign` subsection {subsection[2]}")
-
-        return Resign_Config(
-            resign_section["enabled"],
-            resign_section["score"],
-            resign_section["consecutive_moves"],
-            resign_section["against_humans"],
-            resign_section.get("min_rating"),
-        )
-
+    def _get_resign_config(resign_section: dict[str, Any]) -> Resign_Config:  
+        resign_sections = [  
+            ['enabled', bool, '"enabled" must be a bool.'],  
+            ['score', int, '"score" must be an integer.'],  
+            ['consecutive_moves', int, '"consecutive_moves" must be an integer.'],  
+            ['against_humans', bool, '"against_humans" must be a bool.']]  
+  
+        validate_config_section(resign_section, 'resign', resign_sections)  
+  
+        return Resign_Config(resign_section['enabled'],  
+                             resign_section['score'],  
+                             resign_section['consecutive_moves'],  
+                             resign_section['against_humans'],  
+                             resign_section.get('min_rating'))
     @staticmethod
-    def _get_challenge_config(challenge_section: dict[str, Any]) -> Challenge_Config:
-        challenge_sections = [
-            ["concurrency", int, '"concurrency" must be an integer.'],
-            ["max_takebacks", int, '"max_takebacks" must be an integer.'],
-            ["bullet_with_increment_only", bool, '"bullet_with_increment_only" must be a bool.'],
-            ["variants", list, '"variants" must be a list of variants.'],
-            ["time_controls", list | None, '"time_controls" must be a list of speeds or time controls.'],
-            ["bot_modes", list | None, '"bot_modes" must be a list of game modes.'],
-            ["human_modes", list | None, '"human_modes" must be a list of game modes.'],
-        ]
-
-        for subsection in challenge_sections:
-            if subsection[0] not in challenge_section:
-                raise RuntimeError(f"Your config does not have required `challenge` subsection `{subsection[0]}`.")
-
-            if not isinstance(challenge_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`challenge` subsection {subsection[2]}")
-
-        return Challenge_Config(
-            challenge_section["concurrency"],
-            challenge_section["max_takebacks"],
-            challenge_section["bullet_with_increment_only"],
-            challenge_section.get("min_increment"),
-            challenge_section.get("max_increment"),
-            challenge_section.get("min_initial"),
-            challenge_section.get("max_initial"),
-            challenge_section["variants"],
-            challenge_section["time_controls"] or [],
-            challenge_section["bot_modes"] or [],
-            challenge_section["human_modes"] or [],
-        )
-
+    def _get_challenge_config(challenge_section: dict[str, Any]) -> Challenge_Config:  
+        challenge_sections = [  
+            ['concurrency', int, '"concurrency" must be an integer.'],  
+            ['max_takebacks', int, '"max_takebacks" must be an integer.'],  
+            ['bullet_with_increment_only', bool, '"bullet_with_increment_only" must be a bool.'],  
+            ['variants', list, '"variants" must be a list of variants.'],  
+            ['time_controls', list | None, '"time_controls" must be a list of speeds or time controls.'],  
+            ['bot_modes', list | None, '"bot_modes" must be a list of game modes.'],  
+            ['human_modes', list | None, '"human_modes" must be a list of game modes.']]  
+  
+        validate_config_section(challenge_section, 'challenge', challenge_sections)  
+  
+        return Challenge_Config(challenge_section['concurrency'],  
+                                challenge_section['max_takebacks'],  
+                                challenge_section['bullet_with_increment_only'],  
+                                challenge_section.get('min_increment'),  
+                                challenge_section.get('max_increment'),  
+                                challenge_section.get('min_initial'),  
+                                challenge_section.get('max_initial'),  
+                                challenge_section['variants'],  
+                                challenge_section['time_controls'] or [],  
+                                challenge_section['bot_modes'] or [],  
+                                challenge_section['human_modes'] or [])
     @staticmethod
-    def _get_matchmaking_config(matchmaking_section: dict[str, Any]) -> Matchmaking_Config:
-        matchmaking_sections = [
-            ["delay", int, '"delay" must be an integer.'],
-            ["timeout", int, '"timeout" must be an integer.'],
-            ["selection", str, '"selection" must be one of "weighted_random", "sequential" or "cyclic".'],
-            ["types", dict, '"types" must be a dictionary with indented keys followed by colons.'],
-        ]
-
-        for subsection in matchmaking_sections:
-            if subsection[0] not in matchmaking_section:
-                raise RuntimeError(f"Your config does not have required `matchmaking` subsection `{subsection[0]}`.")
-
-            if not isinstance(matchmaking_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`matchmaking` subsection {subsection[2]}")
-
-        types: dict[str, Matchmaking_Type_Config] = {}
-        for matchmaking_type, matchmaking_options in matchmaking_section["types"].items():
-            if not isinstance(matchmaking_options, dict):
-                raise TypeError(
-                    f'`matchmaking` `types` subsection "{matchmaking_type}" must be a dictionary with '
-                    "indented keys followed by colons."
-                )
-
-            if "tc" not in matchmaking_options:
-                raise RuntimeError(f'Your matchmaking type "{matchmaking_type}" does not have required `tc` field.')
-
-            if not isinstance(matchmaking_options["tc"], str):
-                raise TypeError(
-                    f"`matchmaking` `types` `{matchmaking_type}` field `tc` must be a string in "
-                    "initial_minutes+increment_seconds format."
-                )
-
-            types[matchmaking_type] = Matchmaking_Type_Config(
-                matchmaking_options["tc"],
-                matchmaking_options.get("rated"),
-                matchmaking_options.get("variant"),
-                matchmaking_options.get("weight"),
-                matchmaking_options.get("multiplier"),
-                matchmaking_options.get("min_rating_diff"),
-                matchmaking_options.get("max_rating_diff"),
-            )
-
-        return Matchmaking_Config(
-            matchmaking_section["delay"], matchmaking_section["timeout"], matchmaking_section["selection"], types
-        )
-
+    def _get_matchmaking_config(matchmaking_section: dict[str, Any]) -> Matchmaking_Config:  
+        matchmaking_sections = [  
+            ['delay', int, '"delay" must be an integer.'],  
+            ['timeout', int, '"timeout" must be an integer.'],  
+            ['selection', str, '"selection" must be one of "weighted_random", "sequential" or "cyclic".'],  
+            ['types', dict, '"types" must be a dictionary with indented keys followed by colons.']]  
+  
+        validate_config_section(matchmaking_section, 'matchmaking', matchmaking_sections)  
+  
+        types: dict[str, Matchmaking_Type_Config] = {}  
+        for matchmaking_type, matchmaking_options in matchmaking_section['types'].items():  
+            if not isinstance(matchmaking_options, dict):  
+                raise TypeError(f'`matchmaking` `types` subsection "{matchmaking_type}" must be a dictionary with '  
+                            'indented keys followed by colons.')  
+  
+            if 'tc' not in matchmaking_options:  
+                raise RuntimeError(f'Your matchmaking type "{matchmaking_type}" does not have required `tc` field.')  
+  
+            if not isinstance(matchmaking_options['tc'], str):  
+                raise TypeError(f'`matchmaking` `types` `{matchmaking_type}` field `tc` must be a string in '  
+                            'initial_minutes+increment_seconds format.')  
+  
+            types[matchmaking_type] = Matchmaking_Type_Config(matchmaking_options['tc'],  
+                                                              matchmaking_options.get('rated'),  
+                                                              matchmaking_options.get('variant'),  
+                                                              matchmaking_options.get('weight'),  
+                                                              matchmaking_options.get('multiplier'),  
+                                                              matchmaking_options.get('min_rating_diff'),  
+                                                              matchmaking_options.get('max_rating_diff'))  
+  
+        return Matchmaking_Config(matchmaking_section['delay'],  
+                              matchmaking_section['timeout'],  
+                              matchmaking_section['selection'],  
+                              types)
     @staticmethod
     def _get_messages_config(messages_section: dict[str, str]) -> Messages_Config:
         messages_sections = [
