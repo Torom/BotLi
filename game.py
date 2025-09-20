@@ -6,6 +6,7 @@ from botli_dataclasses import Game_Information
 from chatter import Chatter
 from config import Config
 from lichess_game import Lichess_Game
+from utils import game_print
 
 
 class Game:
@@ -179,4 +180,4 @@ class Game:
         opponents_str = f"{info.white_str} {white_result} - {black_result} {info.black_str}"
         message = (5 * " ").join([info.id_str, opponents_str, message])
 
-        print(f"{message}\n{128 * '‾'}")
+        game_print(f"{message}\n{128 * '‾'}")
