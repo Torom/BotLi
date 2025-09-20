@@ -27,6 +27,7 @@ from config import Config
 from configs import Engine_Config, Syzygy_Config
 from engine import Engine
 from enums import Variant
+from utils import game_print
 
 
 class Lichess_Game:
@@ -156,7 +157,7 @@ class Lichess_Game:
                 self.board.push(move_response.move)
                 await self.engine.start_pondering(self.board)
 
-                print(f"{move_response.public_message} {move_response.private_message}".strip())
+                game_print(f"{move_response.public_message} {move_response.private_message}".strip(), game_id=self.game_info.id_)
                 self.last_message = move_response.public_message
                 self.last_pv = move_response.pv
                 return Lichess_Move(
@@ -171,7 +172,7 @@ class Lichess_Game:
             self.scores.append(info["score"])
 
         message = f"Engine:  {self._format_move(move):14} {self._format_engine_info(info)}"
-        print(message)
+        game_print(message, game_id=self.game_info.id_)
         self.last_message = message
         self.last_pv = info.get("pv", [])
 
@@ -584,7 +585,7 @@ class Lichess_Game:
 
         if response["status"] != "ok":
             if response["status"] != "unknown":
-                print(f"ChessDB: {response['status']}")
+                game_print(f"ChessDB: {response['status']}", game_id=self.game_info.id_)
             self.out_of_chessdb_counter += 1
             return
 
