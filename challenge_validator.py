@@ -48,7 +48,7 @@ class Challenge_Validator:
             print("Neither bots nor humans are allowed according to config.")
             return Decline_Reason.GENERIC
 
-        is_bot: bool = challenge_event["challenger"]["title"] == "BOT"
+        is_bot: bool = challenge_event["challenger"].get("title") == "BOT"
         modes = self.config.challenge.bot_modes if is_bot else self.config.challenge.human_modes
         if modes is None:
             if is_bot:
