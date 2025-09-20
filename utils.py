@@ -1,6 +1,9 @@
 from itertools import cycle
+
 from rich.console import Console
 from rich.text import Text
+
+console = Console()
 
 console = Console()
 
