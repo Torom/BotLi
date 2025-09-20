@@ -154,11 +154,12 @@ class Lichess_Game:
     async def make_move(self) -> Lichess_Move:
         for move_source in self.move_sources:
             if move_response := await move_source():
-                self.board.push(move_response.move)
-                await self.engine.start_pondering(self.board)
-
-                game_print(f"{move_response.public_message} {move_response.private_message}".strip(),
-                           game_id=self.game_info.id_)
+                 self.board.push(move_response.move)
+                 await self.engine.start_pondering(self.board)
+                 game_print(
+                     f"{move_response.public_message} {move_response.private_message}".strip(),
+                     game_id=self.game_info.id_,
+                 )
                 self.last_message = move_response.public_message
                 self.last_pv = move_response.pv
                 return Lichess_Move(
