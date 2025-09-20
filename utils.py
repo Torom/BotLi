@@ -38,6 +38,7 @@ COLORS = ["cyan", "magenta", "green", "yellow", "blue", "bright_white"]
 _color_cycle = cycle(COLORS)
 
 
-def cprint(msg: str) -> None:
+def cprint(*args, **kwargs) -> None:
     color = next(_color_cycle)
-    console.print(f"[{color}]{msg}[/{color}]")
+    msg = " ".join(str(arg) for arg in args)
+    console.print(f"[{color}]{msg}[/{color}]", **kwargs)
