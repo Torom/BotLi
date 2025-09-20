@@ -1,0 +1,34 @@
+name: Ruff
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ruff.yml'
+      - '**.py'
+  pull_request:
+    paths:
+      - '.github/workflows/ruff.yml'
+      - '**.py'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.head_ref }}
+    - uses: astral-sh/ruff-action@v3
+      with:
+        args: '--version'
+    - name: Ruff check
+      run: |
+        ruff check --fix
+    - name: Ruff format
+      run: |
+        ruff format
+    - name: Auto commit changes
+      uses: stefanzweifel/git-auto-commit-action@v6
+      with:
+        commit_message: Automatic ruff linting and formatting

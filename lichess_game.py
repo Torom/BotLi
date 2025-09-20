@@ -156,7 +156,11 @@ class Lichess_Game:
             if move_response := await move_source():
                 self.board.push(move_response.move)
                 await self.engine.start_pondering(self.board)
+
                 game_print(f"{move_response.public_message} {move_response.private_message}".strip(), game_id=self.game_info.id)
+
+
+
                 self.last_message = move_response.public_message
                 self.last_pv = move_response.pv
                 return Lichess_Move(
@@ -171,7 +175,9 @@ class Lichess_Game:
             self.scores.append(info["score"])
 
         message = f"Engine:  {self._format_move(move):14} {self._format_engine_info(info)}"
+
         game_print(message, game_id=self.game_info.id)
+
         self.last_message = message
         self.last_pv = info.get("pv", [])
 
@@ -584,7 +590,11 @@ class Lichess_Game:
 
         if response["status"] != "ok":
             if response["status"] != "unknown":
+
                 game_print(f"ChessDB: {response['status']}", game_id=self.game_info.id)
+
+
+
             self.out_of_chessdb_counter += 1
             return
 

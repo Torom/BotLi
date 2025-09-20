@@ -12,14 +12,14 @@ from exceptions import NoOpponentException
 class Opponents:
     def __init__(self, delay: int, username: str) -> None:
         self.delay = timedelta(seconds=delay)
-        self.matchmaking_file = f'{username}_matchmaking.json'
+        self.matchmaking_file = f"{username}_matchmaking.json"
         self.opponent_dict = self._load(self.matchmaking_file)
         self.busy_bots: list[Bot] = []
         self.last_opponent: tuple[str, Challenge_Color, Matchmaking_Type]
 
-    def get_opponent(self,
-                     online_bots: list[Bot],
-                     matchmaking_type: Matchmaking_Type) -> tuple[Bot, Challenge_Color] | None:
+    def get_opponent(
+        self, online_bots: list[Bot], matchmaking_type: Matchmaking_Type
+    ) -> tuple[Bot, Challenge_Color] | None:
         for bot in self._filter_bots(online_bots, matchmaking_type):
             if bot in self.busy_bots:
                 continue
@@ -43,8 +43,8 @@ class Opponents:
         else:
             data.release_time = datetime.now() + timeout
 
-        release_str = data.release_time.isoformat(sep=' ', timespec='seconds')
-        print(f'{username} will not be challenged to a new game pair before {release_str}.')
+        release_str = data.release_time.isoformat(sep=" ", timespec="seconds")
+        print(f"{username} will not be challenged to a new game pair before {release_str}.")
 
         if success and color == Challenge_Color.WHITE:
             data.color = Challenge_Color.BLACK
@@ -85,7 +85,7 @@ class Opponents:
         if not os.path.isfile(matchmaking_file):
             return defaultdict(lambda: defaultdict(Matchmaking_Data))
 
-        with open(matchmaking_file, encoding='utf-8') as file:
+        with open(matchmaking_file, encoding="utf-8") as file:
             try:
                 dict_ = json.load(file)
                 if isinstance(dict_, list):
@@ -96,27 +96,35 @@ class Opponents:
                 return defaultdict(lambda: defaultdict(Matchmaking_Data))
 
             except PermissionError:
-                print('Loading the matchmaking file failed due to missing read permissions.')
+                print("Loading the matchmaking file failed due to missing read permissions.")
                 return defaultdict(lambda: defaultdict(Matchmaking_Data))
 
-            return defaultdict(lambda: defaultdict(Matchmaking_Data),
-                               {username:
-                                defaultdict(Matchmaking_Data,
-                                            {Perf_Type(perf_type):
-                                             Matchmaking_Data.from_dict(matchmaking_dict)
-                                             for perf_type,
-                                             matchmaking_dict in perf_types.items()})
-                                for username,
-                                perf_types in dict_.items()})
+            return defaultdict(
+                lambda: defaultdict(Matchmaking_Data),
+                {
+                    username: defaultdict(
+                        Matchmaking_Data,
+                        {
+                            Perf_Type(perf_type): Matchmaking_Data.from_dict(matchmaking_dict)
+                            for perf_type, matchmaking_dict in perf_types.items()
+                        },
+                    )
+                    for username, perf_types in dict_.items()
+                },
+            )
 
     def _min_opponent_dict(self) -> dict[str, dict[Perf_Type, dict[str, Any]]]:
-        return {username: user_dict
-                for username, perf_types
-                in self.opponent_dict.items()
-                if (user_dict := {perf_type: matchmaking_dict
-                                  for perf_type, matchmaking_data
-                                  in perf_types.items()
-                                  if (matchmaking_dict := matchmaking_data.to_dict())})}
+        return {
+            username: user_dict
+            for username, perf_types in self.opponent_dict.items()
+            if (
+                user_dict := {
+                    perf_type: matchmaking_dict
+                    for perf_type, matchmaking_data in perf_types.items()
+                    if (matchmaking_dict := matchmaking_data.to_dict())
+                }
+            )
+        }
 
     def _save(self, matchmaking_file: str) -> None:
         min_opponent_dict = self._min_opponent_dict()
@@ -124,27 +132,27 @@ class Opponents:
             return
 
         try:
-            with open(matchmaking_file, 'w', encoding='utf-8') as json_output:
+            with open(matchmaking_file, "w", encoding="utf-8") as json_output:
                 json.dump(min_opponent_dict, json_output)
         except PermissionError:
-            print('Saving the matchmaking file failed due to missing write permissions.')
+            print("Saving the matchmaking file failed due to missing write permissions.")
 
-    def _update_format(self,
-                       list_format: list[dict[str, Any]]
-                       ) -> defaultdict[str, defaultdict[Perf_Type, Matchmaking_Data]]:
-        dict_format: defaultdict[str,
-                                 defaultdict[Perf_Type,
-                                             Matchmaking_Data]] = defaultdict(lambda: defaultdict(Matchmaking_Data))
+    def _update_format(
+        self, list_format: list[dict[str, Any]]
+    ) -> defaultdict[str, defaultdict[Perf_Type, Matchmaking_Data]]:
+        dict_format: defaultdict[str, defaultdict[Perf_Type, Matchmaking_Data]] = defaultdict(
+            lambda: defaultdict(Matchmaking_Data)
+        )
         for old_dict in list_format:
-            username = old_dict.pop('username')
+            username = old_dict.pop("username")
 
             perf_types: defaultdict[Perf_Type, Matchmaking_Data] = defaultdict(Matchmaking_Data)
             for perf_type, value in old_dict.items():
-                release_time = (datetime.fromisoformat(value['release_time'])
-                                if 'release_time' in value
-                                else datetime.now())
-                multiplier = value.get('multiplier', 1)
-                color = Challenge_Color(value['color']) if 'color' in value else Challenge_Color.WHITE
+                release_time = (
+                    datetime.fromisoformat(value["release_time"]) if "release_time" in value else datetime.now()
+                )
+                multiplier = value.get("multiplier", 1)
+                color = Challenge_Color(value["color"]) if "color" in value else Challenge_Color.WHITE
 
                 perf_types[Perf_Type(perf_type)] = Matchmaking_Data(release_time, multiplier, color)
 

@@ -9,6 +9,7 @@ ______       _   _     _
 | |_/ / (_) | |_| |___| |
 \____/ \___/ \__\_____/_|"""
 
+
 def show_logo(version: str | None = None):
     colors = ["magenta", "cyan", "green", "yellow", "blue", "red"]
     for i, line in enumerate(LOGO.splitlines()):
@@ -21,3 +22,4 @@ def show_logo(version: str | None = None):
     if version:
         tagline.append(f" • {version}", style="cyan")
     console.print(tagline, justify="center")
+
