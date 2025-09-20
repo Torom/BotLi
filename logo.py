@@ -16,6 +16,7 @@ ______       _   _     _
 _COLORS = ["magenta", "cyan", "green", "yellow", "blue", "red"]
 _color_cycle = cycle(_COLORS)
 
+
 def show_logo(text: str, version: str | None = None, **kwargs):
     for line in text.splitlines():
         if line.strip():
