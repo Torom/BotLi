@@ -26,6 +26,7 @@ from configs import (
     Resign_Config,
     Syzygy_Config,
 )
+from utils import validate_config_section
 
 
 @dataclass
@@ -457,12 +458,7 @@ class Config:
             ["against_humans", bool, '"against_humans" must be a bool.'],
         ]
 
-        for subsection in offer_draw_sections:
-            if subsection[0] not in offer_draw_section:
-                raise RuntimeError(f"Your config does not have required `offer_draw` subsection `{subsection[0]}`.")
-
-            if not isinstance(offer_draw_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`offer_draw` subsection {subsection[2]}")
+        validate_config_section(offer_draw_section, "offer_draw", offer_draw_sections)
 
         return Offer_Draw_Config(
             offer_draw_section["enabled"],
@@ -482,12 +478,7 @@ class Config:
             ["against_humans", bool, '"against_humans" must be a bool.'],
         ]
 
-        for subsection in resign_sections:
-            if subsection[0] not in resign_section:
-                raise RuntimeError(f"Your config does not have required `resign` subsection `{subsection[0]}`.")
-
-            if not isinstance(resign_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`resign` subsection {subsection[2]}")
+        validate_config_section(resign_section, "resign", resign_sections)
 
         return Resign_Config(
             resign_section["enabled"],
@@ -509,12 +500,7 @@ class Config:
             ["human_modes", list | None, '"human_modes" must be a list of game modes.'],
         ]
 
-        for subsection in challenge_sections:
-            if subsection[0] not in challenge_section:
-                raise RuntimeError(f"Your config does not have required `challenge` subsection `{subsection[0]}`.")
-
-            if not isinstance(challenge_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`challenge` subsection {subsection[2]}")
+        validate_config_section(challenge_section, "challenge", challenge_sections)
 
         return Challenge_Config(
             challenge_section["concurrency"],
@@ -539,12 +525,7 @@ class Config:
             ["types", dict, '"types" must be a dictionary with indented keys followed by colons.'],
         ]
 
-        for subsection in matchmaking_sections:
-            if subsection[0] not in matchmaking_section:
-                raise RuntimeError(f"Your config does not have required `matchmaking` subsection `{subsection[0]}`.")
-
-            if not isinstance(matchmaking_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`matchmaking` subsection {subsection[2]}")
+        validate_config_section(matchmaking_section, "matchmaking", matchmaking_sections)
 
         types: dict[str, Matchmaking_Type_Config] = {}
         for matchmaking_type, matchmaking_options in matchmaking_section["types"].items():
