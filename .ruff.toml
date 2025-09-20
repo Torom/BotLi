@@ -3,8 +3,8 @@ line-length = 120
 target-version = "py311"
 
 [lint]
-select = ["ARG", "ASYNC", "B", "C4", "E", "F", "FIX", "FURB", "I", "PERF", "PIE", "PL", "RUF", "SIM", "SLF", "UP", "W"]
-ignore = ["ASYNC109", "PLR2004", "SIM102", "SIM103"]
+select = ["ARG", "ASYNC", "B", "C4", "E", "F", "FIX", "FURB", "I", "PERF", "PIE", "PL", "RET", "RUF", "SIM", "SLF", "UP", "W"]
+ignore = ["ASYNC109", "PLR2004", "RET502", "RET503", "SIM102", "SIM103"]
 
 fixable = ["ALL"]
 unfixable = []
@@ -15,7 +15,7 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 max-args = 10
 max-statements = 100
 max-returns = 24
-max-branches=24
+max-branches = 24
 
 [format]
 quote-style = "double"
