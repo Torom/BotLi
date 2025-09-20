@@ -23,7 +23,7 @@ def show_logo(text: str, version: str | None = None, **kwargs):
             console.print(Text(line, style=next(_color_cycle)), **kwargs)
         else:
             console.print()
-    tagline = Text("BotLi", style="bold magenta")
+    tagline = Text("BotLi", style="bold magenta", justify="center")
     if version:
         tagline.append(f" • {version}", style="cyan")
-    console.print(tagline, **kwargs, justify="center")
+    console.print(tagline, **kwargs)
