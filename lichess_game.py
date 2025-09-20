@@ -169,7 +169,7 @@ class Lichess_Game:
                 )
 
         move, info = await self.engine.make_move(self.board, *self.engine_times)
-        
+
         if "score" in info:
             self.scores.append(info["score"])
 
