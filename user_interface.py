@@ -14,8 +14,8 @@ from engine import Engine
 from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
-from logo import LOGO
-from utils import parse_time_control, show_logo
+from logo import LOGO, show_logo
+from utils import parse_time_control
 
 try:
     import readline
