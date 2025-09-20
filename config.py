@@ -53,9 +53,7 @@ class Config:
             try:
                 yaml_config = yaml.safe_load(yaml_input)
             except Exception as e:
-                print(
-                    f"There appears to be a syntax problem with your {yaml_path}",
-                    file=sys.stderr)
+                print(f"There appears to be a syntax problem with your {yaml_path}", file=sys.stderr)
                 raise e
 
         if not yaml_config.get("token") and "LICHESS_BOT_TOKEN" in os.environ:
@@ -67,20 +65,14 @@ class Config:
         syzygy_config = cls._get_syzygy_configs(yaml_config["syzygy"])
         gaviota_config = cls._get_gaviota_config(yaml_config["gaviota"])
         opening_books_config = cls._get_opening_books_config(yaml_config)
-        online_moves_config = cls._get_online_moves_config(
-            yaml_config["online_moves"])
-        offer_draw_config = cls._get_offer_draw_config(
-            yaml_config["offer_draw"])
+        online_moves_config = cls._get_online_moves_config(yaml_config["online_moves"])
+        offer_draw_config = cls._get_offer_draw_config(yaml_config["offer_draw"])
         resign_config = cls._get_resign_config(yaml_config["resign"])
         challenge_config = cls._get_challenge_config(yaml_config["challenge"])
-        matchmaking_config = cls._get_matchmaking_config(
-            yaml_config["matchmaking"])
-        messages_config = cls._get_messages_config(
-            yaml_config["messages"] or {})
-        whitelist = [username.lower()
-                     for username in yaml_config.get("whitelist") or []]
-        blacklist = [username.lower()
-                     for username in yaml_config.get("blacklist") or []]
+        matchmaking_config = cls._get_matchmaking_config(yaml_config["matchmaking"])
+        messages_config = cls._get_messages_config(yaml_config["messages"] or {})
+        whitelist = [username.lower() for username in yaml_config.get("whitelist") or []]
+        blacklist = [username.lower() for username in yaml_config.get("blacklist") or []]
 
         return cls(
             yaml_config.get("url", "https://lichess.org"),
@@ -129,16 +121,13 @@ class Config:
         ]
         for section in sections:
             if section[0] not in config:
-                raise RuntimeError(
-                    f"Your config does not have required section `{
-                        section[0]}`.")
+                raise RuntimeError(f"Your config does not have required section `{section[0]}`.")
 
             if not isinstance(config[section[0]], section[1]):
                 raise TypeError(section[2])
 
     @staticmethod
-    def _get_engine_configs(
-            engines_section: dict[str, dict[str, Any]]) -> dict[str, Engine_Config]:
+    def _get_engine_configs(engines_section: dict[str, dict[str, Any]]) -> dict[str, Engine_Config]:
         engines_sections = [
             ["dir", str, '"dir" must be a string wrapped in quotes.'],
             ["name", str, '"name" must be a string wrapped in quotes.'],
@@ -153,26 +142,18 @@ class Config:
         for key, settings in engines_section.items():
             for subsection in engines_sections:
                 if subsection[0] not in settings:
-                    raise RuntimeError(
-                        f'Your "{key}" engine does not have required field `{
-                            subsection[0]}`.')
+                    raise RuntimeError(f'Your "{key}" engine does not have required field `{subsection[0]}`.')
 
                 if not isinstance(settings[subsection[0]], subsection[1]):
-                    raise TypeError(
-                        f"`engines` `{key}` subsection {
-                            subsection[2]}")
+                    raise TypeError(f"`engines` `{key}` subsection {subsection[2]}")
 
             if not os.path.isdir(settings["dir"]):
-                raise RuntimeError(
-                    f'Your engine dir "{
-                        settings["dir"]}" is not a directory.')
+                raise RuntimeError(f'Your engine dir "{settings["dir"]}" is not a directory.')
 
             settings["path"] = os.path.join(settings["dir"], settings["name"])
 
             if not os.path.isfile(settings["path"]):
-                raise RuntimeError(
-                    f'The engine "{
-                        settings["path"]}" file does not exist.')
+                raise RuntimeError(f'The engine "{settings["path"]}" file does not exist.')
 
             if not os.access(settings["path"], os.X_OK):
                 raise RuntimeError(
@@ -188,17 +169,13 @@ class Config:
                 settings["silence_stderr"],
                 settings["move_overhead_multiplier"],
                 settings["uci_options"] or {},
-                Limit_Config(
-                    limits_settings.get("time"),
-                    limits_settings.get("depth"),
-                    limits_settings.get("nodes")),
+                Limit_Config(limits_settings.get("time"), limits_settings.get("depth"), limits_settings.get("nodes")),
             )
 
         return engine_configs
 
     @staticmethod
-    def _get_syzygy_configs(
-            syzygy_section: dict[str, dict[str, Any]]) -> dict[str, Syzygy_Config]:
+    def _get_syzygy_configs(syzygy_section: dict[str, dict[str, Any]]) -> dict[str, Syzygy_Config]:
         syzygy_sections = [
             ["enabled", bool, '"enabled" must be a bool.'],
             ["paths", list, '"paths" must be a list.'],
@@ -211,13 +188,11 @@ class Config:
             for subsection in syzygy_sections:
                 if subsection[0] not in settings:
                     raise RuntimeError(
-                        f"Your config does not have required `syzygy` `{key}` subsection `{
-                            subsection[0]}`.")
+                        f"Your config does not have required `syzygy` `{key}` subsection `{subsection[0]}`."
+                    )
 
                 if not isinstance(settings[subsection[0]], subsection[1]):
-                    raise TypeError(
-                        f"`syzygy` `{key}` subsection {
-                            subsection[2]}")
+                    raise TypeError(f"`syzygy` `{key}` subsection {subsection[2]}")
 
             if not settings["enabled"]:
                 syzygy_configs[key] = Syzygy_Config(False, [], 0, False)
@@ -225,14 +200,11 @@ class Config:
 
             for path in settings["paths"]:
                 if not os.path.isdir(path):
-                    raise RuntimeError(
-                        f'Your {key} syzygy path "{path}" is not a directory.')
+                    raise RuntimeError(f'Your {key} syzygy path "{path}" is not a directory.')
 
             syzygy_configs[key] = Syzygy_Config(
-                settings["enabled"],
-                settings["paths"],
-                settings["max_pieces"],
-                settings["instant_play"])
+                settings["enabled"], settings["paths"], settings["max_pieces"], settings["instant_play"]
+            )
 
         return syzygy_configs
 
@@ -246,9 +218,7 @@ class Config:
 
         for subsection in gaviota_sections:
             if subsection[0] not in gaviota_section:
-                raise RuntimeError(
-                    f"Your config does not have required `gaviota` subsection `{
-                        subsection[0]}`.")
+                raise RuntimeError(f"Your config does not have required `gaviota` subsection `{subsection[0]}`.")
 
             if not isinstance(gaviota_section[subsection[0]], subsection[1]):
                 raise TypeError(f"`gaviota` subsection {subsection[2]}")
@@ -256,17 +226,12 @@ class Config:
         if gaviota_section["enabled"]:
             for path in gaviota_section["paths"]:
                 if not os.path.isdir(path):
-                    raise RuntimeError(
-                        f'Your gaviota directory "{path}" is not a directory.')
+                    raise RuntimeError(f'Your gaviota directory "{path}" is not a directory.')
 
-        return Gaviota_Config(
-            gaviota_section["enabled"],
-            gaviota_section["paths"],
-            gaviota_section["max_pieces"])
+        return Gaviota_Config(gaviota_section["enabled"], gaviota_section["paths"], gaviota_section["max_pieces"])
 
     @staticmethod
-    def _get_opening_books_config(
-            config: dict[str, Any]) -> Opening_Books_Config:
+    def _get_opening_books_config(config: dict[str, Any]) -> Opening_Books_Config:
         opening_books_sections = [
             ["enabled", bool, '"enabled" must be a bool.'],
             ["priority", int, '"priority" must be an integer.'],
@@ -275,12 +240,9 @@ class Config:
 
         for subsection in opening_books_sections:
             if subsection[0] not in config["opening_books"]:
-                raise RuntimeError(
-                    f"Your config does not have required `opening_books` subsection `{
-                        subsection[0]}`.")
+                raise RuntimeError(f"Your config does not have required `opening_books` subsection `{subsection[0]}`.")
 
-            if not isinstance(config["opening_books"]
-                              [subsection[0]], subsection[1]):
+            if not isinstance(config["opening_books"][subsection[0]], subsection[1]):
                 raise TypeError(f"`opening_books` subsection {subsection[2]}")
 
         if not config["opening_books"]["enabled"]:
@@ -301,28 +263,21 @@ class Config:
                     )
 
                 if not isinstance(settings[subsection[0]], subsection[1]):
-                    raise TypeError(
-                        f"`opening_books` `books` `{section}` field {
-                            subsection[2]}")
+                    raise TypeError(f"`opening_books` `books` `{section}` field {subsection[2]}")
 
             names: dict[str, str] = {}
             for book_name in settings["names"]:
                 if book_name not in config["books"]:
-                    raise RuntimeError(
-                        f'The book "{book_name}" is not defined in the books section.')
+                    raise RuntimeError(f'The book "{book_name}" is not defined in the books section.')
 
                 if not os.path.isfile(config["books"][book_name]):
-                    raise RuntimeError(
-                        f'The book "{book_name}" at "{
-                            config["books"][book_name]}" does not exist.')
+                    raise RuntimeError(f'The book "{book_name}" at "{config["books"][book_name]}" does not exist.')
 
                 names[book_name] = config["books"][book_name]
 
             books[section] = Books_Config(
-                settings["selection"],
-                settings.get("max_depth"),
-                settings.get("allow_repetitions"),
-                names)
+                settings["selection"], settings.get("max_depth"), settings.get("allow_repetitions"), names
+            )
 
         return Opening_Books_Config(
             config["opening_books"]["enabled"],
@@ -332,8 +287,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_opening_explorer_config(
-            opening_explorer_section: dict[str, Any]) -> Opening_Explorer_Config:
+    def _get_opening_explorer_config(opening_explorer_section: dict[str, Any]) -> Opening_Explorer_Config:
         opening_explorer_sections = [
             ["enabled", bool, '"enabled" must be a bool.'],
             ["priority", int, '"priority" must be an integer.'],
@@ -351,14 +305,11 @@ class Config:
         for subsection in opening_explorer_sections:
             if subsection[0] not in opening_explorer_section:
                 raise RuntimeError(
-                    f"Your config does not have required `online_moves` `opening_explorer` field `{
-                        subsection[0]}`.")
+                    f"Your config does not have required `online_moves` `opening_explorer` field `{subsection[0]}`."
+                )
 
-            if not isinstance(
-                    opening_explorer_section[subsection[0]], subsection[1]):
-                raise TypeError(
-                    f"`online_moves` `opening_explorer` field {
-                        subsection[2]}")
+            if not isinstance(opening_explorer_section[subsection[0]], subsection[1]):
+                raise TypeError(f"`online_moves` `opening_explorer` field {subsection[2]}")
 
         return Opening_Explorer_Config(
             opening_explorer_section["enabled"],
@@ -378,8 +329,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_lichess_cloud_config(
-            lichess_cloud_section: dict[str, Any]) -> Lichess_Cloud_Config:
+    def _get_lichess_cloud_config(lichess_cloud_section: dict[str, Any]) -> Lichess_Cloud_Config:
         lichess_cloud_sections = [
             ["enabled", bool, '"enabled" must be a bool.'],
             ["priority", int, '"priority" must be an integer.'],
@@ -395,14 +345,11 @@ class Config:
         for subsection in lichess_cloud_sections:
             if subsection[0] not in lichess_cloud_section:
                 raise RuntimeError(
-                    f"Your config does not have required `online_moves` `lichess_cloud` field `{
-                        subsection[0]}`.")
+                    f"Your config does not have required `online_moves` `lichess_cloud` field `{subsection[0]}`."
+                )
 
-            if not isinstance(
-                    lichess_cloud_section[subsection[0]], subsection[1]):
-                raise TypeError(
-                    f"`online_moves` `lichess_cloud` field {
-                        subsection[2]}")
+            if not isinstance(lichess_cloud_section[subsection[0]], subsection[1]):
+                raise TypeError(f"`online_moves` `lichess_cloud` field {subsection[2]}")
 
         return Lichess_Cloud_Config(
             lichess_cloud_section["enabled"],
@@ -434,13 +381,11 @@ class Config:
         for subsection in chessdb_sections:
             if subsection[0] not in chessdb_section:
                 raise RuntimeError(
-                    f"Your config does not have required `online_moves` `chessdb` field `{
-                        subsection[0]}`.")
+                    f"Your config does not have required `online_moves` `chessdb` field `{subsection[0]}`."
+                )
 
             if not isinstance(chessdb_section[subsection[0]], subsection[1]):
-                raise TypeError(
-                    f"`online_moves` `chessdb` field {
-                        subsection[2]}")
+                raise TypeError(f"`online_moves` `chessdb` field {subsection[2]}")
 
         return ChessDB_Config(
             chessdb_section["enabled"],
@@ -456,8 +401,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_online_egtb_config(
-            online_egtb_section: dict[str, Any]) -> Online_EGTB_Config:
+    def _get_online_egtb_config(online_egtb_section: dict[str, Any]) -> Online_EGTB_Config:
         online_egtb_sections = [
             ["enabled", bool, '"enabled" must be a bool.'],
             ["min_time", int, '"min_time" must be an integer.'],
@@ -467,23 +411,18 @@ class Config:
         for subsection in online_egtb_sections:
             if subsection[0] not in online_egtb_section:
                 raise RuntimeError(
-                    f"Your config does not have required `online_moves` `online_egtb` field `{
-                        subsection[0]}`.")
+                    f"Your config does not have required `online_moves` `online_egtb` field `{subsection[0]}`."
+                )
 
-            if not isinstance(
-                    online_egtb_section[subsection[0]], subsection[1]):
-                raise TypeError(
-                    f"`online_moves` `online_egtb` field {
-                        subsection[2]}")
+            if not isinstance(online_egtb_section[subsection[0]], subsection[1]):
+                raise TypeError(f"`online_moves` `online_egtb` field {subsection[2]}")
 
         return Online_EGTB_Config(
-            online_egtb_section["enabled"],
-            online_egtb_section["min_time"],
-            online_egtb_section["timeout"])
+            online_egtb_section["enabled"], online_egtb_section["min_time"], online_egtb_section["timeout"]
+        )
 
     @staticmethod
-    def _get_online_moves_config(
-            online_moves_section: dict[str, dict[str, Any]]) -> Online_Moves_Config:
+    def _get_online_moves_config(online_moves_section: dict[str, dict[str, Any]]) -> Online_Moves_Config:
         online_moves_sections = [
             [
                 "opening_explorer",
@@ -497,24 +436,20 @@ class Config:
 
         for subsection in online_moves_sections:
             if subsection[0] not in online_moves_section:
-                raise RuntimeError(
-                    f"Your config does not have required `online_moves` subsection `{
-                        subsection[0]}`.")
+                raise RuntimeError(f"Your config does not have required `online_moves` subsection `{subsection[0]}`.")
 
-            if not isinstance(
-                    online_moves_section[subsection[0]], subsection[1]):
+            if not isinstance(online_moves_section[subsection[0]], subsection[1]):
                 raise TypeError(f"`online_moves` subsection {subsection[2]}")
 
         return Online_Moves_Config(
-            Config._get_opening_explorer_config(
-                online_moves_section["opening_explorer"]), Config._get_lichess_cloud_config(
-                online_moves_section["lichess_cloud"]), Config._get_chessdb_config(
-                online_moves_section["chessdb"]), Config._get_online_egtb_config(
-                    online_moves_section["online_egtb"]), )
+            Config._get_opening_explorer_config(online_moves_section["opening_explorer"]),
+            Config._get_lichess_cloud_config(online_moves_section["lichess_cloud"]),
+            Config._get_chessdb_config(online_moves_section["chessdb"]),
+            Config._get_online_egtb_config(online_moves_section["online_egtb"]),
+        )
 
     @staticmethod
-    def _get_offer_draw_config(
-            offer_draw_section: dict[str, Any]) -> Offer_Draw_Config:
+    def _get_offer_draw_config(offer_draw_section: dict[str, Any]) -> Offer_Draw_Config:
         offer_draw_sections = [
             ["enabled", bool, '"enabled" must be a bool.'],
             ["score", int, '"score" must be an integer.'],
@@ -523,10 +458,7 @@ class Config:
             ["against_humans", bool, '"against_humans" must be a bool.'],
         ]
 
-        validate_config_section(
-            offer_draw_section,
-            "offer_draw",
-            offer_draw_sections)
+        validate_config_section(offer_draw_section, "offer_draw", offer_draw_sections)
 
         return Offer_Draw_Config(
             offer_draw_section["enabled"],
@@ -557,8 +489,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_challenge_config(
-            challenge_section: dict[str, Any]) -> Challenge_Config:
+    def _get_challenge_config(challenge_section: dict[str, Any]) -> Challenge_Config:
         challenge_sections = [
             ["concurrency", int, '"concurrency" must be an integer.'],
             ["max_takebacks", int, '"max_takebacks" must be an integer.'],
@@ -569,10 +500,7 @@ class Config:
             ["human_modes", list | None, '"human_modes" must be a list of game modes.'],
         ]
 
-        validate_config_section(
-            challenge_section,
-            "challenge",
-            challenge_sections)
+        validate_config_section(challenge_section, "challenge", challenge_sections)
 
         return Challenge_Config(
             challenge_section["concurrency"],
@@ -589,8 +517,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_matchmaking_config(
-            matchmaking_section: dict[str, Any]) -> Matchmaking_Config:
+    def _get_matchmaking_config(matchmaking_section: dict[str, Any]) -> Matchmaking_Config:
         matchmaking_sections = [
             ["delay", int, '"delay" must be an integer.'],
             ["timeout", int, '"timeout" must be an integer.'],
@@ -598,14 +525,10 @@ class Config:
             ["types", dict, '"types" must be a dictionary with indented keys followed by colons.'],
         ]
 
-        validate_config_section(
-            matchmaking_section,
-            "matchmaking",
-            matchmaking_sections)
+        validate_config_section(matchmaking_section, "matchmaking", matchmaking_sections)
 
         types: dict[str, Matchmaking_Type_Config] = {}
-        for matchmaking_type, matchmaking_options in matchmaking_section["types"].items(
-        ):
+        for matchmaking_type, matchmaking_options in matchmaking_section["types"].items():
             if not isinstance(matchmaking_options, dict):
                 raise TypeError(
                     f'`matchmaking` `types` subsection "{matchmaking_type}" must be a dictionary with '
@@ -613,8 +536,7 @@ class Config:
                 )
 
             if "tc" not in matchmaking_options:
-                raise RuntimeError(
-                    f'Your matchmaking type "{matchmaking_type}" does not have required `tc` field.')
+                raise RuntimeError(f'Your matchmaking type "{matchmaking_type}" does not have required `tc` field.')
 
             if not isinstance(matchmaking_options["tc"], str):
                 raise TypeError(
@@ -633,14 +555,11 @@ class Config:
             )
 
         return Matchmaking_Config(
-            matchmaking_section["delay"],
-            matchmaking_section["timeout"],
-            matchmaking_section["selection"],
-            types)
+            matchmaking_section["delay"], matchmaking_section["timeout"], matchmaking_section["selection"], types
+        )
 
     @staticmethod
-    def _get_messages_config(
-            messages_section: dict[str, str]) -> Messages_Config:
+    def _get_messages_config(messages_section: dict[str, str]) -> Messages_Config:
         messages_sections = [
             ["greeting", str, '"greeting" must be a string wrapped in quotes.'],
             ["goodbye", str, '"goodbye" must be a string wrapped in quotes.'],
@@ -650,14 +569,11 @@ class Config:
 
         for subsection in messages_sections:
             if subsection[0] in messages_section:
-                if not isinstance(
-                        messages_section[subsection[0]], subsection[1]):
+                if not isinstance(messages_section[subsection[0]], subsection[1]):
                     raise TypeError(f"`messages` subsection {subsection[2]}")
 
                 if messages_section[subsection[0]].strip() == "!printeval":
-                    print(
-                        f'Ignoring message "{
-                            subsection[0]}": "!printeval" is not allowed in messages.')
+                    print(f'Ignoring message "{subsection[0]}": "!printeval" is not allowed in messages.')
                     del messages_section[messages_section[subsection[0]]]
 
         return Messages_Config(
@@ -670,16 +586,11 @@ class Config:
     @staticmethod
     def _get_version() -> str:
         try:
-            output = subprocess.check_output(["git",
-                                              "show",
-                                              "-s",
-                                              "--date=format:%Y%m%d",
-                                              "--format=%cd",
-                                              "HEAD"],
-                                             stderr=subprocess.DEVNULL)
-            commit_date = output.decode("utf-8").strip()
             output = subprocess.check_output(
-                ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL)
+                ["git", "show", "-s", "--date=format:%Y%m%d", "--format=%cd", "HEAD"], stderr=subprocess.DEVNULL
+            )
+            commit_date = output.decode("utf-8").strip()
+            output = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL)
             commit_SHA = output.decode("utf-8").strip()[:7]
             return f"{commit_date}-{commit_SHA}"
         except (FileNotFoundError, subprocess.CalledProcessError):

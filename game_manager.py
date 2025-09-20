@@ -82,17 +82,14 @@ class Game_Manager:
 
     @property
     def is_busy(self) -> bool:
-        return len(self.tasks) + len(self.tournaments) + \
-            self.reserved_game_spots >= self.config.challenge.concurrency
+        return len(self.tasks) + len(self.tournaments) + self.reserved_game_spots >= self.config.challenge.concurrency
 
     def add_challenge(self, challenge: Challenge) -> None:
         if challenge not in self.open_challenges:
             self.open_challenges.append(challenge)
             self.changed_event.set()
 
-    def request_challenge(
-            self,
-            *challenge_requests: Challenge_Request) -> None:
+    def request_challenge(self, *challenge_requests: Challenge_Request) -> None:
         self.challenge_requests.extend(challenge_requests)
         self.changed_event.set()
 
@@ -102,8 +99,7 @@ class Game_Manager:
             self.changed_event.set()
 
     def on_game_started(self, game_event: dict[str, Any]) -> None:
-        if game_event["id"] in {started_game_event["id"]
-                                for started_game_event in self.started_game_events}:
+        if game_event["id"] in {started_game_event["id"] for started_game_event in self.started_game_events}:
             return
 
         if game_event["id"] in {game.game_id for game in self.tasks.values()}:
@@ -126,30 +122,22 @@ class Game_Manager:
         self.changed_event.set()
         return True
 
-    def request_tournament_joining(
-            self,
-            tournament_id: str,
-            team: str | None,
-            password: str | None) -> None:
-        self.tournament_requests.append(
-            Tournament_Request(
-                tournament_id, team, password))
+    def request_tournament_joining(self, tournament_id: str, team: str | None, password: str | None) -> None:
+        self.tournament_requests.append(Tournament_Request(tournament_id, team, password))
         self.changed_event.set()
 
     def request_tournament_leaving(self, tournament_id: str) -> None:
         self.tournament_ids_to_leave.append(tournament_id)
         self.changed_event.set()
 
-    async def _process_tournament_request(
-            self, tournament_request: Tournament_Request) -> None:
+    async def _process_tournament_request(self, tournament_request: Tournament_Request) -> None:
         if tournament_request.id_ in self.unstarted_tournaments:
             return
 
         if tournament_request.id_ in self.tournaments:
             return
 
-        if tournament_request.id_ in {
-                tournament.id_ for tournament in self.tournaments_to_join}:
+        if tournament_request.id_ in {tournament.id_ for tournament in self.tournaments_to_join}:
             return
 
         tournament_info = await self.api.get_tournament_info(tournament_request.id_)
@@ -169,12 +157,9 @@ class Game_Manager:
             self.tournaments_to_join.append(tournament)
             return
 
-        tournament.start_task = asyncio.create_task(
-            self._tournament_start_task(tournament))
+        tournament.start_task = asyncio.create_task(self._tournament_start_task(tournament))
         self.unstarted_tournaments[tournament.id_] = tournament
-        print(
-            f'Added tournament "{
-                tournament.name}". Waiting for its start time to join.')
+        print(f'Added tournament "{tournament.name}". Waiting for its start time to join.')
 
     async def _join_tournament(self, tournament: Tournament) -> None:
         if tournament.seconds_to_finish <= 0.0:
@@ -182,8 +167,7 @@ class Game_Manager:
             return
 
         if await self.api.join_tournament(tournament.id_, tournament.team, tournament.password):
-            tournament.end_task = asyncio.create_task(
-                self._tournament_end_task(tournament))
+            tournament.end_task = asyncio.create_task(self._tournament_end_task(tournament))
             self.tournaments[tournament.id_] = tournament
             print(f'Joined tournament "{tournament.name}". Awaiting games ...')
 
@@ -239,9 +223,7 @@ class Game_Manager:
         if game.ejected_tournament in self.tournaments:
             self.tournaments[game.ejected_tournament].cancel()
             del self.tournaments[game.ejected_tournament]
-            print(
-                f'Ignoring tournament "{
-                    game.ejected_tournament}" after failure to start the game.')
+            print(f'Ignoring tournament "{game.ejected_tournament}" after failure to start the game.')
 
         self._set_next_matchmaking(self.config.matchmaking.delay)
         self.changed_event.set()
@@ -253,8 +235,7 @@ class Game_Manager:
         if "tournamentId" in game_event and game_event["tournamentId"] not in self.tournaments:
             tournament_info = await self.api.get_tournament_info(game_event["tournamentId"])
             tournament = Tournament.from_tournament_info(tournament_info)
-            tournament.end_task = asyncio.create_task(
-                self._tournament_end_task(tournament))
+            tournament.end_task = asyncio.create_task(self._tournament_end_task(tournament))
             self.tournaments[tournament.id_] = tournament
             print(f'External joined tournament "{tournament.name}" detected.')
 
@@ -322,8 +303,7 @@ class Game_Manager:
             return
 
         if len(self.tasks) >= self.config.challenge.concurrency:
-            print(
-                "Max number of concurrent games exceeded. Ignoring already started game for now.")
+            print("Max number of concurrent games exceeded. Ignoring already started game for now.")
             return
 
         return self.started_game_events.popleft()
@@ -337,8 +317,7 @@ class Game_Manager:
 
         return self.tournaments_to_join.popleft()
 
-    async def _create_challenge(
-            self, challenge_request: Challenge_Request) -> None:
+    async def _create_challenge(self, challenge_request: Challenge_Request) -> None:
         print(f"Challenging {challenge_request.opponent_username} ...")
         response = await self.challenger.create(challenge_request)
 
@@ -348,8 +327,6 @@ class Game_Manager:
             print("Challenge queue cleared due to rate limiting.")
             self.challenge_requests.clear()
         elif challenge_request in self.challenge_requests:
-            print(
-                f"Challenges against {
-                    challenge_request.opponent_username} removed from queue.")
+            print(f"Challenges against {challenge_request.opponent_username} removed from queue.")
             while challenge_request in self.challenge_requests:
                 self.challenge_requests.remove(challenge_request)

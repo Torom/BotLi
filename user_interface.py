@@ -43,11 +43,7 @@ EnumT = TypeVar("EnumT", bound=StrEnum)
 
 
 class User_Interface:
-    async def main(
-            self,
-            commands: list[str],
-            config_path: str,
-            allow_upgrade: bool) -> None:
+    async def main(self, commands: list[str], config_path: str, allow_upgrade: bool) -> None:
         self.config = Config.from_yaml(config_path)
         print(f"{LOGO} • {self.config.version}", end="", flush=True)
 
@@ -62,13 +58,10 @@ class User_Interface:
             await self._test_engines()
 
             self.game_manager = Game_Manager(self.api, self.config, username)
-            self.game_manager_task = asyncio.create_task(
-                self.game_manager.run())
+            self.game_manager_task = asyncio.create_task(self.game_manager.run())
 
-            self.event_handler = Event_Handler(
-                self.api, self.config, username, self.game_manager)
-            self.event_handler_task = asyncio.create_task(
-                self.event_handler.run())
+            self.event_handler = Event_Handler(self.api, self.config, username, self.game_manager)
+            self.event_handler_task = asyncio.create_task(self.event_handler.run())
 
             signal.signal(signal.SIGTERM, self.signal_handler)
 
@@ -93,15 +86,13 @@ class User_Interface:
                 if len(command) > 0:
                     await self._handle_command(command)
 
-    async def _handle_bot_status(
-            self,
-            title: str | None,
-            allow_upgrade: bool) -> None:
+    async def _handle_bot_status(self, title: str | None, allow_upgrade: bool) -> None:
         if "bot:play" not in await self.api.get_token_scopes(self.config.token):
             print(
                 "Your token is missing the bot:play scope. This is mandatory to use BotLi.\n"
                 "You can create such a token by following this link:\n"
-                "https://lichess.org/account/oauth/token/create?scopes[]=bot:play&description=BotLi")
+                "https://lichess.org/account/oauth/token/create?scopes[]=bot:play&description=BotLi"
+            )
             sys.exit(1)
 
         if title == "BOT":
@@ -112,12 +103,14 @@ class User_Interface:
         if not sys.stdin.isatty() and not allow_upgrade:
             print(
                 'Start BotLi with the "--upgrade" flag if you are sure you want to upgrade this account.\n'
-                "WARNING: This is irreversible. The account will only be able to play as a BOT.")
+                "WARNING: This is irreversible. The account will only be able to play as a BOT."
+            )
             sys.exit(1)
         elif sys.stdin.isatty():
             print(
                 "This will upgrade your account to a BOT account.\n"
-                "WARNING: This is irreversible. The account will only be able to play as a BOT.")
+                "WARNING: This is irreversible. The account will only be able to play as a BOT."
+            )
             approval = input("Do you want to continue? [y/N]: ")
 
             if approval.lower() not in ["y", "yes"]:
@@ -185,28 +178,16 @@ class User_Interface:
             opponent_username = command[1]
             time_control = command[2] if len(command) > 2 else "1+1"
             initial_time, increment = parse_time_control(time_control)
-            color = Challenge_Color(command[3].lower()) if len(
-                command) > 3 else Challenge_Color.RANDOM
-            rated = command[4].lower() in [
-                "true", "yes", "rated"] if len(command) > 4 else True
-            variant = self._find_enum(command[5], Variant) if len(
-                command) > 5 else Variant.STANDARD
+            color = Challenge_Color(command[3].lower()) if len(command) > 3 else Challenge_Color.RANDOM
+            rated = command[4].lower() in ["true", "yes", "rated"] if len(command) > 4 else True
+            variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
         except ValueError as e:
             print(e)
             return
 
-        challenge_request = Challenge_Request(
-            opponent_username,
-            initial_time,
-            increment,
-            rated,
-            color,
-            variant,
-            300)
+        challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 300)
         self.game_manager.request_challenge(challenge_request)
-        print(
-            f"Challenge against {
-                challenge_request.opponent_username} added to the queue.")
+        print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 
     def _clear(self) -> None:
         self.game_manager.challenge_requests.clear()
@@ -222,10 +203,8 @@ class User_Interface:
             opponent_username = command[2]
             time_control = command[3] if len(command) > 3 else "1+1"
             initial_time, increment = parse_time_control(time_control)
-            rated = command[4].lower() in [
-                "true", "yes", "rated"] if len(command) > 4 else True
-            variant = self._find_enum(command[5], Variant) if len(
-                command) > 5 else Variant.STANDARD
+            rated = command[4].lower() in ["true", "yes", "rated"] if len(command) > 4 else True
+            variant = self._find_enum(command[5], Variant) if len(command) > 5 else Variant.STANDARD
         except ValueError as e:
             print(e)
             return
@@ -234,26 +213,17 @@ class User_Interface:
         for _ in range(count):
             challenges.append(
                 Challenge_Request(
-                    opponent_username,
-                    initial_time,
-                    increment,
-                    rated,
-                    Challenge_Color.WHITE,
-                    variant,
-                    300))
+                    opponent_username, initial_time, increment, rated, Challenge_Color.WHITE, variant, 300
+                )
+            )
             challenges.append(
                 Challenge_Request(
-                    opponent_username,
-                    initial_time,
-                    increment,
-                    rated,
-                    Challenge_Color.BLACK,
-                    variant,
-                    300))
+                    opponent_username, initial_time, increment, rated, Challenge_Color.BLACK, variant, 300
+                )
+            )
 
         self.game_manager.request_challenge(*challenges)
-        print(
-            f"Challenges for {count} game pairs against {opponent_username} added to the queue.")
+        print(f"Challenges for {count} game pairs against {opponent_username} added to the queue.")
 
     async def _join(self, command: list[str]) -> None:
         if len(command) < 2 or len(command) > 3:
@@ -305,18 +275,9 @@ class User_Interface:
         else:
             color = Challenge_Color.RANDOM
 
-        challenge_request = Challenge_Request(
-            opponent_username,
-            initial_time,
-            increment,
-            rated,
-            color,
-            variant,
-            300)
+        challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 300)
         self.game_manager.request_challenge(challenge_request)
-        print(
-            f"Challenge against {
-                challenge_request.opponent_username} added to the queue.")
+        print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 
     def _reset(self, command: list[str]) -> None:
         if len(command) != 2:
@@ -347,8 +308,7 @@ class User_Interface:
         tournament_team = command[2] if len(command) > 2 else None
         tournament_password = command[3] if len(command) > 3 else None
 
-        self.game_manager.request_tournament_joining(
-            tournament_id, tournament_team, tournament_password)
+        self.game_manager.request_tournament_joining(tournament_id, tournament_team, tournament_password)
 
     def _whitelist(self, command: list[str]) -> None:
         if len(command) != 2:
@@ -382,8 +342,7 @@ class Autocompleter:
     def complete(self, text: str, state: int) -> str | None:
         if state == 0:
             if text:
-                self.matches = [
-                    s for s in self.options if s and s.startswith(text)]
+                self.matches = [s for s in self.options if s and s.startswith(text)]
             else:
                 self.matches = self.options[:]
 
@@ -395,33 +354,13 @@ class Autocompleter:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "commands",
-        nargs="*",
-        help="Commands that BotLi executes.")
-    parser.add_argument(
-        "--config",
-        "-c",
-        default="config.yml",
-        help="Path to config.yml.")
-    parser.add_argument(
-        "--upgrade",
-        "-u",
-        action="store_true",
-        help="Upgrade account to BOT account.")
-    parser.add_argument(
-        "--debug",
-        "-d",
-        action="store_true",
-        help="Enable debug logging.")
+    parser.add_argument("commands", nargs="*", help="Commands that BotLi executes.")
+    parser.add_argument("--config", "-c", default="config.yml", help="Path to config.yml.")
+    parser.add_argument("--upgrade", "-u", action="store_true", help="Upgrade account to BOT account.")
+    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug logging.")
     args = parser.parse_args()
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    asyncio.run(
-        User_Interface().main(
-            args.commands,
-            args.config,
-            args.upgrade),
-        debug=args.debug)
+    asyncio.run(User_Interface().main(args.commands, args.config, args.upgrade), debug=args.debug)

@@ -25,10 +25,8 @@ class Engine:
 
     @classmethod
     async def from_config(
-            cls,
-            engine_config: Engine_Config,
-            syzygy_config: Syzygy_Config,
-            opponent: chess.engine.Opponent) -> "Engine":
+        cls, engine_config: Engine_Config, syzygy_config: Syzygy_Config, opponent: chess.engine.Opponent
+    ) -> "Engine":
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
         transport, engine = await chess.engine.popen_uci(engine_config.path, stderr=stderr)
@@ -36,12 +34,7 @@ class Engine:
         await cls._configure_engine(engine, engine_config, syzygy_config)
         await engine.send_opponent_information(opponent=opponent)
 
-        return cls(
-            transport,
-            engine,
-            engine_config.ponder,
-            opponent,
-            engine_config.limits)
+        return cls(transport, engine, engine_config.ponder, opponent, engine_config.limits)
 
     @classmethod
     async def test(cls, engine_config: Engine_Config) -> None:
@@ -59,18 +52,15 @@ class Engine:
 
     @staticmethod
     async def _configure_engine(
-            engine: chess.engine.UciProtocol,
-            engine_config: Engine_Config,
-            syzygy_config: Syzygy_Config) -> None:
+        engine: chess.engine.UciProtocol, engine_config: Engine_Config, syzygy_config: Syzygy_Config
+    ) -> None:
         for name, value in engine_config.uci_options.items():
             if name.lower() in chess.engine.MANAGED_OPTIONS:
-                print(
-                    f'UCI option "{name}" ignored as it is managed by the bot.')
+                print(f'UCI option "{name}" ignored as it is managed by the bot.')
             elif name in engine.options:
                 await engine.configure({name: value})
             else:
-                print(
-                    f'UCI option "{name}" ignored as it is not supported by the engine.')
+                print(f'UCI option "{name}" ignored as it is not supported by the engine.')
 
         if not syzygy_config.enabled:
             return
@@ -86,21 +76,15 @@ class Engine:
     def name(self) -> str:
         return self.engine.id["name"]
 
-    async def make_move(self,
-                        board: chess.Board,
-                        white_time: float,
-                        black_time: float,
-                        increment: float) -> tuple[chess.Move,
-                                                   chess.engine.InfoDict]:
+    async def make_move(
+        self, board: chess.Board, white_time: float, black_time: float, increment: float
+    ) -> tuple[chess.Move, chess.engine.InfoDict]:
         if len(board.move_stack) < 2:
             time_limit = 10.0 if self.opponent.is_engine else 5.0
             if self.limit_config.time:
                 time_limit = min(time_limit, self.limit_config.time)
 
-            limit = chess.engine.Limit(
-                time=time_limit,
-                depth=self.limit_config.depth,
-                nodes=self.limit_config.nodes)
+            limit = chess.engine.Limit(time=time_limit, depth=self.limit_config.depth, nodes=self.limit_config.nodes)
             ponder = False
         else:
             limit = chess.engine.Limit(

@@ -9,12 +9,7 @@ from game_manager import Game_Manager
 
 
 class Event_Handler:
-    def __init__(
-            self,
-            api: API,
-            config: Config,
-            username: str,
-            game_manager: Game_Manager) -> None:
+    def __init__(self, api: API, config: Config, username: str, game_manager: Game_Manager) -> None:
         self.api = api
         self.username = username
         self.game_manager = game_manager
@@ -23,8 +18,7 @@ class Event_Handler:
 
     async def run(self) -> None:
         event_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
-        self._task = asyncio.create_task(
-            self.api.get_event_stream(event_queue))
+        self._task = asyncio.create_task(self.api.get_event_stream(event_queue))
         while event := await event_queue.get():
             match event["type"]:
                 case "challenge":
@@ -34,16 +28,14 @@ class Event_Handler:
                     self.last_challenge_event = event["challenge"]
                     self._print_challenge_event(event["challenge"])
 
-                    if decline_reason := self.challenge_validator.get_decline_reason(
-                            event["challenge"]):
+                    if decline_reason := self.challenge_validator.get_decline_reason(event["challenge"]):
                         print(128 * "‾")
                         await self.api.decline_challenge(event["challenge"]["id"], decline_reason)
                         continue
 
                     self.game_manager.add_challenge(
-                        Challenge(
-                            event["challenge"]["id"],
-                            event["challenge"]["challenger"]["name"]))
+                        Challenge(event["challenge"]["id"], event["challenge"]["challenger"]["name"])
+                    )
                     print("Challenge added to queue.")
                     print(128 * "‾")
                 case "gameStart":
@@ -56,17 +48,14 @@ class Event_Handler:
                     if opponent_name == self.username:
                         continue
 
-                    print(
-                        f"{opponent_name} declined challenge: {
-                            event['challenge']['declineReason']}")
+                    print(f"{opponent_name} declined challenge: {event['challenge']['declineReason']}")
                 case "challengeCanceled":
                     if event["challenge"]["challenger"]["name"] == self.username:
                         continue
 
                     self.game_manager.remove_challenge(
-                        Challenge(
-                            event["challenge"]["id"],
-                            event["challenge"]["challenger"]["name"]))
+                        Challenge(event["challenge"]["id"], event["challenge"]["challenger"]["name"])
+                    )
                     self._print_challenge_event(event["challenge"])
                     print("Challenge has been canceled.")
                     print(128 * "‾")
@@ -78,18 +67,13 @@ class Event_Handler:
         title = challenge_event["challenger"].get("title") or ""
         name = challenge_event["challenger"]["name"]
         rating = challenge_event["challenger"]["rating"]
-        provisional = "?" if challenge_event["challenger"].get(
-            "provisional") else ""
-        challenger_str = f"Challenger: {title}{
-            ' ' if title else ''}{name} ({rating}{provisional})"
-        tc_str = f"TC: {
-            challenge_event['timeControl'].get(
-                'show', 'Correspondence')}"
+        provisional = "?" if challenge_event["challenger"].get("provisional") else ""
+        challenger_str = f"Challenger: {title}{' ' if title else ''}{name} ({rating}{provisional})"
+        tc_str = f"TC: {challenge_event['timeControl'].get('show', 'Correspondence')}"
         rated_str = "Rated" if challenge_event["rated"] else "Casual"
         color_str = f"Color: {challenge_event['color'].capitalize()}"
         variant_str = f"Variant: {challenge_event['variant']['name']}"
         delimiter = 5 * " "
 
         print(128 * "_")
-        print(delimiter.join([id_str, challenger_str,
-              tc_str, rated_str, color_str, variant_str]))
+        print(delimiter.join([id_str, challenger_str, tc_str, rated_str, color_str, variant_str]))
