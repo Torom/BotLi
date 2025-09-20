@@ -21,13 +21,18 @@ COMMANDS = {
     "ram": "Displays the amount of system memory (RAM).",
     "takeback": "Shows how many takebacks are allowed and how many the opponent has used.",
 }
-SPECTATOR_COMMANDS = {"pv": "Shows the principal variation (best line of play) from the latest position."}
+SPECTATOR_COMMANDS = {
+    "pv": "Shows the principal variation (best line of play) from the latest position."}
 
 
 class Chatter:
     def __init__(
-        self, api: API, config: Config, username: str, game_information: Game_Information, lichess_game: Lichess_Game
-    ) -> None:
+            self,
+            api: API,
+            config: Config,
+            username: str,
+            game_information: Game_Information,
+            lichess_game: Lichess_Game) -> None:
         self.api = api
         self.username = username
         self.game_info = game_information
@@ -39,11 +44,17 @@ class Chatter:
         self.ram_message = self._get_ram()
         self.player_greeting = self._format_message(config.messages.greeting)
         self.player_goodbye = self._format_message(config.messages.goodbye)
-        self.spectator_greeting = self._format_message(config.messages.greeting_spectators)
-        self.spectator_goodbye = self._format_message(config.messages.goodbye_spectators)
+        self.spectator_greeting = self._format_message(
+            config.messages.greeting_spectators)
+        self.spectator_goodbye = self._format_message(
+            config.messages.goodbye_spectators)
         self.print_eval_rooms: set[str] = set()
 
-    async def handle_chat_message(self, chatLine_Event: dict, takeback_count: int, max_takebacks: int) -> None:
+    async def handle_chat_message(
+            self,
+            chatLine_Event: dict,
+            takeback_count: int,
+            max_takebacks: int) -> None:
         chat_message = Chat_Message.from_chatLine_event(chatLine_Event)
 
         if chat_message.username == "lichess":
@@ -93,7 +104,11 @@ class Chatter:
             ("Too bad you weren't there. Feel free to challenge me again, I will accept the challenge if possible."),
         )
 
-    async def _handle_command(self, chat_message: Chat_Message, takeback_count: int, max_takebacks: int) -> None:
+    async def _handle_command(
+            self,
+            chat_message: Chat_Message,
+            takeback_count: int,
+            max_takebacks: int) -> None:
         match chat_message.text[1:].lower():
             case "cpu":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
@@ -142,7 +157,8 @@ class Chatter:
                 commands = COMMANDS if chat_message.room == "player" else COMMANDS | SPECTATOR_COMMANDS
                 words = chat_message.text.split()
                 if len(words) == 1:
-                    message = f"Commands: !{', !'.join(commands)}. Type !help <command> for more information."
+                    message = f"Commands: !{
+                        ', !'.join(commands)}. Type !help <command> for more information."
                     await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
                     return
 
@@ -155,7 +171,8 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
 
     async def _send_last_message(self, room: str) -> None:
-        last_message = self.lichess_game.last_message.replace("Engine", "Evaluation")
+        last_message = self.lichess_game.last_message.replace(
+            "Engine", "Evaluation")
         last_message = " ".join(last_message.split())
 
         if room == "spectator":
@@ -163,7 +180,11 @@ class Chatter:
 
         await self.api.send_chat_message(self.game_info.id_, room, last_message)
 
-    async def _send_takeback_message(self, room: str, takeback_count: int, max_takebacks: int) -> None:
+    async def _send_takeback_message(
+            self,
+            room: str,
+            takeback_count: int,
+            max_takebacks: int) -> None:
         if not max_takebacks:
             message = f"{self.username} does not accept takebacks."
         else:
@@ -210,8 +231,7 @@ class Chatter:
             and self.lichess_game.engine.opponent.rating < config.offer_draw.min_rating
         )
         no_draw_against_humans = (
-            not self.lichess_game.engine.opponent.is_engine and not config.offer_draw.against_humans
-        )
+            not self.lichess_game.engine.opponent.is_engine and not config.offer_draw.against_humans)
         if not config.offer_draw.enabled or too_low_rating or no_draw_against_humans:
             return f"{self.username} will neither accept nor offer draws."
 
@@ -224,7 +244,9 @@ class Chatter:
         )
 
     def _get_name_message(self, version: str) -> str:
-        return f"{self.username} running {self.lichess_game.engine.name} (BotLi {version})"
+        return f"{
+            self.username} running {
+            self.lichess_game.engine.name} (BotLi {version})"
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:

@@ -25,7 +25,8 @@ class API_Challenge_Reponse:
 
 @dataclass
 class Book_Settings:
-    selection: Literal["weighted_random", "uniform_random", "best_move"] = "best_move"
+    selection: Literal["weighted_random",
+                       "uniform_random", "best_move"] = "best_move"
     max_depth: int | None = None
     allow_repetitions: bool | None = None
     readers: dict[str, MemoryMappedReader] = field(default_factory=dict)
@@ -97,7 +98,9 @@ class Chat_Message:
     room: Literal["player", "spectator"]
 
     @classmethod
-    def from_chatLine_event(cls, chatLine_event: dict[str, Any]) -> "Chat_Message":
+    def from_chatLine_event(cls,
+                            chatLine_event: dict[str,
+                                                 Any]) -> "Chat_Message":
         username = chatLine_event["username"]
         text = chatLine_event["text"]
         room = chatLine_event["room"]
@@ -129,7 +132,9 @@ class Game_Information:
     tournament_id: str | None
 
     @classmethod
-    def from_gameFull_event(cls, gameFull_event: dict[str, Any]) -> "Game_Information":
+    def from_gameFull_event(cls,
+                            gameFull_event: dict[str,
+                                                 Any]) -> "Game_Information":
         assert gameFull_event["type"] == "gameFull"
 
         id_ = gameFull_event["id"]
@@ -188,7 +193,9 @@ class Game_Information:
     @property
     def white_str(self) -> str:
         provisional_str = "?" if self.white_provisional else ""
-        rating_str = f"{self.white_rating}{provisional_str}" if self.white_rating else f"Level {self.white_ai_level}"
+        rating_str = f"{
+            self.white_rating}{provisional_str}" if self.white_rating else f"Level {
+            self.white_ai_level}"
         return f"{self.white_name_str} ({rating_str})"
 
     @property
@@ -199,7 +206,9 @@ class Game_Information:
     @property
     def black_str(self) -> str:
         provisional_str = "?" if self.black_provisional else ""
-        rating_str = f"{self.black_rating}{provisional_str}" if self.black_rating else f"Level {self.black_ai_level}"
+        rating_str = f"{
+            self.black_rating}{provisional_str}" if self.black_rating else f"Level {
+            self.black_ai_level}"
         return f"{self.black_name_str} ({rating_str})"
 
     @property
@@ -235,11 +244,19 @@ class Game_Information:
 
     @property
     def white_opponent(self) -> chess.engine.Opponent:
-        return chess.engine.Opponent(self.white_name, self.white_title, self.white_rating, self.white_title == "BOT")
+        return chess.engine.Opponent(
+            self.white_name,
+            self.white_title,
+            self.white_rating,
+            self.white_title == "BOT")
 
     @property
     def black_opponent(self) -> chess.engine.Opponent:
-        return chess.engine.Opponent(self.black_name, self.black_title, self.black_rating, self.black_title == "BOT")
+        return chess.engine.Opponent(
+            self.black_name,
+            self.black_title,
+            self.black_rating,
+            self.black_title == "BOT")
 
     @property
     def opponent_is_bot(self) -> bool:
@@ -272,16 +289,19 @@ class Matchmaking_Data:
 
     @classmethod
     def from_dict(cls, dict_: dict[str, Any]) -> "Matchmaking_Data":
-        release_time = datetime.fromisoformat(dict_["release_time"]) if "release_time" in dict_ else datetime.now()
+        release_time = datetime.fromisoformat(
+            dict_["release_time"]) if "release_time" in dict_ else datetime.now()
         multiplier = dict_.get("multiplier", 1)
-        color = Challenge_Color(dict_["color"]) if "color" in dict_ else Challenge_Color.WHITE
+        color = Challenge_Color(
+            dict_["color"]) if "color" in dict_ else Challenge_Color.WHITE
 
         return Matchmaking_Data(release_time, multiplier, color)
 
     def to_dict(self) -> dict[str, Any]:
         dict_ = {}
         if self.release_time > datetime.now():
-            dict_["release_time"] = self.release_time.isoformat(timespec="seconds")
+            dict_["release_time"] = self.release_time.isoformat(
+                timespec="seconds")
 
         if self.multiplier > 1:
             dict_["multiplier"] = self.multiplier
@@ -307,7 +327,8 @@ class Matchmaking_Type:
     max_rating_diff: int | None
 
     def __post_init__(self) -> None:
-        self.estimated_game_duration = timedelta(seconds=max(self.initial_time, 3) * 1.33 + self.increment * 94.48)
+        self.estimated_game_duration = timedelta(seconds=max(
+            self.initial_time, 3) * 1.33 + self.increment * 94.48)
 
     def __str__(self) -> str:
         initial_time_min = self.initial_time / 60
@@ -387,7 +408,8 @@ class Tournament:
     end_task: Task[None] | None = None
 
     @classmethod
-    def from_tournament_info(cls, tournament_info: dict[str, Any]) -> "Tournament":
+    def from_tournament_info(
+            cls, tournament_info: dict[str, Any]) -> "Tournament":
         return cls(
             tournament_info["id"],
             start_time := datetime.fromisoformat(tournament_info["startsAt"]),
