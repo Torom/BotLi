@@ -180,4 +180,4 @@ class Game:
         opponents_str = f"{info.white_str} {white_result} - {black_result} {info.black_str}"
         message = (5 * " ").join([info.id_str, opponents_str, message])
 
-        game_print(f"{message}\n{128 * '‾'}", game_id=self.game_info.id_)
+        game_print(f"{message}\n{128 * '‾'}", game_id=info.id_)
