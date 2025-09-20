@@ -14,7 +14,7 @@ from engine import Engine
 from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
-from logo import LOGO
+from logo import LOGO, show_logo
 from utils import parse_time_control
 
 try:
@@ -45,13 +45,13 @@ EnumT = TypeVar("EnumT", bound=StrEnum)
 class User_Interface:
     async def main(self, commands: list[str], config_path: str, allow_upgrade: bool) -> None:
         self.config = Config.from_yaml(config_path)
-        print(f"{LOGO} • {self.config.version}", end="", flush=True)
+        show_logo(f"{LOGO} • {self.config.version}", end="")
 
         async with API(self.config) as self.api:
             account = await self.api.get_account()
             username: str = account["username"]
 
-            print(f" • {username}\n")
+            show_logo(f" • {username}\n")
 
             self.api.append_user_agent(username)
             await self._handle_bot_status(account.get("title"), allow_upgrade)
