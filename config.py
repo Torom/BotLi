@@ -221,6 +221,8 @@ class Config:
 
     @staticmethod
     def _get_opening_books_config(config: dict[str, Any]) -> Opening_Books_Config:
+        if not config.get("opening_books", {}).get("enabled", False):
+            return Opening_Books_Config(False, 0, None, {})
         opening_books_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("priority", int, '"priority" must be an integer.'),
@@ -239,13 +241,11 @@ class Config:
             Config._validate_config_section(settings, f"opening_books.{section}", opening_book_types_sections)
 
             names: dict[str, str] = {}
-            for book_name in settings["names"]:
-                if book_name not in config["books"]:
+            for book_name in settings.get("names", []):
+                if book_name not in config.get("books", {}):
                     raise RuntimeError(f'The book "{book_name}" is not defined in the books section.')
-
                 if not os.path.isfile(config["books"][book_name]):
                     raise RuntimeError(f'The book "{book_name}" at "{config["books"][book_name]}" does not exist.')
-
                 names[book_name] = config["books"][book_name]
 
             books[section] = Books_Config(
