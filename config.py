@@ -124,7 +124,8 @@ class Config:
 
             if not isinstance(config[section[0]], section[1]):
                 raise TypeError(section[2])
-    @staticmethod 
+
+    @staticmethod
     def _validate_config_section(config: dict, section_name: str, required_fields: list[list]) -> None:
         for field_info in required_fields:
             field_name, field_type, error_msg = field_info
@@ -133,7 +134,7 @@ class Config:
 
             if not isinstance(config[field_name], field_type):
                 raise TypeError(f"`{section_name}` subsection {error_msg}")
-            
+
     @staticmethod
     def _get_engine_configs(engines_section: dict[str, dict[str, Any]]) -> dict[str, Engine_Config]:
         engines_sections = [
@@ -181,7 +182,7 @@ class Config:
             )
 
         return engine_configs
-        
+
     @staticmethod
     def _get_syzygy_configs(syzygy_section: dict[str, dict[str, Any]]) -> dict[str, Syzygy_Config]:
         syzygy_sections = [
@@ -217,7 +218,7 @@ class Config:
         ]
 
         Config._validate_config_section(gaviota_section, "gaviota", gaviota_sections)
-        
+
         if gaviota_section["enabled"]:
             for path in gaviota_section["paths"]:
                 if not os.path.isdir(path):
@@ -290,9 +291,7 @@ class Config:
         ]
 
         Config._validate_config_section(
-            opening_explorer_section, 
-            "online_moves.opening_explorer", 
-            opening_explorer_sections
+            opening_explorer_section, "online_moves.opening_explorer", opening_explorer_sections
         )
 
         return Opening_Explorer_Config(
@@ -354,9 +353,9 @@ class Config:
             ["timeout", int, '"timeout" must be an integer.'],
             ["best_move", bool, '"best_move" must be a bool.'],
         ]
-        
+
         Config._validate_config_section(chessdb_section, "online_moves.chessdb", chessdb_sections)
-        
+
         return ChessDB_Config(
             chessdb_section["enabled"],
             chessdb_section["priority"],
@@ -397,7 +396,7 @@ class Config:
             ["online_egtb", dict, '"online_egtb" must be a dictionary with indented keys followed by colons.'],
         ]
 
-        Config._validate_config_section(online_moves_section, "online_moves", online_moves_sections)        
+        Config._validate_config_section(online_moves_section, "online_moves", online_moves_sections)
 
         return Online_Moves_Config(
             Config._get_opening_explorer_config(online_moves_section["opening_explorer"]),
