@@ -193,7 +193,7 @@ class Config:
 
         syzygy_configs: dict[str, Syzygy_Config] = {}
         for key, settings in syzygy_section.items():
-            cls._validate_config_section(settings, f"syzygy.{key}", syzygy_sections)
+            Config._validate_config_section(settings, f"syzygy.{key}", syzygy_sections)
             if not settings["enabled"]:
                 syzygy_configs[key] = Syzygy_Config(False, [], 0, False)
                 continue
@@ -216,7 +216,7 @@ class Config:
             ["max_pieces", int, '"max_pieces" must be an integer.'],
         ]
 
-        cls._validate_config_section(gaviota_section, "gaviota", gaviota_sections)
+        Config._validate_config_section(gaviota_section, "gaviota", gaviota_sections)
         
         if gaviota_section["enabled"]:
             for path in gaviota_section["paths"]:
@@ -233,7 +233,7 @@ class Config:
             ["books", dict, '"books" must be a dictionary with indented keys followed by colons.'],
         ]
 
-        cls._validate_config_section(config["opening_books"], "opening_books", opening_books_sections)
+        Config._validate_config_section(config["opening_books"], "opening_books", opening_books_sections)
 
         opening_book_types_sections = [
             ["selection", str, '"selection" must be one of "weighted_random", "uniform_random" or "best_move".'],
@@ -289,7 +289,7 @@ class Config:
             ["anti", bool, '"anti" must be a bool.'],
         ]
 
-        cls._validate_config_section(opening_explorer_section, "online_moves.opening_explorer", opening_explorer_sections)
+        Config._validate_config_section(opening_explorer_section, "online_moves.opening_explorer", opening_explorer_sections)
 
         return Opening_Explorer_Config(
             opening_explorer_section["enabled"],
@@ -322,7 +322,7 @@ class Config:
             ["timeout", int, '"timeout" must be an integer.'],
         ]
 
-        cls._validate_config_section(lichess_cloud_section, "online_moves.lichess_cloud", lichess_cloud_sections)
+        Config._validate_config_section(lichess_cloud_section, "online_moves.lichess_cloud", lichess_cloud_sections)
 
         return Lichess_Cloud_Config(
             lichess_cloud_section["enabled"],
@@ -351,7 +351,7 @@ class Config:
             ["best_move", bool, '"best_move" must be a bool.'],
         ]
         
-        cls._validate_config_section(chessdb_section, "online_moves.chessdb", chessdb_sections)
+        Config._validate_config_section(chessdb_section, "online_moves.chessdb", chessdb_sections)
         
         return ChessDB_Config(
             chessdb_section["enabled"],
@@ -374,7 +374,7 @@ class Config:
             ["timeout", int, '"timeout" must be an integer.'],
         ]
 
-        cls._validate_config_section(online_egtb_section, "online_moves.online_egtb", online_egtb_sections)
+        Config._validate_config_section(online_egtb_section, "online_moves.online_egtb", online_egtb_sections)
 
         return Online_EGTB_Config(
             online_egtb_section["enabled"], online_egtb_section["min_time"], online_egtb_section["timeout"]
@@ -393,7 +393,7 @@ class Config:
             ["online_egtb", dict, '"online_egtb" must be a dictionary with indented keys followed by colons.'],
         ]
 
-        cls._validate_config_section(online_moves_section, "online_moves", online_moves_sections)        
+        Config._validate_config_section(online_moves_section, "online_moves", online_moves_sections)        
 
         return Online_Moves_Config(
             Config._get_opening_explorer_config(online_moves_section["opening_explorer"]),
@@ -412,7 +412,7 @@ class Config:
             ["against_humans", bool, '"against_humans" must be a bool.'],
         ]
 
-        cls._validate_config_section(offer_draw_section, "offer_draw", offer_draw_sections)
+        Config._validate_config_section(offer_draw_section, "offer_draw", offer_draw_sections)
 
         return Offer_Draw_Config(
             offer_draw_section["enabled"],
@@ -432,7 +432,7 @@ class Config:
             ["against_humans", bool, '"against_humans" must be a bool.'],
         ]
 
-        cls._validate_config_section(resign_section, "resign", resign_sections)
+        Config._validate_config_section(resign_section, "resign", resign_sections)
 
         return Resign_Config(
             resign_section["enabled"],
@@ -454,7 +454,7 @@ class Config:
             ["human_modes", list | None, '"human_modes" must be a list of game modes.'],
         ]
 
-        cls._validate_config_section(challenge_section, "challenge", challenge_sections)
+        Config._validate_config_section(challenge_section, "challenge", challenge_sections)
 
         return Challenge_Config(
             challenge_section["concurrency"],
@@ -479,7 +479,7 @@ class Config:
             ["types", dict, '"types" must be a dictionary with indented keys followed by colons.'],
         ]
 
-        cls._validate_config_section(matchmaking_section, "matchmaking", matchmaking_sections)
+        Config._validate_config_section(matchmaking_section, "matchmaking", matchmaking_sections)
 
         types: dict[str, Matchmaking_Type_Config] = {}
         for matchmaking_type, matchmaking_options in matchmaking_section["types"].items():
