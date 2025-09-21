@@ -102,8 +102,8 @@ class Game:
         self.move_task = None
 
     async def _abortion_task(
-         self, lichess_game: Lichess_Game, chatter: Chatter, abortion_seconds: int, info: Game_Information
-     ) -> None:
+        self, lichess_game: Lichess_Game, chatter: Chatter, abortion_seconds: int, info: Game_Information
+    ) -> None:
         await asyncio.sleep(abortion_seconds)
 
         if not lichess_game.is_our_turn and lichess_game.is_abortable:
