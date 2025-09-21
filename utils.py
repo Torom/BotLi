@@ -23,11 +23,4 @@ def validate_time_limits(
     return True, None
 
 
-def validate_config_section(config: dict, section_name: str, required_fields: list[list]) -> None:
-    for field_info in required_fields:
-        field_name, field_type, error_msg = field_info
-        if field_name not in config:
-            raise RuntimeError(f"Your config does not have required `{section_name}` subsection `{field_name}`.")
 
-        if not isinstance(config[field_name], field_type):
-            raise TypeError(f"`{section_name}` subsection {error_msg}")
