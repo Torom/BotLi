@@ -229,6 +229,9 @@ class Config:
 
         Config._validate_config_section(config["opening_books"], "opening_books", opening_books_sections)
 
+        if not config["opening_books"]["enabled"]:
+            return Opening_Books_Config(False, 0, None, {})
+
         opening_book_types_sections: list[tuple[str, type | UnionType, str]] = [
             ("selection", str, '"selection" must be one of "weighted_random", "uniform_random" or "best_move".'),
             ("names", list, '"names" must be a list of book names.'),
