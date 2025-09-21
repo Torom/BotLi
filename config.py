@@ -181,7 +181,7 @@ class Config:
             )
 
         return engine_configs
-
+        
     @staticmethod
     def _get_syzygy_configs(syzygy_section: dict[str, dict[str, Any]]) -> dict[str, Syzygy_Config]:
         syzygy_sections = [
@@ -193,15 +193,7 @@ class Config:
 
         syzygy_configs: dict[str, Syzygy_Config] = {}
         for key, settings in syzygy_section.items():
-            for subsection in syzygy_sections:
-                if subsection[0] not in settings:
-                    raise RuntimeError(
-                        f"Your config does not have required `syzygy` `{key}` subsection `{subsection[0]}`."
-                    )
-
-                if not isinstance(settings[subsection[0]], subsection[1]):
-                    raise TypeError(f"`syzygy` `{key}` subsection {subsection[2]}")
-
+            cls._validate_config_section(settings, f"syzygy.{key}", syzygy_sections)
             if not settings["enabled"]:
                 syzygy_configs[key] = Syzygy_Config(False, [], 0, False)
                 continue
@@ -224,13 +216,8 @@ class Config:
             ["max_pieces", int, '"max_pieces" must be an integer.'],
         ]
 
-        for subsection in gaviota_sections:
-            if subsection[0] not in gaviota_section:
-                raise RuntimeError(f"Your config does not have required `gaviota` subsection `{subsection[0]}`.")
-
-            if not isinstance(gaviota_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`gaviota` subsection {subsection[2]}")
-
+        cls._validate_config_section(gaviota_section, "gaviota", gaviota_sections)
+        
         if gaviota_section["enabled"]:
             for path in gaviota_section["paths"]:
                 if not os.path.isdir(path):
@@ -246,15 +233,7 @@ class Config:
             ["books", dict, '"books" must be a dictionary with indented keys followed by colons.'],
         ]
 
-        for subsection in opening_books_sections:
-            if subsection[0] not in config["opening_books"]:
-                raise RuntimeError(f"Your config does not have required `opening_books` subsection `{subsection[0]}`.")
-
-            if not isinstance(config["opening_books"][subsection[0]], subsection[1]):
-                raise TypeError(f"`opening_books` subsection {subsection[2]}")
-
-        if not config["opening_books"]["enabled"]:
-            return Opening_Books_Config(False, 0, None, {})
+        cls._validate_config_section(config["opening_books"], "opening_books", opening_books_sections)
 
         opening_book_types_sections = [
             ["selection", str, '"selection" must be one of "weighted_random", "uniform_random" or "best_move".'],
@@ -310,14 +289,7 @@ class Config:
             ["anti", bool, '"anti" must be a bool.'],
         ]
 
-        for subsection in opening_explorer_sections:
-            if subsection[0] not in opening_explorer_section:
-                raise RuntimeError(
-                    f"Your config does not have required `online_moves` `opening_explorer` field `{subsection[0]}`."
-                )
-
-            if not isinstance(opening_explorer_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` `opening_explorer` field {subsection[2]}")
+        cls._validate_config_section(opening_explorer_section, "online_moves.opening_explorer", opening_explorer_sections)
 
         return Opening_Explorer_Config(
             opening_explorer_section["enabled"],
@@ -350,14 +322,7 @@ class Config:
             ["timeout", int, '"timeout" must be an integer.'],
         ]
 
-        for subsection in lichess_cloud_sections:
-            if subsection[0] not in lichess_cloud_section:
-                raise RuntimeError(
-                    f"Your config does not have required `online_moves` `lichess_cloud` field `{subsection[0]}`."
-                )
-
-            if not isinstance(lichess_cloud_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` `lichess_cloud` field {subsection[2]}")
+        cls._validate_config_section(lichess_cloud_section, "online_moves.lichess_cloud", lichess_cloud_sections)
 
         return Lichess_Cloud_Config(
             lichess_cloud_section["enabled"],
@@ -385,16 +350,9 @@ class Config:
             ["timeout", int, '"timeout" must be an integer.'],
             ["best_move", bool, '"best_move" must be a bool.'],
         ]
-
-        for subsection in chessdb_sections:
-            if subsection[0] not in chessdb_section:
-                raise RuntimeError(
-                    f"Your config does not have required `online_moves` `chessdb` field `{subsection[0]}`."
-                )
-
-            if not isinstance(chessdb_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` `chessdb` field {subsection[2]}")
-
+        
+        cls._validate_config_section(chessdb_section, "online_moves.chessdb", chessdb_sections)
+        
         return ChessDB_Config(
             chessdb_section["enabled"],
             chessdb_section["priority"],
@@ -416,14 +374,7 @@ class Config:
             ["timeout", int, '"timeout" must be an integer.'],
         ]
 
-        for subsection in online_egtb_sections:
-            if subsection[0] not in online_egtb_section:
-                raise RuntimeError(
-                    f"Your config does not have required `online_moves` `online_egtb` field `{subsection[0]}`."
-                )
-
-            if not isinstance(online_egtb_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` `online_egtb` field {subsection[2]}")
+        cls._validate_config_section(online_egtb_section, "online_moves.online_egtb", online_egtb_sections)
 
         return Online_EGTB_Config(
             online_egtb_section["enabled"], online_egtb_section["min_time"], online_egtb_section["timeout"]
@@ -442,12 +393,7 @@ class Config:
             ["online_egtb", dict, '"online_egtb" must be a dictionary with indented keys followed by colons.'],
         ]
 
-        for subsection in online_moves_sections:
-            if subsection[0] not in online_moves_section:
-                raise RuntimeError(f"Your config does not have required `online_moves` subsection `{subsection[0]}`.")
-
-            if not isinstance(online_moves_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` subsection {subsection[2]}")
+        cls._validate_config_section(online_moves_section, "online_moves", online_moves_sections)        
 
         return Online_Moves_Config(
             Config._get_opening_explorer_config(online_moves_section["opening_explorer"]),
