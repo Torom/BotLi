@@ -3,6 +3,7 @@ import os.path
 import subprocess
 import sys
 from dataclasses import dataclass
+from types import UnionType
 from typing import Any
 
 import yaml
@@ -92,59 +93,60 @@ class Config:
         )
 
     @staticmethod
+    def _validate_config_section(
+        config: dict[str, Any], section_name: str, required_fields: list[tuple[str, type | UnionType, str]]
+    ) -> None:
+        for field_name, field_type, error_msg in required_fields:
+            if field_name not in config:
+                raise RuntimeError(f"Your config does not have required `{section_name}` subsection `{field_name}`.")
+
+            if not isinstance(config[field_name], field_type):
+                raise TypeError(f"`{section_name}` subsection {error_msg}")
+
+    @staticmethod
     def _check_sections(config: dict[str, Any]) -> None:
-        # [section, type, error message]
-        sections = [
-            ["token", str, "Section `token` must be a string wrapped in quotes."],
-            ["engines", dict, "Section `engines` must be a dictionary with indented keys followed by colons."],
-            ["syzygy", dict, "Section `syzygy` must be a dictionary with indented keys followed by colons."],
-            ["gaviota", dict, "Section `gaviota` must be a dictionary with indented keys followed by colons."],
-            [
+        sections: list[tuple[str, type | UnionType, str]] = [
+            ("token", str, "Section `token` must be a string wrapped in quotes."),
+            ("engines", dict, "Section `engines` must be a dictionary with indented keys followed by colons."),
+            ("syzygy", dict, "Section `syzygy` must be a dictionary with indented keys followed by colons."),
+            ("gaviota", dict, "Section `gaviota` must be a dictionary with indented keys followed by colons."),
+            (
                 "opening_books",
                 dict,
                 ("Section `opening_books` must be a dictionary with indented keys followed by colons."),
-            ],
-            [
+            ),
+            (
                 "online_moves",
                 dict,
                 ("Section `online_moves` must be a dictionary with indented keys followed by colons."),
-            ],
-            ["offer_draw", dict, "Section `offer_draw` must be a dictionary with indented keys followed by colons."],
-            ["resign", dict, "Section `resign` must be a dictionary with indented keys followed by colons."],
-            ["challenge", dict, "Section `challenge` must be a dictionary with indented keys followed by colons."],
-            ["matchmaking", dict, "Section `matchmaking` must be a dictionary with indented keys followed by colons."],
-            ["messages", dict | None, "Section `messages` must be a dictionary with indented keys followed by colons."],
-            ["whitelist", list | None, "Section `whitelist` must be a list."],
-            ["blacklist", list | None, "Section `blacklist` must be a list."],
-            ["books", dict, "Section `books` must be a dictionary with indented keys followed by colons."],
+            ),
+            ("offer_draw", dict, "Section `offer_draw` must be a dictionary with indented keys followed by colons."),
+            ("resign", dict, "Section `resign` must be a dictionary with indented keys followed by colons."),
+            ("challenge", dict, "Section `challenge` must be a dictionary with indented keys followed by colons."),
+            ("matchmaking", dict, "Section `matchmaking` must be a dictionary with indented keys followed by colons."),
+            ("messages", dict | None, "Section `messages` must be a dictionary with indented keys followed by colons."),
+            ("whitelist", list | None, "Section `whitelist` must be a list."),
+            ("blacklist", list | None, "Section `blacklist` must be a list."),
+            ("books", dict, "Section `books` must be a dictionary with indented keys followed by colons."),
         ]
-        for section in sections:
-            if section[0] not in config:
-                raise RuntimeError(f"Your config does not have required section `{section[0]}`.")
 
-            if not isinstance(config[section[0]], section[1]):
-                raise TypeError(section[2])
+        Config._validate_config_section(config, "config", sections)
 
     @staticmethod
     def _get_engine_configs(engines_section: dict[str, dict[str, Any]]) -> dict[str, Engine_Config]:
-        engines_sections = [
-            ["dir", str, '"dir" must be a string wrapped in quotes.'],
-            ["name", str, '"name" must be a string wrapped in quotes.'],
-            ["ponder", bool, '"ponder" must be a bool.'],
-            ["silence_stderr", bool, '"silence_stderr" must be a bool.'],
-            ["move_overhead_multiplier", float, '"move_overhead_multiplier" must be a float.'],
-            ["uci_options", dict | None, '"uci_options" must be a dictionary with indented keys followed by colons.'],
-            ["limits", dict | None, '"limits" must be a dictionary with indented keys followed by colons.'],
+        engines_sections: list[tuple[str, type | UnionType, str]] = [
+            ("dir", str, '"dir" must be a string wrapped in quotes.'),
+            ("name", str, '"name" must be a string wrapped in quotes.'),
+            ("ponder", bool, '"ponder" must be a bool.'),
+            ("silence_stderr", bool, '"silence_stderr" must be a bool.'),
+            ("move_overhead_multiplier", float, '"move_overhead_multiplier" must be a float.'),
+            ("uci_options", dict | None, '"uci_options" must be a dictionary with indented keys followed by colons.'),
+            ("limits", dict | None, '"limits" must be a dictionary with indented keys followed by colons.'),
         ]
 
         engine_configs: dict[str, Engine_Config] = {}
         for key, settings in engines_section.items():
-            for subsection in engines_sections:
-                if subsection[0] not in settings:
-                    raise RuntimeError(f'Your "{key}" engine does not have required field `{subsection[0]}`.')
-
-                if not isinstance(settings[subsection[0]], subsection[1]):
-                    raise TypeError(f"`engines` `{key}` subsection {subsection[2]}")
+            Config._validate_config_section(settings, f"engine.{key}", engines_sections)
 
             if not os.path.isdir(settings["dir"]):
                 raise RuntimeError(f'Your engine dir "{settings["dir"]}" is not a directory.')
@@ -175,23 +177,16 @@ class Config:
 
     @staticmethod
     def _get_syzygy_configs(syzygy_section: dict[str, dict[str, Any]]) -> dict[str, Syzygy_Config]:
-        syzygy_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["paths", list, '"paths" must be a list.'],
-            ["max_pieces", int, '"max_pieces" must be an integer.'],
-            ["instant_play", bool, '"instant_play" must be a bool.'],
+        syzygy_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("paths", list, '"paths" must be a list.'),
+            ("max_pieces", int, '"max_pieces" must be an integer.'),
+            ("instant_play", bool, '"instant_play" must be a bool.'),
         ]
 
         syzygy_configs: dict[str, Syzygy_Config] = {}
         for key, settings in syzygy_section.items():
-            for subsection in syzygy_sections:
-                if subsection[0] not in settings:
-                    raise RuntimeError(
-                        f"Your config does not have required `syzygy` `{key}` subsection `{subsection[0]}`."
-                    )
-
-                if not isinstance(settings[subsection[0]], subsection[1]):
-                    raise TypeError(f"`syzygy` `{key}` subsection {subsection[2]}")
+            Config._validate_config_section(settings, f"syzygy.{key}", syzygy_sections)
 
             if not settings["enabled"]:
                 syzygy_configs[key] = Syzygy_Config(False, [], 0, False)
@@ -209,18 +204,13 @@ class Config:
 
     @staticmethod
     def _get_gaviota_config(gaviota_section: dict[str, Any]) -> Gaviota_Config:
-        gaviota_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["paths", list, '"paths" must be a list.'],
-            ["max_pieces", int, '"max_pieces" must be an integer.'],
+        gaviota_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("paths", list, '"paths" must be a list.'),
+            ("max_pieces", int, '"max_pieces" must be an integer.'),
         ]
 
-        for subsection in gaviota_sections:
-            if subsection[0] not in gaviota_section:
-                raise RuntimeError(f"Your config does not have required `gaviota` subsection `{subsection[0]}`.")
-
-            if not isinstance(gaviota_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`gaviota` subsection {subsection[2]}")
+        Config._validate_config_section(gaviota_section, "gaviota", gaviota_sections)
 
         if gaviota_section["enabled"]:
             for path in gaviota_section["paths"]:
@@ -231,38 +221,22 @@ class Config:
 
     @staticmethod
     def _get_opening_books_config(config: dict[str, Any]) -> Opening_Books_Config:
-        opening_books_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["priority", int, '"priority" must be an integer.'],
-            ["books", dict, '"books" must be a dictionary with indented keys followed by colons.'],
+        opening_books_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("priority", int, '"priority" must be an integer.'),
+            ("books", dict, '"books" must be a dictionary with indented keys followed by colons.'),
         ]
 
-        for subsection in opening_books_sections:
-            if subsection[0] not in config["opening_books"]:
-                raise RuntimeError(f"Your config does not have required `opening_books` subsection `{subsection[0]}`.")
+        Config._validate_config_section(config["opening_books"], "opening_books", opening_books_sections)
 
-            if not isinstance(config["opening_books"][subsection[0]], subsection[1]):
-                raise TypeError(f"`opening_books` subsection {subsection[2]}")
-
-        if not config["opening_books"]["enabled"]:
-            return Opening_Books_Config(False, 0, None, {})
-
-        opening_book_types_sections = [
-            ["selection", str, '"selection" must be one of "weighted_random", "uniform_random" or "best_move".'],
-            ["names", list, '"names" must be a list of book names.'],
+        opening_book_types_sections: list[tuple[str, type | UnionType, str]] = [
+            ("selection", str, '"selection" must be one of "weighted_random", "uniform_random" or "best_move".'),
+            ("names", list, '"names" must be a list of book names.'),
         ]
 
         books: dict[str, Books_Config] = {}
         for section, settings in config["opening_books"]["books"].items():
-            for subsection in opening_book_types_sections:
-                if subsection[0] not in settings:
-                    raise RuntimeError(
-                        f"Your `opening_books` `books` `{section}` section"
-                        f"does not have required field `{subsection[0]}`."
-                    )
-
-                if not isinstance(settings[subsection[0]], subsection[1]):
-                    raise TypeError(f"`opening_books` `books` `{section}` field {subsection[2]}")
+            Config._validate_config_section(settings, f"opening_books.{section}", opening_book_types_sections)
 
             names: dict[str, str] = {}
             for book_name in settings["names"]:
@@ -287,28 +261,23 @@ class Config:
 
     @staticmethod
     def _get_opening_explorer_config(opening_explorer_section: dict[str, Any]) -> Opening_Explorer_Config:
-        opening_explorer_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["priority", int, '"priority" must be an integer.'],
-            ["only_without_book", bool, '"only_without_book" must be a bool.'],
-            ["use_for_variants", bool, '"use_for_variants" must be a bool.'],
-            ["allow_repetitions", bool, '"allow_repetitions" must be a bool.'],
-            ["min_time", int, '"min_time" must be an integer.'],
-            ["timeout", int, '"timeout" must be an integer.'],
-            ["min_games", int, '"min_games" must be an integer.'],
-            ["only_with_wins", bool, '"only_with_wins" must be a bool.'],
-            ["selection", str, '"selection" must be "performance" or "win_rate".'],
-            ["anti", bool, '"anti" must be a bool.'],
+        opening_explorer_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("priority", int, '"priority" must be an integer.'),
+            ("only_without_book", bool, '"only_without_book" must be a bool.'),
+            ("use_for_variants", bool, '"use_for_variants" must be a bool.'),
+            ("allow_repetitions", bool, '"allow_repetitions" must be a bool.'),
+            ("min_time", int, '"min_time" must be an integer.'),
+            ("timeout", int, '"timeout" must be an integer.'),
+            ("min_games", int, '"min_games" must be an integer.'),
+            ("only_with_wins", bool, '"only_with_wins" must be a bool.'),
+            ("selection", str, '"selection" must be "performance" or "win_rate".'),
+            ("anti", bool, '"anti" must be a bool.'),
         ]
 
-        for subsection in opening_explorer_sections:
-            if subsection[0] not in opening_explorer_section:
-                raise RuntimeError(
-                    f"Your config does not have required `online_moves` `opening_explorer` field `{subsection[0]}`."
-                )
-
-            if not isinstance(opening_explorer_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` `opening_explorer` field {subsection[2]}")
+        Config._validate_config_section(
+            opening_explorer_section, "online_moves.opening_explorer", opening_explorer_sections
+        )
 
         return Opening_Explorer_Config(
             opening_explorer_section["enabled"],
@@ -329,26 +298,19 @@ class Config:
 
     @staticmethod
     def _get_lichess_cloud_config(lichess_cloud_section: dict[str, Any]) -> Lichess_Cloud_Config:
-        lichess_cloud_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["priority", int, '"priority" must be an integer.'],
-            ["only_without_book", bool, '"only_without_book" must be a bool.'],
-            ["use_for_variants", bool, '"use_for_variants" must be a bool.'],
-            ["allow_repetitions", bool, '"allow_repetitions" must be a bool.'],
-            ["trust_eval", bool, '"trust_eval" must be a bool.'],
-            ["min_eval_depth", int, '"min_eval_depth" must be an integer.'],
-            ["min_time", int, '"min_time" must be an integer.'],
-            ["timeout", int, '"timeout" must be an integer.'],
+        lichess_cloud_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("priority", int, '"priority" must be an integer.'),
+            ("only_without_book", bool, '"only_without_book" must be a bool.'),
+            ("use_for_variants", bool, '"use_for_variants" must be a bool.'),
+            ("allow_repetitions", bool, '"allow_repetitions" must be a bool.'),
+            ("trust_eval", bool, '"trust_eval" must be a bool.'),
+            ("min_eval_depth", int, '"min_eval_depth" must be an integer.'),
+            ("min_time", int, '"min_time" must be an integer.'),
+            ("timeout", int, '"timeout" must be an integer.'),
         ]
 
-        for subsection in lichess_cloud_sections:
-            if subsection[0] not in lichess_cloud_section:
-                raise RuntimeError(
-                    f"Your config does not have required `online_moves` `lichess_cloud` field `{subsection[0]}`."
-                )
-
-            if not isinstance(lichess_cloud_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` `lichess_cloud` field {subsection[2]}")
+        Config._validate_config_section(lichess_cloud_section, "online_moves.lichess_cloud", lichess_cloud_sections)
 
         return Lichess_Cloud_Config(
             lichess_cloud_section["enabled"],
@@ -366,25 +328,18 @@ class Config:
 
     @staticmethod
     def _get_chessdb_config(chessdb_section: dict[str, Any]) -> ChessDB_Config:
-        chessdb_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["priority", int, '"priority" must be an integer.'],
-            ["only_without_book", bool, '"only_without_book" must be a bool.'],
-            ["allow_repetitions", bool, '"allow_repetitions" must be a bool.'],
-            ["trust_eval", bool, '"trust_eval" must be a bool.'],
-            ["min_time", int, '"min_time" must be an integer.'],
-            ["timeout", int, '"timeout" must be an integer.'],
-            ["best_move", bool, '"best_move" must be a bool.'],
+        chessdb_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("priority", int, '"priority" must be an integer.'),
+            ("only_without_book", bool, '"only_without_book" must be a bool.'),
+            ("allow_repetitions", bool, '"allow_repetitions" must be a bool.'),
+            ("trust_eval", bool, '"trust_eval" must be a bool.'),
+            ("min_time", int, '"min_time" must be an integer.'),
+            ("timeout", int, '"timeout" must be an integer.'),
+            ("best_move", bool, '"best_move" must be a bool.'),
         ]
 
-        for subsection in chessdb_sections:
-            if subsection[0] not in chessdb_section:
-                raise RuntimeError(
-                    f"Your config does not have required `online_moves` `chessdb` field `{subsection[0]}`."
-                )
-
-            if not isinstance(chessdb_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` `chessdb` field {subsection[2]}")
+        Config._validate_config_section(chessdb_section, "online_moves.chessdb", chessdb_sections)
 
         return ChessDB_Config(
             chessdb_section["enabled"],
@@ -401,20 +356,13 @@ class Config:
 
     @staticmethod
     def _get_online_egtb_config(online_egtb_section: dict[str, Any]) -> Online_EGTB_Config:
-        online_egtb_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["min_time", int, '"min_time" must be an integer.'],
-            ["timeout", int, '"timeout" must be an integer.'],
+        online_egtb_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("min_time", int, '"min_time" must be an integer.'),
+            ("timeout", int, '"timeout" must be an integer.'),
         ]
 
-        for subsection in online_egtb_sections:
-            if subsection[0] not in online_egtb_section:
-                raise RuntimeError(
-                    f"Your config does not have required `online_moves` `online_egtb` field `{subsection[0]}`."
-                )
-
-            if not isinstance(online_egtb_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` `online_egtb` field {subsection[2]}")
+        Config._validate_config_section(online_egtb_section, "online_moves.online_egtb", online_egtb_sections)
 
         return Online_EGTB_Config(
             online_egtb_section["enabled"], online_egtb_section["min_time"], online_egtb_section["timeout"]
@@ -422,23 +370,18 @@ class Config:
 
     @staticmethod
     def _get_online_moves_config(online_moves_section: dict[str, dict[str, Any]]) -> Online_Moves_Config:
-        online_moves_sections = [
-            [
+        online_moves_sections: list[tuple[str, type | UnionType, str]] = [
+            (
                 "opening_explorer",
                 dict,
                 ('"opening_explorer" must be a dictionary with indented keys followed by colons.'),
-            ],
-            ["chessdb", dict, '"chessdb" must be a dictionary with indented keys followed by colons.'],
-            ["lichess_cloud", dict, '"lichess_cloud" must be a dictionary with indented keys followed by colons.'],
-            ["online_egtb", dict, '"online_egtb" must be a dictionary with indented keys followed by colons.'],
+            ),
+            ("chessdb", dict, '"chessdb" must be a dictionary with indented keys followed by colons.'),
+            ("lichess_cloud", dict, '"lichess_cloud" must be a dictionary with indented keys followed by colons.'),
+            ("online_egtb", dict, '"online_egtb" must be a dictionary with indented keys followed by colons.'),
         ]
 
-        for subsection in online_moves_sections:
-            if subsection[0] not in online_moves_section:
-                raise RuntimeError(f"Your config does not have required `online_moves` subsection `{subsection[0]}`.")
-
-            if not isinstance(online_moves_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`online_moves` subsection {subsection[2]}")
+        Config._validate_config_section(online_moves_section, "online_moves", online_moves_sections)
 
         return Online_Moves_Config(
             Config._get_opening_explorer_config(online_moves_section["opening_explorer"]),
@@ -449,20 +392,15 @@ class Config:
 
     @staticmethod
     def _get_offer_draw_config(offer_draw_section: dict[str, Any]) -> Offer_Draw_Config:
-        offer_draw_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["score", int, '"score" must be an integer.'],
-            ["consecutive_moves", int, '"consecutive_moves" must be an integer.'],
-            ["min_game_length", int, '"min_game_length" must be an integer.'],
-            ["against_humans", bool, '"against_humans" must be a bool.'],
+        offer_draw_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("score", int, '"score" must be an integer.'),
+            ("consecutive_moves", int, '"consecutive_moves" must be an integer.'),
+            ("min_game_length", int, '"min_game_length" must be an integer.'),
+            ("against_humans", bool, '"against_humans" must be a bool.'),
         ]
 
-        for subsection in offer_draw_sections:
-            if subsection[0] not in offer_draw_section:
-                raise RuntimeError(f"Your config does not have required `offer_draw` subsection `{subsection[0]}`.")
-
-            if not isinstance(offer_draw_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`offer_draw` subsection {subsection[2]}")
+        Config._validate_config_section(offer_draw_section, "offer_draw", offer_draw_sections)
 
         return Offer_Draw_Config(
             offer_draw_section["enabled"],
@@ -475,19 +413,14 @@ class Config:
 
     @staticmethod
     def _get_resign_config(resign_section: dict[str, Any]) -> Resign_Config:
-        resign_sections = [
-            ["enabled", bool, '"enabled" must be a bool.'],
-            ["score", int, '"score" must be an integer.'],
-            ["consecutive_moves", int, '"consecutive_moves" must be an integer.'],
-            ["against_humans", bool, '"against_humans" must be a bool.'],
+        resign_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("score", int, '"score" must be an integer.'),
+            ("consecutive_moves", int, '"consecutive_moves" must be an integer.'),
+            ("against_humans", bool, '"against_humans" must be a bool.'),
         ]
 
-        for subsection in resign_sections:
-            if subsection[0] not in resign_section:
-                raise RuntimeError(f"Your config does not have required `resign` subsection `{subsection[0]}`.")
-
-            if not isinstance(resign_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`resign` subsection {subsection[2]}")
+        Config._validate_config_section(resign_section, "resign", resign_sections)
 
         return Resign_Config(
             resign_section["enabled"],
@@ -499,22 +432,17 @@ class Config:
 
     @staticmethod
     def _get_challenge_config(challenge_section: dict[str, Any]) -> Challenge_Config:
-        challenge_sections = [
-            ["concurrency", int, '"concurrency" must be an integer.'],
-            ["max_takebacks", int, '"max_takebacks" must be an integer.'],
-            ["bullet_with_increment_only", bool, '"bullet_with_increment_only" must be a bool.'],
-            ["variants", list, '"variants" must be a list of variants.'],
-            ["time_controls", list | None, '"time_controls" must be a list of speeds or time controls.'],
-            ["bot_modes", list | None, '"bot_modes" must be a list of game modes.'],
-            ["human_modes", list | None, '"human_modes" must be a list of game modes.'],
+        challenge_sections: list[tuple[str, type | UnionType, str]] = [
+            ("concurrency", int, '"concurrency" must be an integer.'),
+            ("max_takebacks", int, '"max_takebacks" must be an integer.'),
+            ("bullet_with_increment_only", bool, '"bullet_with_increment_only" must be a bool.'),
+            ("variants", list, '"variants" must be a list of variants.'),
+            ("time_controls", list | None, '"time_controls" must be a list of speeds or time controls.'),
+            ("bot_modes", list | None, '"bot_modes" must be a list of game modes.'),
+            ("human_modes", list | None, '"human_modes" must be a list of game modes.'),
         ]
 
-        for subsection in challenge_sections:
-            if subsection[0] not in challenge_section:
-                raise RuntimeError(f"Your config does not have required `challenge` subsection `{subsection[0]}`.")
-
-            if not isinstance(challenge_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`challenge` subsection {subsection[2]}")
+        Config._validate_config_section(challenge_section, "challenge", challenge_sections)
 
         return Challenge_Config(
             challenge_section["concurrency"],
@@ -532,19 +460,14 @@ class Config:
 
     @staticmethod
     def _get_matchmaking_config(matchmaking_section: dict[str, Any]) -> Matchmaking_Config:
-        matchmaking_sections = [
-            ["delay", int, '"delay" must be an integer.'],
-            ["timeout", int, '"timeout" must be an integer.'],
-            ["selection", str, '"selection" must be one of "weighted_random", "sequential" or "cyclic".'],
-            ["types", dict, '"types" must be a dictionary with indented keys followed by colons.'],
+        matchmaking_sections: list[tuple[str, type | UnionType, str]] = [
+            ("delay", int, '"delay" must be an integer.'),
+            ("timeout", int, '"timeout" must be an integer.'),
+            ("selection", str, '"selection" must be one of "weighted_random", "sequential" or "cyclic".'),
+            ("types", dict, '"types" must be a dictionary with indented keys followed by colons.'),
         ]
 
-        for subsection in matchmaking_sections:
-            if subsection[0] not in matchmaking_section:
-                raise RuntimeError(f"Your config does not have required `matchmaking` subsection `{subsection[0]}`.")
-
-            if not isinstance(matchmaking_section[subsection[0]], subsection[1]):
-                raise TypeError(f"`matchmaking` subsection {subsection[2]}")
+        Config._validate_config_section(matchmaking_section, "matchmaking", matchmaking_sections)
 
         types: dict[str, Matchmaking_Type_Config] = {}
         for matchmaking_type, matchmaking_options in matchmaking_section["types"].items():
@@ -579,11 +502,11 @@ class Config:
 
     @staticmethod
     def _get_messages_config(messages_section: dict[str, str]) -> Messages_Config:
-        messages_sections = [
-            ["greeting", str, '"greeting" must be a string wrapped in quotes.'],
-            ["goodbye", str, '"goodbye" must be a string wrapped in quotes.'],
-            ["greeting_spectators", str, '"greeting_spectators" must be a string wrapped in quotes.'],
-            ["goodbye_spectators", str, '"goodbye_spectators" must be a string wrapped in quotes.'],
+        messages_sections: list[tuple[str, type | UnionType, str]] = [
+            ("greeting", str, '"greeting" must be a string wrapped in quotes.'),
+            ("goodbye", str, '"goodbye" must be a string wrapped in quotes.'),
+            ("greeting_spectators", str, '"greeting_spectators" must be a string wrapped in quotes.'),
+            ("goodbye_spectators", str, '"goodbye_spectators" must be a string wrapped in quotes.'),
         ]
 
         for subsection in messages_sections:
