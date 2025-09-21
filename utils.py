@@ -5,22 +5,4 @@ def parse_time_control(time_control: str) -> tuple[int, int]:
     return initial_time, increment
 
 
-def validate_time_limits(
-    initial: int, increment: int, min_initial: int, max_initial: int, min_increment: int, max_increment: int
-) -> tuple[bool, str | None]:
-    if increment < min_increment:
-        return False, f"Increment {increment} is too short according to config."
-
-    if increment > max_increment:
-        return False, f"Increment {increment} is too long according to config."
-
-    if initial < min_initial:
-        return False, f"Initial time {initial} is too short according to config."
-
-    if initial > max_initial:
-        return False, f"Initial time {initial} is too long according to config."
-
-    return True, None
-
-
 
