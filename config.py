@@ -289,7 +289,11 @@ class Config:
             ["anti", bool, '"anti" must be a bool.'],
         ]
 
-        Config._validate_config_section(opening_explorer_section, "online_moves.opening_explorer", opening_explorer_sections)
+        Config._validate_config_section(
+            opening_explorer_section, 
+            "online_moves.opening_explorer", 
+            opening_explorer_sections
+        )
 
         return Opening_Explorer_Config(
             opening_explorer_section["enabled"],
