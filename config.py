@@ -26,7 +26,6 @@ from configs import (
     Resign_Config,
     Syzygy_Config,
 )
-from utils import validate_config_section
 
 
 @dataclass
@@ -125,7 +124,16 @@ class Config:
 
             if not isinstance(config[section[0]], section[1]):
                 raise TypeError(section[2])
+    @staticmethod 
+    def _validate_config_section(config: dict, section_name: str, required_fields: list[list]) -> None:
+        for field_info in required_fields:
+            field_name, field_type, error_msg = field_info
+            if field_name not in config:
+                raise RuntimeError(f"Your config does not have required `{section_name}` subsection `{field_name}`.")
 
+            if not isinstance(config[field_name], field_type):
+                raise TypeError(f"`{section_name}` subsection {error_msg}")
+            
     @staticmethod
     def _get_engine_configs(engines_section: dict[str, dict[str, Any]]) -> dict[str, Engine_Config]:
         engines_sections = [
@@ -458,7 +466,7 @@ class Config:
             ["against_humans", bool, '"against_humans" must be a bool.'],
         ]
 
-        validate_config_section(offer_draw_section, "offer_draw", offer_draw_sections)
+        cls._validate_config_section(offer_draw_section, "offer_draw", offer_draw_sections)
 
         return Offer_Draw_Config(
             offer_draw_section["enabled"],
@@ -478,7 +486,7 @@ class Config:
             ["against_humans", bool, '"against_humans" must be a bool.'],
         ]
 
-        validate_config_section(resign_section, "resign", resign_sections)
+        cls._validate_config_section(resign_section, "resign", resign_sections)
 
         return Resign_Config(
             resign_section["enabled"],
@@ -500,7 +508,7 @@ class Config:
             ["human_modes", list | None, '"human_modes" must be a list of game modes.'],
         ]
 
-        validate_config_section(challenge_section, "challenge", challenge_sections)
+        cls._validate_config_section(challenge_section, "challenge", challenge_sections)
 
         return Challenge_Config(
             challenge_section["concurrency"],
@@ -525,7 +533,7 @@ class Config:
             ["types", dict, '"types" must be a dictionary with indented keys followed by colons.'],
         ]
 
-        validate_config_section(matchmaking_section, "matchmaking", matchmaking_sections)
+        cls._validate_config_section(matchmaking_section, "matchmaking", matchmaking_sections)
 
         types: dict[str, Matchmaking_Type_Config] = {}
         for matchmaking_type, matchmaking_options in matchmaking_section["types"].items():
