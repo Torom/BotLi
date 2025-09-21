@@ -105,7 +105,7 @@ class Game:
         await asyncio.sleep(abortion_seconds)
 
         if not lichess_game.is_our_turn and lichess_game.is_abortable:
-            print("Aborting game ...")
+            game_print("Aborting game ...", game_id=info.id_)
             await self.api.abort_game(self.game_id)
             await chatter.send_abortion_message()
 
@@ -115,7 +115,7 @@ class Game:
         opponents_str = f"{info.white_str}   -   {info.black_str}"
         message = (5 * " ").join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
 
-        print(f"\n{message}\n{128 * '‾'}")
+        game_print(f"\n{message}\n{128 * '‾'}", game_id=info.id_)
 
     def _print_result_message(
         self, game_state: dict[str, Any], lichess_game: Lichess_Game, info: Game_Information
