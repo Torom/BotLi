@@ -4,7 +4,7 @@ import logging
 import os
 import signal
 import sys
-from copy import replace
+from dataclasses import replace
 from enum import StrEnum
 from typing import TypeVar
 
