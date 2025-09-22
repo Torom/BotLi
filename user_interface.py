@@ -308,9 +308,7 @@ class User_Interface:
             color = Challenge_Color.WHITE
         else:
             color = Challenge_Color.RANDOM
-        challenge_request = Challenge_Request(
-            opponent_username, initial_time, increment, rated, color, variant, 300
-        )
+        challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 300)
         self.game_manager.request_challenge(challenge_request)
         print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 
@@ -364,8 +362,8 @@ class User_Interface:
 
     def _is_time_control(self, arg: str) -> bool:
         try:
-            if '+' in arg:
-                parts = arg.split('+')
+            if "+" in arg:
+                parts = arg.split("+")
                 if len(parts) == 2:
                     float(parts[0])
                     int(parts[1])
