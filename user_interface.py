@@ -4,6 +4,7 @@ import logging
 import os
 import signal
 import sys
+from copy import replace
 from enum import StrEnum
 from typing import TypeVar
 
@@ -15,7 +16,6 @@ from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
 from logo import LOGO
-from utils import parse_time_control
 
 try:
     import readline
@@ -66,7 +66,9 @@ class User_Interface:
             signal.signal(signal.SIGTERM, self.signal_handler)
 
             if commands:
+                # Short timeout to receive ongoing games first
                 await asyncio.sleep(0.5)
+
                 for command in commands:
                     await self._handle_command(command.split())
 
@@ -171,45 +173,13 @@ class User_Interface:
         if len(command) < 2:
             print(COMMANDS["challenge"])
             return
-        args = command[1:]
-        opponent_username = None
-        time_control = "1+1"
-        color = Challenge_Color.RANDOM
-        rated = True
-        variant = Variant.STANDARD
-        for arg in args:
-            if self._is_time_control(arg):
-                time_control = arg
-            elif arg.lower() in ["true", "yes", "rated"]:
-                rated = True
-            elif arg.lower() in ["false", "no", "unrated", "casual"]:
-                rated = False
-            elif arg.lower() in ["white", "black", "random"]:
-                color = Challenge_Color(arg.lower())
-            elif self._is_variant(arg):
-                variant = self._find_enum(arg, Variant)
-            elif opponent_username is None:
-                opponent_username = arg
-            else:
-                print(f"Unknown argument: {arg}")
-                return
-        if opponent_username is None:
-            print("Username is required")
-            return
+
         try:
-            initial_time, increment = parse_time_control(time_control)
+            challenge_request = Challenge_Request.parse_from_command(command[1:], 60)
         except ValueError as e:
             print(e)
             return
-        challenge_request = Challenge_Request(
-            opponent_username,
-            initial_time,
-            increment,
-            rated,
-            color,
-            variant,
-            300,
-        )
+
         self.game_manager.request_challenge(challenge_request)
         print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 
@@ -221,64 +191,26 @@ class User_Interface:
         if len(command) < 3:
             print(COMMANDS["create"])
             return
+
         try:
             count = int(command[1])
         except ValueError:
             print("First argument must be the number of game pairs to create.")
             return
-        args = command[2:]
-        opponent_username = None
-        time_control = "1+1"
-        rated = True
-        variant = Variant.STANDARD
-        for arg in args:
-            if self._is_time_control(arg):
-                time_control = arg
-            elif arg.lower() in ["true", "yes", "rated"]:
-                rated = True
-            elif arg.lower() in ["false", "no", "unrated", "casual"]:
-                rated = False
-            elif self._is_variant(arg):
-                variant = self._find_enum(arg, Variant)
-            elif opponent_username is None:
-                opponent_username = arg
-            else:
-                print(f"Unknown argument: {arg}")
-                return
-        if opponent_username is None:
-            print("Username is required")
-            return
+
         try:
-            initial_time, increment = parse_time_control(time_control)
+            challenge_request = Challenge_Request.parse_from_command(command[2:], 60)
         except ValueError as e:
             print(e)
             return
+
         challenges: list[Challenge_Request] = []
         for _ in range(count):
-            challenges.append(
-                Challenge_Request(
-                    opponent_username,
-                    initial_time,
-                    increment,
-                    rated,
-                    Challenge_Color.WHITE,
-                    variant,
-                    300,
-                )
-            )
-            challenges.append(
-                Challenge_Request(
-                    opponent_username,
-                    initial_time,
-                    increment,
-                    rated,
-                    Challenge_Color.BLACK,
-                    variant,
-                    300,
-                )
-            )
+            challenges.append(replace(challenge_request, color=Challenge_Color.WHITE))
+            challenges.append(replace(challenge_request, color=Challenge_Color.BLACK))
+
         self.game_manager.request_challenge(*challenges)
-        print(f"Challenges for {count} game pairs against {opponent_username} added to the queue.")
+        print(f"Challenges for {count} game pairs against {challenge_request.opponent_username} added to the queue.")
 
     async def _join(self, command: list[str]) -> None:
         if len(command) < 2 or len(command) > 3:
@@ -387,25 +319,6 @@ class User_Interface:
 
     def signal_handler(self, *_) -> None:
         self._quit_task = asyncio.create_task(self._quit())
-
-    def _is_time_control(self, arg: str) -> bool:
-        try:
-            if "+" in arg:
-                parts = arg.split("+")
-                if len(parts) == 2:
-                    float(parts[0])
-                    int(parts[1])
-                    return True
-        except ValueError:
-            pass
-        return False
-
-    def _is_variant(self, arg: str) -> bool:
-        try:
-            self._find_enum(arg, Variant)
-            return True
-        except ValueError:
-            return False
 
 
 class Autocompleter:

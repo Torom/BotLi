@@ -1,3 +1,24 @@
+from enums import Variant
+
+ALIASES = {
+    Variant.STANDARD: ["Standard", "Chess", "Classical", "Normal", "Std"],
+    Variant.ANTICHESS: ["Antichess", "Anti"],
+    Variant.ATOMIC: ["Atomic", "Atom"],
+    Variant.CHESS960: ["Chess960", "960", "FRC"],
+    Variant.CRAZYHOUSE: ["Crazyhouse", "House", "ZH"],
+    Variant.HORDE: ["Horde"],
+    Variant.KING_OF_THE_HILL: ["KOTH", "kingOfTheHill", "Hill"],
+    Variant.RACING_KINGS: ["Racing", "Race", "racingkings"],
+    Variant.THREE_CHECK: ["Three-check", "Threecheck", "3-check", "3check"],
+}
+
+
+def find_variant(name: str) -> Variant | None:
+    for variant, aliases in ALIASES.items():
+        if any(name.lower() == alias.lower() for alias in aliases):
+            return variant
+
+
 def parse_time_control(time_control: str) -> tuple[int, int]:
     initial_time_str, increment_str = time_control.split("+")
     initial_time = int(float(initial_time_str) * 60)

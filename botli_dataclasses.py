@@ -9,6 +9,7 @@ import chess.engine
 from chess.polyglot import MemoryMappedReader
 
 from enums import Challenge_Color, Perf_Type, Variant
+from utils import find_variant, parse_time_control
 
 
 @dataclass
@@ -70,6 +71,36 @@ class Challenge_Request:
     color: Challenge_Color
     variant: Variant
     timeout: int
+
+    @classmethod
+    def parse_from_command(cls, args: list[str], timeout: int) -> "Challenge_Request":
+        opponent_username = None
+        initial_time = 60
+        increment = 1
+        color = Challenge_Color.RANDOM
+        rated = True
+        variant = Variant.STANDARD
+
+        for arg in args:
+            if "+" in arg:
+                initial_time, increment = parse_time_control(arg)
+            elif arg.lower() in ["true", "yes", "rated"]:
+                rated = True
+            elif arg.lower() in ["false", "no", "unrated", "casual"]:
+                rated = False
+            elif arg.lower() in ["white", "black", "random"]:
+                color = Challenge_Color(arg.lower())
+            elif found_variant := find_variant(arg):
+                variant = found_variant
+            elif opponent_username is None:
+                opponent_username = arg
+            else:
+                print(f"Unknown argument: {arg}")
+
+        if opponent_username is None:
+            raise ValueError("Username is required.")
+
+        return Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, timeout)
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, Challenge_Request):
