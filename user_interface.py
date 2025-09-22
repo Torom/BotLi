@@ -185,7 +185,15 @@ class User_Interface:
         except ValueError as e:
             print(e)
             return
-        challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 300)
+        challenge_request = Challenge_Request(
+            opponent_username,
+            initial_time,
+            increment,
+            rated,
+            color,
+            variant,
+            300,
+        )
         self.game_manager.request_challenge(challenge_request)
         print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 
@@ -232,10 +240,26 @@ class User_Interface:
         challenges: list[Challenge_Request] = []
         for _ in range(count):
             challenges.append(
-                Challenge_Request(opponent_username, initial_time, increment, rated, Challenge_Color.WHITE, variant, 300)
+                Challenge_Request(
+                    opponent_username,
+                    initial_time,
+                    increment,
+                    rated,
+                    Challenge_Color.WHITE,
+                    variant,
+                    300,
+                )
             )
             challenges.append(
-                Challenge_Request(opponent_username, initial_time, increment, rated, Challenge_Color.BLACK, variant, 300)
+                Challenge_Request(
+                    opponent_username,
+                    initial_time,
+                    increment,
+                    rated,
+                    Challenge_Color.BLACK,
+                    variant,
+                    300,
+                )
             )
         self.game_manager.request_challenge(*challenges)
         print(f"Challenges for {count} game pairs against {opponent_username} added to the queue.")
@@ -284,7 +308,9 @@ class User_Interface:
             color = Challenge_Color.WHITE
         else:
             color = Challenge_Color.RANDOM
-        challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 300)
+        challenge_request = Challenge_Request(
+            opponent_username, initial_time, increment, rated, color, variant, 300
+        )
         self.game_manager.request_challenge(challenge_request)
         print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 
