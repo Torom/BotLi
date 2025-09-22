@@ -4,7 +4,6 @@ import logging
 import os
 import signal
 import sys
-from dataclasses import replace
 from enum import StrEnum
 from typing import TypeVar
 
@@ -206,8 +205,8 @@ class User_Interface:
 
         challenges: list[Challenge_Request] = []
         for _ in range(count):
-            challenges.append(replace(challenge_request, color=Challenge_Color.WHITE))
-            challenges.append(replace(challenge_request, color=Challenge_Color.BLACK))
+            challenges.append(challenge_request.replaced(color=Challenge_Color.WHITE))
+            challenges.append(challenge_request.replaced(color=Challenge_Color.BLACK))
 
         self.game_manager.request_challenge(*challenges)
         print(f"Challenges for {count} game pairs against {challenge_request.opponent_username} added to the queue.")

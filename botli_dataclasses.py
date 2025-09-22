@@ -1,6 +1,6 @@
 from asyncio import Task
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
@@ -101,6 +101,9 @@ class Challenge_Request:
             raise ValueError("Username is required.")
 
         return Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, timeout)
+
+    def replaced(self, **changes: Any) -> "Challenge_Request":
+        return replace(self, **changes)
 
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, Challenge_Request):
