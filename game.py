@@ -19,6 +19,7 @@ class Game:
         self.was_aborted = False
         self.ejected_tournament: str | None = None
         self.game_info: Game_Information | None = None
+        self.end_event: dict[str, Any] | None = None
 
         self.move_task: asyncio.Task[None] | None = None
         self.abortion_task: asyncio.Task[None] | None = None
@@ -86,16 +87,19 @@ class Game:
                     self.move_task.cancel()
 
                 self._print_result_message(event, lichess_game, info)
-                await chatter.send_goodbyes()
-                await self._handle_game_end(event, lichess_game, chatter)
+                self.end_event = event
                 break
 
             if has_updated:
                 self.move_task = asyncio.create_task(self._make_move(lichess_game, chatter))
 
+        if self.end_event:
+            await chatter.send_goodbyes()
+            await self._handle_game_end(self.end_event, lichess_game, chatter)
+
         if self.abortion_task:
             self.abortion_task.cancel()
-        await lichess_game.close()
+        asyncio.create_task(lichess_game.close())
 
     async def _make_move(self, lichess_game: Lichess_Game, chatter: Chatter) -> None:
         lichess_move = await lichess_game.make_move()
