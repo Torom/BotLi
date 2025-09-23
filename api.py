@@ -366,3 +366,29 @@ class API:
         except aiohttp.ClientResponseError as e:
             print(e)
             return False
+
+    async def offer_rematch(self, opponent_username: str, initial_time: int, increment: int, rated: bool, variant: str, color: str | None = None) -> bool:
+        challenge_request = Challenge_Request(
+            opponent_username=opponent_username,
+            rated=rated,
+            initial_time=initial_time,
+            increment=increment,
+            variant=variant,
+            color=color,
+            timeout=30
+        )
+        queue: asyncio.Queue[API_Challenge_Reponse] = asyncio.Queue()
+        await self.create_challenge(challenge_request, queue)
+        # Wait for the response
+        try:
+            response = await asyncio.wait_for(queue.get(), timeout=30.0)
+            return response.done == "accepted"
+        except asyncio.TimeoutError:
+            return False
+
+    async def accept_rematch(self, opponent_username: str, initial_time: int, increment: int, rated: bool, variant: str) -> bool:
+        return await self.offer_rematch(opponent_username, initial_time, increment, rated, variant)
+
+    async def decline_rematch(self, game_id: str) -> bool:
+        # No action needed for decline
+        return True

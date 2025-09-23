@@ -18,6 +18,7 @@ class Game:
         self.takeback_count = 0
         self.was_aborted = False
         self.ejected_tournament: str | None = None
+        self.game_info: Game_Information | None = None
 
         self.move_task: asyncio.Task[None] | None = None
         self.abortion_task: asyncio.Task[None] | None = None
@@ -26,6 +27,7 @@ class Game:
         game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self._task = asyncio.create_task(self.api.get_game_stream(self.game_id, game_stream_queue))
         info = Game_Information.from_gameFull_event(await game_stream_queue.get())
+        self.game_info = info
         lichess_game = await Lichess_Game.acreate(self.api, self.config, self.username, info)
         chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
 
@@ -60,6 +62,9 @@ class Game:
                     continue
                 case "gameFull":
                     event = event["state"]
+                case "rematchOffer":
+                    await self._handle_rematch_offer(event, lichess_game, chatter)
+                    continue
 
             if event.get("wtakeback") or event.get("btakeback"):
                 if self.takeback_count >= max_takebacks:
@@ -82,6 +87,7 @@ class Game:
 
                 self._print_result_message(event, lichess_game, info)
                 await chatter.send_goodbyes()
+                await self._handle_game_end(event, lichess_game, chatter)
                 break
 
             if has_updated:
@@ -108,13 +114,46 @@ class Game:
             await self.api.abort_game(self.game_id)
             await chatter.send_abortion_message()
 
-        self.abortion_task = None
+    async def _handle_rematch_offer(self, event: dict[str, Any], lichess_game: Lichess_Game, chatter: Chatter) -> None:
+        if self.config.rematch.auto_rematch:
+            await self.api.accept_rematch(
+                self.game_info.black_name if lichess_game.is_white else self.game_info.white_name,
+                self.game_info.initial_time_ms // 1000,
+                self.game_info.increment_ms // 1000,
+                self.game_info.rated,
+                self.game_info.variant
+            )
+            print("Rematch accepted.")
+        else:
+            await self.api.decline_rematch(self.game_id)
+            print("Rematch declined.")
 
-    def _print_game_information(self, info: Game_Information) -> None:
-        opponents_str = f"{info.white_str}   -   {info.black_str}"
-        message = (5 * " ").join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
-
-        print(f"\n{message}\n{128 * '‾'}")
+    async def _handle_game_end(self, event: dict[str, Any], lichess_game: Lichess_Game, chatter: Chatter) -> None:
+        # Check if we should offer rematch
+        if self.config.rematch.auto_rematch:
+            winner = event.get("winner")
+            status = event.get("status")
+            
+            # Determine if the result matches the conditions
+            should_offer = False
+            if "draw" in self.config.rematch.conditions and status == "draw":
+                should_offer = True
+            elif "win" in self.config.rematch.conditions and winner == ("white" if lichess_game.is_white else "black"):
+                should_offer = True
+            elif "loss" in self.config.rematch.conditions and winner and winner != ("white" if lichess_game.is_white else "black"):
+                should_offer = True
+            
+            if should_offer:
+                opposite_color = "black" if lichess_game.is_white else "white"
+                await self.api.offer_rematch(
+                    self.game_info.black_name if lichess_game.is_white else self.game_info.white_name,
+                    self.game_info.initial_time_ms // 1000,
+                    self.game_info.increment_ms // 1000,
+                    self.game_info.rated,
+                    self.game_info.variant,
+                    opposite_color
+                )
+                print("Rematch offered.")
 
     def _print_result_message(
         self, game_state: dict[str, Any], lichess_game: Lichess_Game, info: Game_Information
