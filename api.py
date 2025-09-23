@@ -382,7 +382,7 @@ class API:
         # Wait for the response
         try:
             response = await asyncio.wait_for(queue.get(), timeout=30.0)
-            return response.done == "accepted"
+            return response.was_accepted
         except asyncio.TimeoutError:
             return False
 

@@ -116,14 +116,14 @@ class Game:
 
         self.abortion_task = None
 
-    async def _print_game_information(self, info: Game_Information) -> None:
+    def _print_game_information(self, info: Game_Information) -> None:
         opponents_str = f"{info.white_str}   -   {info.black_str}"
         message = (5 * " ").join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
 
         print(f"\n{message}\n{128 * '‾'}")
 
     async def _handle_rematch_offer(self, event: dict[str, Any], lichess_game: Lichess_Game, chatter: Chatter) -> None:
-        if self.config.rematch.rematch:
+        if self.config.rematch.enabled:
             await self.api.accept_rematch(
                 self.game_info.black_name if lichess_game.is_white else self.game_info.white_name,
                 self.game_info.initial_time_ms // 1000,
@@ -152,7 +152,7 @@ class Game:
                 should_offer = True
 
             # Check opponent type if conditions are met
-            if should_offer:
+            if should_offer and self.game_info.opponent_is_bot:
                 opponent_is_human = not self.game_info.opponent_is_bot
                 if (opponent_is_human and self.config.rematch.against_humans) or (not opponent_is_human and self.config.rematch.against_bots):
                     # Add delay before offering rematch
@@ -203,6 +203,7 @@ class Game:
         else:
             white_result = "½"
             black_result = "½"
+            message = ""
 
             match game_state["status"]:
                 case "draw":

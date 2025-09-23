@@ -52,6 +52,9 @@ class Game_Manager:
 
             self.changed_event.clear()
 
+            # Clean up finished game tasks
+            self.tasks = {task: game for task, game in self.tasks.items() if not task.done()}
+
             while started_game_event := self._get_next_started_game_event():
                 await self._start_game(started_game_event)
 
@@ -214,6 +217,8 @@ class Game_Manager:
         self.next_matchmaking = asyncio.get_running_loop().time() + delay
 
     def _task_callback(self, task: Task[None]) -> None:
+        if task not in self.tasks:
+            return
         game = self.tasks.pop(task)
 
         if game.game_id == self.current_matchmaking_game_id:
@@ -300,23 +305,25 @@ class Game_Manager:
 
     def _get_next_started_game_event(self) -> dict[str, Any] | None:
         if not self.started_game_events:
-            return
+            return None
+
+        # Clean up finished game tasks
+        self.tasks = {task: game for task, game in self.tasks.items() if not task.done()}
 
         if len(self.tasks) >= self.config.challenge.concurrency:
             print("Max number of concurrent games exceeded. Ignoring already started game for now.")
-            return
+            return None
 
         return self.started_game_events.popleft()
 
     def _get_next_tournament_to_join(self) -> Tournament | None:
         if not self.tournaments_to_join:
-            return
+            return None
 
         if self.is_busy:
-            return
+            return None
 
         return self.tournaments_to_join.popleft()
-
     async def _create_challenge(self, challenge_request: Challenge_Request) -> None:
         print(f"Challenging {challenge_request.opponent_username} ...")
         response = await self.challenger.create(challenge_request)
