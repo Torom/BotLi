@@ -13,7 +13,7 @@ from utils import find_variant, parse_time_control
 
 
 @dataclass
-class API_Challenge_Reponse:
+class API_Challenge_Response:
     challenge_id: str | None = None
     was_accepted: bool = False
     error: str | None = None
