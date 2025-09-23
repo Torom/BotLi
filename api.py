@@ -7,7 +7,7 @@ from typing import Any
 import aiohttp
 from tenacity import before_sleep_log, retry, retry_if_exception_type, wait_fixed
 
-from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
+from botli_dataclasses import API_Challenge_Response, Challenge_Request
 from config import Config
 from enums import Decline_Reason, Variant
 
@@ -98,7 +98,7 @@ class API:
             return False
 
     async def create_challenge(
-        self, challenge_request: Challenge_Request, queue: asyncio.Queue[API_Challenge_Reponse]
+        self, challenge_request: Challenge_Request, queue: asyncio.Queue[API_Challenge_Response]
     ) -> None:
         try:
             async with self.lichess_session.post(
@@ -114,7 +114,7 @@ class API:
                 timeout=aiohttp.ClientTimeout(total=challenge_request.timeout),
             ) as response:
                 if response.status == 429:
-                    queue.put_nowait(API_Challenge_Reponse(has_reached_rate_limit=True))
+                    queue.put_nowait(API_Challenge_Response(has_reached_rate_limit=True))
                     return
 
                 async for line in response.content:
@@ -123,7 +123,7 @@ class API:
 
                     data: dict[str, Any] = json.loads(line)
                     queue.put_nowait(
-                        API_Challenge_Reponse(
+                        API_Challenge_Response(
                             data.get("id"),
                             data.get("done") == "accepted",
                             data.get("error"),
@@ -134,9 +134,9 @@ class API:
                     )
 
         except (aiohttp.ClientError, json.JSONDecodeError) as e:
-            queue.put_nowait(API_Challenge_Reponse(error=str(e)))
+            queue.put_nowait(API_Challenge_Response(error=str(e)))
         except TimeoutError:
-            queue.put_nowait(API_Challenge_Reponse(has_timed_out=True))
+            queue.put_nowait(API_Challenge_Response(has_timed_out=True))
 
     @retry(**BASIC_RETRY_CONDITIONS)
     async def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
@@ -377,7 +377,7 @@ class API:
             color=color,
             timeout=30
         )
-        queue: asyncio.Queue[API_Challenge_Reponse] = asyncio.Queue()
+        queue: asyncio.Queue[API_Challenge_Response] = asyncio.Queue()
         await self.create_challenge(challenge_request, queue)
         # Wait for the response
         try:
