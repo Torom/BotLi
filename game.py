@@ -94,8 +94,8 @@ class Game:
                 self.move_task = asyncio.create_task(self._make_move(lichess_game, chatter))
 
         if self.end_event:
-            await chatter.send_goodbyes()
-            await self._handle_game_end(self.end_event, lichess_game, chatter)
+            asyncio.create_task(chatter.send_goodbyes())
+            asyncio.create_task(self._handle_game_end(self.end_event, lichess_game, chatter))
 
         if self.abortion_task:
             self.abortion_task.cancel()
