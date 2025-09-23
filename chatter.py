@@ -176,7 +176,7 @@ class Chatter:
 
     async def _send_depth_message(self, room: str) -> None:
         last_message = self.lichess_game.last_message
-        depth_match = re.search(r'(\d+)/(\d+)', last_message)
+        depth_match = re.search(r"(\d+)/(\d+)", last_message)
         if depth_match:
             depth, seldepth = depth_match.groups()
             message = f"Depth: {depth}/{seldepth} (selective search reached {seldepth} plies)"
