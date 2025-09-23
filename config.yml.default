@@ -219,6 +219,14 @@ books:                                    # Names of the opening books (to be us
   DefaultBook: "/path/to/DefaultBook.bin"
 
 rematch:
-  auto_rematch: false
-  conditions: ["win", "draw"]
-  max_rematch_count: 3
+  enabled: false                           # Enable rematch functionality.
+  max_consecutive: 3                      # Maximum consecutive rematches with same opponent.
+  offer_on_win: true                      # Offer rematch when we win.
+  offer_on_loss: true                     # Offer rematch when we lose.
+  offer_on_draw: true                     # Offer rematch on draws.
+  against_humans: false                    # Offer rematches against human players.
+  against_bots: true                      # Offer rematches against bot players.
+  delay_seconds: 1                        # Delay before offering rematch (seconds).
+  timeout_seconds: 30                     # Timeout for rematch challenges (seconds).
+# min_rating_diff: 0                      # Minimum rating difference to offer rematch.
+# max_rating_diff: 300                    # Maximum rating difference to offer rematch.

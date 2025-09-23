@@ -114,8 +114,16 @@ class Game:
             await self.api.abort_game(self.game_id)
             await chatter.send_abortion_message()
 
+        self.abortion_task = None
+
+    async def _print_game_information(self, info: Game_Information) -> None:
+        opponents_str = f"{info.white_str}   -   {info.black_str}"
+        message = (5 * " ").join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
+
+        print(f"\n{message}\n{128 * '‾'}")
+
     async def _handle_rematch_offer(self, event: dict[str, Any], lichess_game: Lichess_Game, chatter: Chatter) -> None:
-        if self.config.rematch.auto_rematch:
+        if self.config.rematch.rematch:
             await self.api.accept_rematch(
                 self.game_info.black_name if lichess_game.is_white else self.game_info.white_name,
                 self.game_info.initial_time_ms // 1000,
@@ -129,31 +137,38 @@ class Game:
             print("Rematch declined.")
 
     async def _handle_game_end(self, event: dict[str, Any], lichess_game: Lichess_Game, chatter: Chatter) -> None:
-        # Check if we should offer rematch
-        if self.config.rematch.auto_rematch:
+        # Check if we should offer a rematch
+        if self.config.rematch.enabled:
             winner = event.get("winner")
             status = event.get("status")
-            
+
             # Determine if the result matches the conditions
             should_offer = False
-            if "draw" in self.config.rematch.conditions and status == "draw":
+            if self.config.rematch.offer_on_draw and status == "draw":
                 should_offer = True
-            elif "win" in self.config.rematch.conditions and winner == ("white" if lichess_game.is_white else "black"):
+            elif self.config.rematch.offer_on_win and winner == ("white" if lichess_game.is_white else "black"):
                 should_offer = True
-            elif "loss" in self.config.rematch.conditions and winner and winner != ("white" if lichess_game.is_white else "black"):
+            elif self.config.rematch.offer_on_loss and winner and winner != ("white" if lichess_game.is_white else "black"):
                 should_offer = True
-            
+
+            # Check opponent type if conditions are met
             if should_offer:
-                opposite_color = "black" if lichess_game.is_white else "white"
-                await self.api.offer_rematch(
-                    self.game_info.black_name if lichess_game.is_white else self.game_info.white_name,
-                    self.game_info.initial_time_ms // 1000,
-                    self.game_info.increment_ms // 1000,
-                    self.game_info.rated,
-                    self.game_info.variant,
-                    opposite_color
-                )
-                print("Rematch offered.")
+                opponent_is_human = not self.game_info.opponent_is_bot
+                if (opponent_is_human and self.config.rematch.against_humans) or (not opponent_is_human and self.config.rematch.against_bots):
+                    # Add delay before offering rematch
+                    if self.config.rematch.delay_seconds > 0:
+                        await asyncio.sleep(self.config.rematch.delay_seconds)
+
+                    opposite_color = "black" if lichess_game.is_white else "white"
+                    await self.api.offer_rematch(
+                        self.game_info.black_name if lichess_game.is_white else self.game_info.white_name,
+                        self.game_info.initial_time_ms // 1000,
+                        self.game_info.increment_ms // 1000,
+                        self.game_info.rated,
+                        self.game_info.variant,
+                        opposite_color
+                    )
+                    print("Rematch offered.")
 
     def _print_result_message(
         self, game_state: dict[str, Any], lichess_game: Lichess_Game, info: Game_Information

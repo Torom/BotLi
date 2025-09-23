@@ -24,6 +24,7 @@ from configs import (
     Online_Moves_Config,
     Opening_Books_Config,
     Opening_Explorer_Config,
+    Rematch_Config,
     Resign_Config,
     Syzygy_Config,
 )
@@ -43,6 +44,7 @@ class Config:
     challenge: Challenge_Config
     matchmaking: Matchmaking_Config
     messages: Messages_Config
+    rematch: Rematch_Config
     whitelist: list[str]
     blacklist: list[str]
     version: str
@@ -71,6 +73,7 @@ class Config:
         challenge_config = cls._get_challenge_config(yaml_config["challenge"])
         matchmaking_config = cls._get_matchmaking_config(yaml_config["matchmaking"])
         messages_config = cls._get_messages_config(yaml_config["messages"] or {})
+        rematch_config = cls._get_rematch_config(yaml_config["rematch"])
         whitelist = [username.lower() for username in yaml_config.get("whitelist") or []]
         blacklist = [username.lower() for username in yaml_config.get("blacklist") or []]
 
@@ -87,6 +90,7 @@ class Config:
             challenge_config,
             matchmaking_config,
             messages_config,
+            rematch_config,
             whitelist,
             blacklist,
             cls._get_version(),
@@ -125,6 +129,7 @@ class Config:
             ("challenge", dict, "Section `challenge` must be a dictionary with indented keys followed by colons."),
             ("matchmaking", dict, "Section `matchmaking` must be a dictionary with indented keys followed by colons."),
             ("messages", dict | None, "Section `messages` must be a dictionary with indented keys followed by colons."),
+            ("rematch", dict, "Section `rematch` must be a dictionary with indented keys followed by colons."),
             ("whitelist", list | None, "Section `whitelist` must be a list."),
             ("blacklist", list | None, "Section `blacklist` must be a list."),
             ("books", dict, "Section `books` must be a dictionary with indented keys followed by colons."),
@@ -526,6 +531,34 @@ class Config:
             messages_section.get("goodbye"),
             messages_section.get("greeting_spectators"),
             messages_section.get("goodbye_spectators"),
+        )
+
+    @staticmethod
+    def _get_rematch_config(rematch_section: dict[str, Any]) -> Rematch_Config:
+        rematch_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("max_consecutive", int, '"max_consecutive" must be an integer.'),
+            ("offer_on_win", bool, '"offer_on_win" must be a bool.'),
+            ("offer_on_loss", bool, '"offer_on_loss" must be a bool.'),
+            ("offer_on_draw", bool, '"offer_on_draw" must be a bool.'),
+            ("against_humans", bool, '"against_humans" must be a bool.'),
+            ("against_bots", bool, '"against_bots" must be a bool.'),
+            ("delay_seconds", int, '"delay_seconds" must be an integer.'),
+            ("timeout_seconds", int, '"timeout_seconds" must be an integer.'),
+        ]
+
+        Config._validate_config_section(rematch_section, "rematch", rematch_sections)
+
+        return Rematch_Config(
+            rematch_section["enabled"],
+            rematch_section["max_consecutive"],
+            rematch_section["offer_on_win"],
+            rematch_section["offer_on_loss"],
+            rematch_section["offer_on_draw"],
+            rematch_section["against_humans"],
+            rematch_section["against_bots"],
+            rematch_section["delay_seconds"],
+            rematch_section["timeout_seconds"],
         )
 
     @staticmethod

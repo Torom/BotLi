@@ -184,3 +184,16 @@ class Messages_Config:
     goodbye: str | None
     greeting_spectators: str | None
     goodbye_spectators: str | None
+
+
+@dataclass
+class Rematch_Config:
+    enabled: bool
+    max_consecutive: int
+    offer_on_win: bool
+    offer_on_loss: bool
+    offer_on_draw: bool
+    against_humans: bool
+    against_bots: bool
+    delay_seconds: int
+    timeout_seconds: int
