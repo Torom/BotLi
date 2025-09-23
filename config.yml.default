@@ -215,6 +215,9 @@ blacklist:                                # List of users who are not challenged
 # - Username1
 # - Username2
 
+books:                                    # Names of the opening books (to be used above in the opening_books section) and paths to the opening books.
+  DefaultBook: "/path/to/DefaultBook.bin"
+
 rematch:
   auto_rematch: false
   conditions: ["win", "draw"]
