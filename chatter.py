@@ -8,6 +8,7 @@ from api import API
 from botli_dataclasses import Chat_Message, Game_Information
 from config import Config
 from lichess_game import Lichess_Game
+from utils import ml_print
 
 COMMANDS = {
     "cpu": "Shows information about the bot's CPU (processor, cores, threads, frequency).",
@@ -52,12 +53,7 @@ class Chatter:
             return
 
         if chat_message.username != self.username:
-            prefix = f"{chat_message.username} ({chat_message.room}): "
-            output = prefix + chat_message.text
-            if len(output) > 128:
-                output = f"{output[:128]}\n{len(prefix) * ' '}{output[128:]}"
-
-            print(output)
+            ml_print(f"{chat_message.username} ({chat_message.room}): ", chat_message.text)
 
         if chat_message.text.startswith("!"):
             await self._handle_command(chat_message, takeback_count, max_takebacks)
