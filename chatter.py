@@ -13,6 +13,8 @@ COMMANDS = {
     "cpu": "Shows information about the bot's CPU (processor, cores, threads, frequency).",
     "draw": "Explains the bot's draw offering/accepting policy based on evaluation and game length.",
     "eval": "Shows the latest position evaluation.",
+    "limits": "Shows the engine search limits (time/depth/nodes).",
+    "depth": "Shows the engine search depth information.",
     "motor": "Displays the name of the chess motor currently being used.",
     "name": "Shows the bot's name and motor information.",
     "ping": "Tests the network connection latency to Lichess servers.",
@@ -101,6 +103,27 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.draw_message)
             case "eval":
                 await self._send_last_message(chat_message.room)
+            case "limits":
+                limit_config = self.lichess_game.engine.limit_config
+                limits_msg = "Limits:"
+                if limit_config.time is not None:
+                    limits_msg += f" Time: {limit_config.time:.1f}s"
+                if limit_config.depth is not None:
+                    limits_msg += f", Depth: {limit_config.depth}"
+                if limit_config.nodes is not None:
+                    limits_msg += f", Nodes: {limit_config.nodes/1_000_000:.0f}M"
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, limits_msg)
+            case "depth":
+                last_info = self.lichess_game.last_engine_info
+                if last_info and "depth" in last_info:
+                    depth = last_info.get("depth")
+                    seldepth = last_info.get("seldepth")
+                    msg = f"Depth: {depth}"
+                    if seldepth:
+                        msg += f"/{seldepth} (selective search reached {seldepth} plies)"
+                    await self.api.send_chat_message(self.game_info.id_, chat_message.room, msg)
+                else:
+                    await self.api.send_chat_message(self.game_info.id_, chat_message.room, "No depth info available yet.")
             case "motor":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.lichess_game.engine.name)
             case "name":
