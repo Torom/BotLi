@@ -1,25 +1,26 @@
 import asyncio
+from itertools import islice
 from typing import Any
 
 from api import API
 from botli_dataclasses import Game_Information
 from chatter import Chatter
+
 from config import Config
 from lichess_game import Lichess_Game
 
 
 class Game:
-    def __init__(self, api: API, config: Config, username: str, game_id: str) -> None:
+    def __init__(self, api: API, config: Config, username: str, game_id: str, rematch_manager=None) -> None:
         self.api = api
         self.config = config
         self.username = username
         self.game_id = game_id
+        self.rematch_manager = rematch_manager
 
         self.takeback_count = 0
         self.was_aborted = False
         self.ejected_tournament: str | None = None
-        self.game_info: Game_Information | None = None
-        self.end_event: dict[str, Any] | None = None
 
         self.move_task: asyncio.Task[None] | None = None
         self.abortion_task: asyncio.Task[None] | None = None
@@ -28,13 +29,12 @@ class Game:
         game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self._task = asyncio.create_task(self.api.get_game_stream(self.game_id, game_stream_queue))
         info = Game_Information.from_gameFull_event(await game_stream_queue.get())
-        self.game_info = info
         lichess_game = await Lichess_Game.acreate(self.api, self.config, self.username, info)
         chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
 
         self._print_game_information(info)
 
-        if info.state["status"] != "started":
+        if info.state['status'] != 'started':
             self._print_result_message(info.state, lichess_game, info)
             await chatter.send_goodbyes()
             await lichess_game.close()
@@ -53,21 +53,18 @@ class Game:
             self.abortion_task = asyncio.create_task(self._abortion_task(lichess_game, chatter, abortion_seconds))
 
         while event := await game_stream_queue.get():
-            match event["type"]:
-                case "chatLine":
+            match event['type']:
+                case 'chatLine':
                     await chatter.handle_chat_message(event, self.takeback_count, max_takebacks)
                     continue
-                case "opponentGone":
-                    if not self.move_task and event.get("claimWinInSeconds") == 0:
+                case 'opponentGone':
+                    if not self.move_task and event.get('claimWinInSeconds') == 0:
                         await self.api.claim_victory(self.game_id)
                     continue
-                case "gameFull":
-                    event = event["state"]
-                case "rematchOffer":
-                    await self._handle_rematch_offer(event, lichess_game, chatter)
-                    continue
+                case 'gameFull':
+                    event = event['state']
 
-            if event.get("wtakeback") or event.get("btakeback"):
+            if event.get('wtakeback') or event.get('btakeback'):
                 if self.takeback_count >= max_takebacks:
                     await self.api.handle_takeback(self.game_id, False)
                     continue
@@ -82,24 +79,25 @@ class Game:
 
             has_updated = lichess_game.update(event)
 
-            if event["status"] != "started":
+            if event['status'] != 'started':
                 if self.move_task:
                     self.move_task.cancel()
 
                 self._print_result_message(event, lichess_game, info)
-                self.end_event = event
+                await chatter.send_goodbyes()
+
+                # Handle rematch logic
+                if self.rematch_manager and not self.was_aborted:
+                    await self._handle_rematch(event, info)
+
                 break
 
             if has_updated:
                 self.move_task = asyncio.create_task(self._make_move(lichess_game, chatter))
 
-        if self.end_event:
-            asyncio.create_task(chatter.send_goodbyes())
-            asyncio.create_task(self._handle_game_end(self.end_event, lichess_game, chatter))
-
         if self.abortion_task:
             self.abortion_task.cancel()
-        asyncio.create_task(lichess_game.close())
+        await lichess_game.close()
 
     async def _make_move(self, lichess_game: Lichess_Game, chatter: Chatter) -> None:
         lichess_move = await lichess_game.make_move()
@@ -114,128 +112,98 @@ class Game:
         await asyncio.sleep(abortion_seconds)
 
         if not lichess_game.is_our_turn and lichess_game.is_abortable:
-            print("Aborting game ...")
+            print('Aborting game ...')
             await self.api.abort_game(self.game_id)
             await chatter.send_abortion_message()
 
         self.abortion_task = None
 
     def _print_game_information(self, info: Game_Information) -> None:
-        opponents_str = f"{info.white_str}   -   {info.black_str}"
-        message = (5 * " ").join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
+        opponents_str = f'{info.white_str}   -   {info.black_str}'
+        message = (5 * ' ').join([info.id_str, opponents_str, info.tc_format,
+                                  info.rated_str, info.variant_str])
 
-        print(f"\n{message}\n{128 * '‾'}")
+        print(f'\n{message}\n{128 * "-"}')
 
-    async def _handle_rematch_offer(self, event: dict[str, Any], lichess_game: Lichess_Game, chatter: Chatter) -> None:
-        if self.config.rematch.enabled:
-            await self.api.accept_rematch(
-                self.game_info.black_name if lichess_game.is_white else self.game_info.white_name,
-                self.game_info.initial_time_ms // 1000,
-                self.game_info.increment_ms // 1000,
-                self.game_info.rated,
-                self.game_info.variant
-            )
-            print("Rematch accepted.")
-        else:
-            await self.api.decline_rematch(self.game_id)
-            print("Rematch declined.")
-
-    async def _handle_game_end(self, event: dict[str, Any], lichess_game: Lichess_Game, chatter: Chatter) -> None:
-        # Check if we should offer a rematch
-        if self.config.rematch.enabled:
-            winner = event.get("winner")
-            status = event.get("status")
-
-            # Determine if the result matches the conditions
-            should_offer = False
-            if self.config.rematch.offer_on_draw and status == "draw":
-                should_offer = True
-            elif self.config.rematch.offer_on_win and winner == ("white" if lichess_game.is_white else "black"):
-                should_offer = True
-            elif self.config.rematch.offer_on_loss and winner and winner != ("white" if lichess_game.is_white else "black"):
-                should_offer = True
-
-            # Check opponent type if conditions are met
-            if should_offer and self.game_info.opponent_is_bot:
-                opponent_is_human = not self.game_info.opponent_is_bot
-                if (opponent_is_human and self.config.rematch.against_humans) or (not opponent_is_human and self.config.rematch.against_bots):
-                    # Add delay before offering rematch
-                    if self.config.rematch.delay_seconds > 0:
-                        await asyncio.sleep(self.config.rematch.delay_seconds)
-
-                    opposite_color = "black" if lichess_game.is_white else "white"
-                    await self.api.offer_rematch(
-                        self.game_info.black_name if lichess_game.is_white else self.game_info.white_name,
-                        self.game_info.initial_time_ms // 1000,
-                        self.game_info.increment_ms // 1000,
-                        self.game_info.rated,
-                        self.game_info.variant,
-                        opposite_color
-                    )
-                    print("Rematch offered.")
-
-    def _print_result_message(
-        self, game_state: dict[str, Any], lichess_game: Lichess_Game, info: Game_Information
-    ) -> None:
-        if winner := game_state.get("winner"):
-            if winner == "white":
-                message = f"{info.white_name} won"
+    def _print_result_message(self,
+                              game_state: dict[str, Any],
+                              lichess_game: Lichess_Game,
+                              info: Game_Information) -> None:
+        if winner := game_state.get('winner'):
+            if winner == 'white':
+                message = f'{info.white_name} won'
                 loser = info.black_name
-                white_result = "1"
-                black_result = "0"
+                white_result = '1'
+                black_result = '0'
             else:
-                message = f"{info.black_name} won"
+                message = f'{info.black_name} won'
                 loser = info.white_name
-                white_result = "0"
-                black_result = "1"
+                white_result = '0'
+                black_result = '1'
 
-            match game_state["status"]:
-                case "mate":
-                    message += " by checkmate!"
-                case "outoftime":
-                    message += f"! {loser} ran out of time."
-                case "resign":
-                    message += f"! {loser} resigned."
-                case "variantEnd":
-                    message += " by variant rules!"
-                case "timeout":
-                    message += f"! {loser} timed out."
-                case "noStart":
+            match game_state['status']:
+                case 'mate':
+                    message += ' by checkmate!'
+                case 'outoftime':
+                    message += f'! {loser} ran out of time.'
+                case 'resign':
+                    message += f'! {loser} resigned.'
+                case 'variantEnd':
+                    message += ' by variant rules!'
+                case 'timeout':
+                    message += f'! {loser} timed out.'
+                case 'noStart':
                     if loser == self.username:
                         self.ejected_tournament = info.tournament_id
-                    message += f"! {loser} has not started the game."
+                    message += f'! {loser} has not started the game.'
         else:
-            white_result = "½"
-            black_result = "½"
-            message = ""
+            white_result = '½'
+            black_result = '½'
 
-            match game_state["status"]:
-                case "draw":
+            match game_state['status']:
+                case 'draw':
                     if lichess_game.board.is_fifty_moves():
-                        message = "Game drawn by 50-move rule."
+                        message = 'Game drawn by 50-move rule.'
                     elif lichess_game.board.is_repetition():
-                        message = "Game drawn by threefold repetition."
+                        message = 'Game drawn by threefold repetition.'
                     elif lichess_game.board.is_insufficient_material():
-                        message = "Game drawn due to insufficient material."
+                        message = 'Game drawn due to insufficient material.'
                     elif lichess_game.board.is_variant_draw():
-                        message = "Game drawn by variant rules."
+                        message = 'Game drawn by variant rules.'
                     else:
-                        message = "Game drawn by agreement."
-                case "stalemate":
-                    message = "Game drawn by stalemate."
-                case "outoftime":
-                    out_of_time_player = info.black_name if game_state["wtime"] else info.white_name
-                    message = f"Game drawn. {out_of_time_player} ran out of time."
-                case "insufficientMaterialClaim":
-                    message = "Game drawn due to insufficient material claim."
+                        message = 'Game drawn by agreement.'
+                case 'stalemate':
+                    message = 'Game drawn by stalemate.'
+                case 'outoftime':
+                    out_of_time_player = info.black_name if game_state['wtime'] else info.white_name
+                    message = f'Game drawn. {out_of_time_player} ran out of time.'
+                case 'insufficientMaterialClaim':
+                    message = 'Game drawn due to insufficient material claim.'
                 case _:
                     self.was_aborted = True
-                    message = "Game aborted."
+                    message = 'Game aborted.'
 
-                    white_result = "X"
-                    black_result = "X"
+                    white_result = 'X'
+                    black_result = 'X'
 
-        opponents_str = f"{info.white_str} {white_result} - {black_result} {info.black_str}"
-        message = (5 * " ").join([info.id_str, opponents_str, message])
+        opponents_str = f'{info.white_str} {white_result} - {black_result} {info.black_str}'
+        message = (5 * ' ').join([info.id_str, opponents_str, message])
 
-        print(f"{message}\n{128 * '‾'}")
+        print(f'{message}\n{128 * "-"}')
+
+    async def _handle_rematch(self, game_state: dict[str, Any], info: Game_Information) -> None:
+        """Handle rematch logic after game ends."""
+        try:
+            winner = game_state.get('winner')
+            game_result = game_state.get('status', 'unknown')
+
+            # Check if we should offer a rematch
+            if self.rematch_manager.should_offer_rematch(info, game_result, winner):
+                await self.rematch_manager.offer_rematch(info)
+            else:
+                # Notify rematch manager that game finished without rematch
+                opponent_name = self.rematch_manager._get_opponent_name(info)
+                if opponent_name:
+                    self.rematch_manager.on_game_finished(opponent_name)
+        except Exception as e:
+            print(f'Error handling rematch: {e}')

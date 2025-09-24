@@ -9,6 +9,7 @@ from challenger import Challenger
 from config import Config
 from game import Game
 from matchmaking import Matchmaking
+from rematch_manager import Rematch_Manager
 
 
 class Game_Manager:
@@ -20,6 +21,7 @@ class Game_Manager:
         self.challenger = Challenger(api)
         self.changed_event = Event()
         self.matchmaking = Matchmaking(api, config, username)
+        self.rematch_manager = Rematch_Manager(self.api, self.config, self.username)
 
         self.challenge_requests: deque[Challenge_Request] = deque()
         self.current_matchmaking_game_id: str | None = None
@@ -52,9 +54,6 @@ class Game_Manager:
 
             self.changed_event.clear()
 
-            # Clean up finished game tasks
-            self.tasks = {task: game for task, game in self.tasks.items() if not task.done()}
-
             while started_game_event := self._get_next_started_game_event():
                 await self._start_game(started_game_event)
 
@@ -71,7 +70,14 @@ class Game_Manager:
                 await self._accept_challenge(challenge)
 
             while challenge_request := self._get_next_challenge_request():
-                await self._create_challenge(challenge_request)
+                await self._create_challenge(challenge_request, is_rematch=False)
+
+            # Process pending rematch
+            if self.rematch_manager.pending_rematch:
+                challenge_request = self.rematch_manager.get_rematch_challenge_request()
+                if challenge_request:
+                    await self._create_challenge(challenge_request, is_rematch=True)
+                    self.rematch_manager.clear_pending_rematch()
 
         for tournament in self.unstarted_tournaments.values():
             tournament.cancel()
@@ -217,8 +223,6 @@ class Game_Manager:
         self.next_matchmaking = asyncio.get_running_loop().time() + delay
 
     def _task_callback(self, task: Task[None]) -> None:
-        if task not in self.tasks:
-            return
         game = self.tasks.pop(task)
 
         if game.game_id == self.current_matchmaking_game_id:
@@ -244,7 +248,7 @@ class Game_Manager:
             self.tournaments[tournament.id_] = tournament
             print(f'External joined tournament "{tournament.name}" detected.')
 
-        game = Game(self.api, self.config, self.username, game_event["id"])
+        game = Game(self.api, self.config, self.username, game_event["id"], self.rematch_manager)
         task = asyncio.create_task(game.run())
         task.add_done_callback(self._task_callback)
         self.tasks[task] = game
@@ -254,6 +258,7 @@ class Game_Manager:
             return
 
         if self.is_busy:
+            print("Bot is busy, not accepting challenge.")
             return
 
         return self.open_challenges.popleft()
@@ -305,28 +310,30 @@ class Game_Manager:
 
     def _get_next_started_game_event(self) -> dict[str, Any] | None:
         if not self.started_game_events:
-            return None
-
-        # Clean up finished game tasks
-        self.tasks = {task: game for task, game in self.tasks.items() if not task.done()}
+            return
 
         if len(self.tasks) >= self.config.challenge.concurrency:
             print("Max number of concurrent games exceeded. Ignoring already started game for now.")
-            return None
+            return
 
         return self.started_game_events.popleft()
 
     def _get_next_tournament_to_join(self) -> Tournament | None:
         if not self.tournaments_to_join:
-            return None
+            return
 
         if self.is_busy:
-            return None
+            return
 
         return self.tournaments_to_join.popleft()
-    async def _create_challenge(self, challenge_request: Challenge_Request) -> None:
-        print(f"Challenging {challenge_request.opponent_username} ...")
+
+    async def _create_challenge(self, challenge_request: Challenge_Request, is_rematch: bool = False) -> None:
+        if is_rematch:
+            print(f"Offering rematch to {challenge_request.opponent_username} ...")
+        else:
+            print(f"Challenging {challenge_request.opponent_username} ...")
         response = await self.challenger.create(challenge_request)
+        print(f"Challenge response: success={response.success}")
 
         if response.success:
             self.reserved_game_spots += 1

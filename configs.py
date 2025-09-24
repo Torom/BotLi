@@ -36,11 +36,10 @@ class Gaviota_Config:
 
 @dataclass
 class Books_Config:
-    selection: Literal["weighted_random", "uniform_random", "best_move"]
+    selection: Literal['weighted_random', 'uniform_random', 'best_move']
     max_depth: int | None
     allow_repetitions: bool | None
     names: dict[str, str]
-
 
 @dataclass
 class Opening_Books_Config:
@@ -62,7 +61,7 @@ class Opening_Explorer_Config:
     timeout: int
     min_games: int
     only_with_wins: bool
-    selection: Literal["performance", "win_rate"]
+    selection: Literal['performance', 'win_rate']
     anti: bool
     max_depth: int | None
     max_moves: int | None
@@ -121,7 +120,6 @@ class Offer_Draw_Config:
     against_humans: bool
     min_rating: int | None
 
-
 @dataclass
 class Resign_Config:
     enabled: bool
@@ -144,26 +142,17 @@ class Challenge_Config:
     time_controls: list[str]
     bot_modes: list[str]
     human_modes: list[str]
+    # min_rating_diff: int | None
+    # max_rating_diff: int | None
+    # variant_rating_diffs: dict[str, dict[str, int | None]] | None
 
 
 @dataclass
 class Matchmaking_Type_Config:
     tc: str
     rated: bool | None
-    variant: (
-        Literal[
-            "standard",
-            "chess960",
-            "crazyhouse",
-            "antichess",
-            "atomic",
-            "horde",
-            "kingOfTheHill",
-            "racingKings",
-            "threeCheck",
-        ]
-        | None
-    )
+    variant: Literal['standard', 'chess960', 'crazyhouse', 'antichess', 'atomic',
+                     'horde', 'kingOfTheHill', 'racingKings', 'threeCheck'] | None
     weight: int | None
     multiplier: int | None
     min_rating_diff: int | None
@@ -174,8 +163,26 @@ class Matchmaking_Type_Config:
 class Matchmaking_Config:
     delay: int
     timeout: int
-    selection: Literal["weighted_random", "sequential"]
+    selection: Literal['weighted_random', 'sequential']
     types: dict[str, Matchmaking_Type_Config]
+
+
+
+
+
+@dataclass
+class Rematch_Config:
+    enabled: bool
+    max_consecutive: int
+    min_rating_diff: int | None
+    max_rating_diff: int | None
+    offer_on_win: bool
+    offer_on_loss: bool
+    offer_on_draw: bool
+    against_humans: bool
+    against_bots: bool
+    delay_seconds: int
+    timeout_seconds: int
 
 
 @dataclass
@@ -184,16 +191,3 @@ class Messages_Config:
     goodbye: str | None
     greeting_spectators: str | None
     goodbye_spectators: str | None
-
-
-@dataclass
-class Rematch_Config:
-    enabled: bool
-    max_consecutive: int
-    offer_on_win: bool
-    offer_on_loss: bool
-    offer_on_draw: bool
-    against_humans: bool
-    against_bots: bool
-    delay_seconds: int
-    timeout_seconds: int

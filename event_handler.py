@@ -20,6 +20,7 @@ class Event_Handler:
         event_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self._task = asyncio.create_task(self.api.get_event_stream(event_queue))
         while event := await event_queue.get():
+            print(f"Event: {event['type']}")
             match event["type"]:
                 case "challenge":
                     if event["challenge"]["challenger"]["name"] == self.username:
@@ -49,6 +50,10 @@ class Event_Handler:
                         continue
 
                     print(f"{opponent_name} declined challenge: {event['challenge']['declineReason']}")
+
+                    # Check if this decline is for a pending rematch
+                    if self.game_manager.rematch_manager.pending_rematch == opponent_name.lower():
+                        self.game_manager.rematch_manager.on_rematch_declined(opponent_name)
                 case "challengeCanceled":
                     if event["challenge"]["challenger"]["name"] == self.username:
                         continue
