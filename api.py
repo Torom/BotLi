@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import time
+from collections.abc import AsyncGenerator
 from typing import Any
 
 import aiohttp
@@ -173,6 +174,22 @@ class API:
             if "error" in json_response:
                 raise RuntimeError(f"Account error: {json_response['error']}")
             return json_response
+
+    async def get_user_games(self, username: str, since: int | None = None, until: int | None = None, max_games: int | None = None) -> AsyncGenerator[dict[str, Any], None]:
+        params = {}
+        if since is not None:
+            params['since'] = since
+        if until is not None:
+            params['until'] = until
+        if max_games is not None:
+            params['max'] = max_games
+        params['finished'] = 'true'
+        async with self.lichess_session.get(f"/api/games/user/{username}", params=params, headers={'Accept': 'application/x-ndjson'}) as response:
+            response.raise_for_status()
+            async for line in response.content:
+                line = line.decode('utf-8').strip()
+                if line:
+                    yield json.loads(line)
 
     async def get_chessdb_eval(self, fen: str, best_move: bool, timeout: int) -> dict[str, Any] | None:
         try:
