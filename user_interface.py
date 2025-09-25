@@ -32,9 +32,9 @@ COMMANDS = {
     "matchmaking": "Starts matchmaking mode.",
     "quit": "Exits the bot.",
     "rechallenge": "Challenges the opponent to the last received challenge.",
-    'rematch': 'Toggles automatic rematch offering on/off.',
-    'rematch_status': 'Shows current rematch configuration and statistics.',
-    'rematch_reset': 'Resets all rematch counts and clears pending rematches.',
+    "rematch": "Toggles automatic rematch offering on/off.",
+    "rematch_status": "Shows current rematch configuration and statistics.",
+    "rematch_reset": "Resets all rematch counts and clears pending rematches.",
     "reset": "Resets matchmaking. Usage: reset PERF_TYPE",
     "stop": "Stops matchmaking mode.",
     "tournament": "Joins tournament. Usage: tournament ID [TEAM_ID] [PASSWORD]",
@@ -152,11 +152,11 @@ class User_Interface:
                 sys.exit()
             case "rechallenge":
                 self._rechallenge()
-            case 'rematch':
+            case "rematch":
                 self._rematch()
-            case 'rematch_status':
+            case "rematch_status":
                 self._rematch_status()
-            case 'rematch_reset':
+            case "rematch_reset":
                 self._rematch_reset()
             case "reset":
                 self._reset(command)
@@ -280,40 +280,40 @@ class User_Interface:
         self.config.rematch.enabled = not current_state
 
         if self.config.rematch.enabled:
-            print('Rematch functionality enabled.')
+            print("Rematch functionality enabled.")
         else:
-            print('Rematch functionality disabled.')
+            print("Rematch functionality disabled.")
 
     def _rematch_status(self) -> None:
         """Show current rematch configuration and statistics."""
         config = self.config.rematch
         manager = self.game_manager.rematch_manager
 
-        print('Rematch Configuration:')
-        print(f'  Enabled: {config.enabled}')
-        print(f'  Max consecutive: {config.max_consecutive}')
-        print(f'  Offer on win: {config.offer_on_win}')
-        print(f'  Offer on loss: {config.offer_on_loss}')
-        print(f'  Offer on draw: {config.offer_on_draw}')
-        print(f'  Against humans: {config.against_humans}')
-        print(f'  Against bots: {config.against_bots}')
-        print(f'  Delay: {config.delay_seconds}s')
-        print(f'  Timeout: {config.timeout_seconds}s')
+        print("Rematch Configuration:")
+        print(f"  Enabled: {config.enabled}")
+        print(f"  Max consecutive: {config.max_consecutive}")
+        print(f"  Offer on win: {config.offer_on_win}")
+        print(f"  Offer on loss: {config.offer_on_loss}")
+        print(f"  Offer on draw: {config.offer_on_draw}")
+        print(f"  Against humans: {config.against_humans}")
+        print(f"  Against bots: {config.against_bots}")
+        print(f"  Delay: {config.delay_seconds}s")
+        print(f"  Timeout: {config.timeout_seconds}s")
 
         if config.min_rating_diff is not None:
-            print(f'  Min rating diff: {config.min_rating_diff}')
+            print(f"  Min rating diff: {config.min_rating_diff}")
         if config.max_rating_diff is not None:
-            print(f'  Max rating diff: {config.max_rating_diff}')
+            print(f"  Max rating diff: {config.max_rating_diff}")
 
-        print('\nRematch Statistics:')
+        print("\nRematch Statistics:")
         if manager.rematch_counts:
             for opponent, count in manager.rematch_counts.items():
-                print(f'  {opponent}: {count} consecutive rematches')
+                print(f"  {opponent}: {count} consecutive rematches")
         else:
-            print('  No active rematch chains')
+            print("  No active rematch chains")
 
         if manager.pending_rematch:
-            print(f'  Pending rematch with: {manager.pending_rematch}')
+            print(f"  Pending rematch with: {manager.pending_rematch}")
 
     def _rematch_reset(self) -> None:
         """Reset all rematch counts and clear pending rematches."""
@@ -327,11 +327,11 @@ class User_Interface:
         pending_before = manager.pending_rematch
         manager.clear_pending_rematch()
 
-        print(f'Rematch system reset:')
-        print(f'  Cleared {count_before} rematch chains')
+        print("Rematch system reset:")
+        print(f"  Cleared {count_before} rematch chains")
         if pending_before:
-            print(f'  Cleared pending rematch with {pending_before}')
-        print('  All rematch counts reset to 0')
+            print(f"  Cleared pending rematch with {pending_before}")
+        print("  All rematch counts reset to 0")
 
     def _reset(self, command: list[str]) -> None:
         if len(command) != 2:
