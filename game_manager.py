@@ -66,8 +66,9 @@ class Game_Manager:
             while tournament := self._get_next_tournament_to_join():
                 await self._join_tournament(tournament)
 
-            while challenge := self._get_next_challenge():
-                await self._accept_challenge(challenge)
+            while challenge := await self._get_next_challenge():
+                if challenge:  # Only proceed if we got a challenge
+                    await self._accept_challenge(challenge)
 
             while challenge_request := self._get_next_challenge_request():
                 await self._create_challenge(challenge_request, is_rematch=False)
@@ -253,12 +254,14 @@ class Game_Manager:
         task.add_done_callback(self._task_callback)
         self.tasks[task] = game
 
-    def _get_next_challenge(self) -> Challenge | None:
+    async def _get_next_challenge(self) -> Challenge | None:
         if not self.open_challenges:
             return
 
         if self.is_busy:
-            print("Bot is busy, not accepting challenge.")
+            challenge = self.open_challenges.popleft()
+            print(f"Bot is busy, declining challenge from {challenge.opponent_username}.")
+            await self.api.decline_challenge(challenge.challenge_id, "Bot is currently busy")
             return
 
         return self.open_challenges.popleft()
