@@ -17,6 +17,7 @@ class Rematch_Manager:
         self.last_game_info: Game_Information | None = None
         self.pending_rematch: str | None = None
         self.rematch_offered: bool = False  # Track if rematch was already offered
+        self.last_opponent: str | None = None  # Track the last opponent for rematch detection
 
     def should_offer_rematch(self, game_info: Game_Information, game_result: str, winner: str | None) -> bool:
         """Determine if we should offer a rematch based on configuration and game outcome."""
@@ -118,21 +119,44 @@ class Rematch_Manager:
         print(f"Rematch declined by {opponent_name}. Count remains at: {current_count}")
 
     def on_game_finished(self, opponent_name: str) -> None:
-        """Called when a game finishes to reset rematch count if needed."""
-        # Don't reset counts anymore - let them persist
+        """Called when a game finishes to update rematch state."""
         self.rematch_offered = False
+        self.last_opponent = opponent_name.lower() if opponent_name else None
         print(f"Game finished with {opponent_name}. Rematch count preserved.")
 
     def clear_pending_rematch(self) -> None:
-        """Clear the pending rematch after it's been processed."""
-        if self.pending_rematch:
-            opponent_key = self.pending_rematch
-            current_count = self.rematch_counts.get(opponent_key, 0)
-            print(f"Clearing pending rematch with {opponent_key}. Count remains at: {current_count}")
-
+        """Clear any pending rematch state."""
         self.pending_rematch = None
-        self.last_game_info = None
         self.rematch_offered = False
+        
+    def is_rematch_challenge(self, challenge) -> bool:
+        """Check if a challenge is a rematch from our last opponent."""
+        if not hasattr(challenge, 'challenger') or not hasattr(challenge.challenger, 'username'):
+            return False
+            
+        if not self.last_opponent:
+            return False
+            
+        # Check if the challenge is from our last opponent
+        is_from_last_opponent = (challenge.challenger.username.lower() == self.last_opponent)
+        
+        # Only consider it a rematch if we haven't already offered one
+        return is_from_last_opponent and not self.rematch_offered
+        
+    def should_accept_challenge(self, challenge) -> bool:
+        """Determine if we should accept this challenge based on rematch state."""
+        # If this is a rematch from our last opponent, accept it
+        if self.is_rematch_challenge(challenge):
+            print(f"Accepting rematch challenge from {challenge.challenger.username}")
+            self.clear_pending_rematch()  # Clear any pending rematch we might have
+            return True
+            
+        # If we have a pending rematch, decline other challenges
+        if self.pending_rematch:
+            print(f"Declining challenge - waiting for rematch with {self.pending_rematch}")
+            return False
+            
+        return True  # Accept other challenges if no rematch is pending
 
     def get_rematch_challenge_request(self) -> Challenge_Request | None:
         """Get the challenge request for the pending rematch."""
@@ -140,6 +164,36 @@ class Rematch_Manager:
             return None
 
         return self._create_rematch_challenge(self.last_game_info, self.pending_rematch)
+        
+    def get_priority_challenge(self, challenges):
+        """Get the highest priority challenge from a list of challenges."""
+        if not challenges:
+            return None
+            
+        # First check for incoming rematch challenges
+        incoming_rematches = [c for c in challenges 
+                           if self.is_rematch_challenge(c) 
+                           and not self.is_our_challenge(c)]
+        if incoming_rematches:
+            # If we receive a rematch, clear our pending rematch to prevent duplicates
+            if self.pending_rematch:
+                print(f"Accepting incoming rematch, clearing our pending rematch")
+                self.clear_pending_rematch()
+            return incoming_rematches[0]
+            
+        # Then check for our own challenges (if we already sent a rematch)
+        our_challenges = [c for c in challenges if self.is_our_challenge(c)]
+        if our_challenges:
+            return our_challenges[0]
+            
+        # Finally, return any other challenge
+        return challenges[0] if challenges else None
+
+    def is_our_challenge(self, challenge) -> bool:
+        """Check if this is a challenge we initiated."""
+        return (hasattr(challenge, 'challenger') and 
+                hasattr(challenge.challenger, 'username') and 
+                challenge.challenger.username == self.username)
 
     def get_opponent_name(self, game_info: Game_Information) -> str | None:
         """Get the opponent's name from game info."""
