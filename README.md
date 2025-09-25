@@ -13,6 +13,10 @@ If you have found a bug, please [create an issue](https://github.com/Torom/BotLi
 
 # How to install
 
+First, ask yourself if there is a good reason to create another bot. If you are developing your **own engine** or have a cool idea that makes it interesting **for humans** to play against your bot, then BotLi is for you.
+
+Please refrain from creating another Stockfish bot. There are already enough of them, and that is **not** what the Lichess bot API is intended for.
+
 - **NOTE: Only Python 3.11 or later is supported!**
 - Download the repo into BotLi directory: `git clone https://github.com/Torom/BotLi.git`
 - Navigate to the directory in cmd/Terminal: `cd BotLi`
