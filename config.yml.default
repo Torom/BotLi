@@ -215,5 +215,8 @@ blacklist:                                # List of users who are not challenged
 # - Username1
 # - Username2
 
+online_blacklists:                        # List of URLs for online blacklists. One username per line.
+# - https://raw.githubusercontent.com/xu-shawn/lichess-bots-blocklist/refs/heads/main/blocklist  # Contains most of the bot accounts that use Stockfish.
+
 books:                                    # Names of the opening books (to be used above in the opening_books section) and paths to the opening books.
   DefaultBook: "/path/to/DefaultBook.bin"

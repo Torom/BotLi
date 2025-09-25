@@ -55,6 +55,7 @@ class User_Interface:
             self.api.append_user_agent(username)
             await self._handle_bot_status(account.get("title"), allow_upgrade)
             await self._test_engines()
+            await self._download_online_blacklists()
 
             self.game_manager = Game_Manager(self.api, self.config, username)
             self.game_manager_task = asyncio.create_task(self.game_manager.run())
@@ -127,6 +128,12 @@ class User_Interface:
             print(f'Testing engine "{engine_name}" ... ', end="", flush=True)
             await Engine.test(engine_config)
             print("OK")
+
+    async def _download_online_blacklists(self) -> None:
+        for url in self.config.online_blacklists:
+            online_blacklist = await self.api.download_blacklist(url) or []
+            self.config.blacklist.extend(username.lower() for username in online_blacklist)
+            print(f'Blacklisted {len(online_blacklist)} users from "{url}".')
 
     async def _handle_command(self, command: list[str]) -> None:
         match command[0]:

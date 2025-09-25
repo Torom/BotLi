@@ -150,6 +150,16 @@ class API:
             print(e)
             return False
 
+    async def download_blacklist(self, url: str) -> list[str] | None:
+        try:
+            async with self.external_session.get(url, timeout=aiohttp.ClientTimeout(total=5.0)) as response:
+                response.raise_for_status()
+                return (await response.text()).splitlines()
+        except aiohttp.ClientError as e:
+            print(f"Error downloading blacklist: {e}")
+        except TimeoutError:
+            print("Error downloading blacklist: Request timed out.")
+
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_account(self) -> dict[str, Any]:
         async with self.lichess_session.get("/api/account") as response:
