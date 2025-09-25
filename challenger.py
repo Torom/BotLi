@@ -29,7 +29,9 @@ class Challenger:
 
             if response.has_reached_rate_limit:
                 print(f"Challenge against {challenge_request.opponent_username} failed due to Lichess rate limit.")
-                return Challenge_Response(success=False, has_reached_rate_limit=True)
+                return Challenge_Response(
+                    success=False, has_reached_rate_limit=True, wait_seconds=response.wait_seconds
+                )
 
             if response.invalid_initial:
                 print("Challenge failed due to invalid initial time.")

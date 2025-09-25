@@ -9,6 +9,7 @@ from challenger import Challenger
 from config import Config
 from game import Game
 from matchmaking import Matchmaking
+from utils import get_future_timestamp
 
 
 class Game_Manager:
@@ -280,8 +281,9 @@ class Game_Manager:
         if challenge_response.no_opponent:
             self._set_next_matchmaking(self.config.matchmaking.delay)
         elif challenge_response.has_reached_rate_limit:
-            self._set_next_matchmaking(3600)
-            print("Matchmaking has reached rate limit, next attempt in one hour.")
+            wait_seconds = 3600 if challenge_response.wait_seconds is None else challenge_response.wait_seconds
+            self._set_next_matchmaking(wait_seconds)
+            print(f"Matchmaking has reached rate limit, next attempt at {get_future_timestamp(wait_seconds)}.")
             self.is_rate_limited = True
         elif challenge_response.is_misconfigured:
             print("Matchmaking stopped due to misconfiguration.")
@@ -323,9 +325,12 @@ class Game_Manager:
 
         if response.success:
             self.reserved_game_spots += 1
-        elif response.has_reached_rate_limit and self.challenge_requests:
-            print("Challenge queue cleared due to rate limiting.")
-            self.challenge_requests.clear()
+        elif response.has_reached_rate_limit:
+            if response.wait_seconds is not None:
+                print(f"Don't create new challenges before {get_future_timestamp(response.wait_seconds)}!")
+            if self.challenge_requests:
+                print("Challenge queue cleared due to rate limiting.")
+                self.challenge_requests.clear()
         elif challenge_request in self.challenge_requests:
             print(f"Challenges against {challenge_request.opponent_username} removed from queue.")
             while challenge_request in self.challenge_requests:

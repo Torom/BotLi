@@ -114,7 +114,13 @@ class API:
                 timeout=aiohttp.ClientTimeout(total=challenge_request.timeout),
             ) as response:
                 if response.status == 429:
-                    queue.put_nowait(API_Challenge_Reponse(has_reached_rate_limit=True))
+                    json_response = await response.json()
+                    queue.put_nowait(
+                        API_Challenge_Reponse(
+                            has_reached_rate_limit=True,
+                            wait_seconds=json_response.get("ratelimit", {}).get("seconds"),
+                        )
+                    )
                     return
 
                 async for line in response.content:

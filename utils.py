@@ -1,4 +1,5 @@
 import textwrap
+from datetime import datetime, timedelta
 
 from enums import Variant
 
@@ -19,6 +20,10 @@ def find_variant(name: str) -> Variant | None:
     for variant, aliases in ALIASES.items():
         if any(name.lower() == alias.lower() for alias in aliases):
             return variant
+
+
+def get_future_timestamp(seconds: int) -> str:
+    return (datetime.now() + timedelta(seconds=seconds)).isoformat(sep=" ", timespec="seconds")
 
 
 def ml_print(prefix: str, suffix: str) -> None:
