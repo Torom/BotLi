@@ -172,14 +172,6 @@ python user_interface.py --upgrade
 
 The account **cannot have played any game** before becoming a Bot account. The upgrade is **irreversible**. The account will only be able to play as a Bot.
 
-## Running with Docker
-
-The project comes with a Dockerfile, this uses python:3.13, installs all dependencies, downloads the latest version of Stockfish and starts the bot.
-
-If Docker is used, all configurations must be done in `config.yml.default`. This is automatically renamed to `config.yml` in the build process.
-
-The Dockerfile also contains all commands to download Fairy-Stockfish and all NNUEs needed for the Lichess chess variants. These commands must be uncommented if desired. In addition, the variants engine must be enabled in the `config.yml.default`. To use NNUE for the Lichess chess variants the following UCI option for Fairy-Stockfish must be set in the config: `EvalFile: "3check-cb5f517c228b.nnue:antichess-dd3cbe53cd4e.nnue:atomic-2cf13ff256cc.nnue:crazyhouse-8ebf84784ad2.nnue:horde-28173ddccabe.nnue:kingofthehill-978b86d0e6a4.nnue:racingkings-636b95f085e3.nnue"`
-
 ## Running as a service
 
 This is an example systemd service definition:
