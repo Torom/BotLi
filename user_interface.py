@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 from engine import Engine
 from enum import StrEnum
 from typing import TypeVar
+import psutil
 
 from api import API
 from botli_dataclasses import Challenge_Request
@@ -318,36 +319,46 @@ class User_Interface:
         since = int(start_of_day.timestamp() * 1000)
         until = int(end_of_day.timestamp() * 1000)
         total_games_today = 0
-        rating_changes = defaultdict(int)
+        rating_changes = defaultdict(lambda: {'diff': 0, 'wins': 0, 'losses': 0, 'draws': 0})
         try:
             async for game in self.api.get_user_games(account['username'], since=since, until=until):
                 total_games_today += 1
                 user_id = account['id']
                 if game['players']['white']['user']['id'] == user_id:
                     player = game['players']['white']
+                    bot_color = 'white'
                 elif game['players']['black']['user']['id'] == user_id:
                     player = game['players']['black']
+                    bot_color = 'black'
                 else:
                     continue
+                if game['variant'] == 'standard':
+                    key = game['speed']
+                else:
+                    key = game['variant']
                 if 'ratingDiff' in player:
-                    if game['variant'] == 'standard':
-                        key = game['speed']
-                    else:
-                        key = game['variant']
-                    rating_changes[key] += player['ratingDiff']
+                    rating_changes[key]['diff'] += player['ratingDiff']
+                # Determine result
+                winner = game.get('winner')
+                if winner == bot_color:
+                    rating_changes[key]['wins'] += 1
+                elif winner and winner != bot_color:
+                    rating_changes[key]['losses'] += 1
+                elif game.get('status') == 'draw' or not winner:
+                    rating_changes[key]['draws'] += 1
         except Exception as e:
             print(f"Could not retrieve games today: {e}")
             total_games_today = "N/A"
         print(f"\nTotal Games Today: {total_games_today}")
         if rating_changes and total_games_today != "N/A":
             print("\nToday's Rating Changes:")
-            for key, diff in rating_changes.items():
+            for key, data in rating_changes.items():
+                diff = data['diff']
+                wins = data['wins']
+                losses = data['losses']
+                draws = data['draws']
                 sign = "+" if diff > 0 else ""
-                print(f"  {key.title()}: {sign}{diff}")
-
-        # System info
-        import psutil
-        import time
+                print(f"  {key.title()}: {sign}{diff} (W: {wins} L: {losses} D: {draws})")
 
         # Memory usage
         process = psutil.Process()
