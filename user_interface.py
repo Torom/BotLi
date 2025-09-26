@@ -4,8 +4,12 @@ import logging
 import os
 import signal
 import sys
+from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import TypeVar
+
+import psutil
 
 from api import API
 from botli_dataclasses import Challenge_Request
@@ -33,6 +37,7 @@ COMMANDS = {
     "quit": "Exits the bot.",
     "rechallenge": "Challenges the opponent to the last received challenge.",
     "reset": "Resets matchmaking. Usage: reset PERF_TYPE",
+    "stats": "Shows bot statistics and performance information.",
     "stop": "Stops matchmaking mode.",
     "tournament": "Joins tournament. Usage: tournament ID [TEAM_ID] [PASSWORD]",
     "whitelist": "Temporarily whitelists a user. Use config for permanent whitelisting. Usage: whitelist USERNAME",
@@ -158,6 +163,8 @@ class User_Interface:
                 self._rechallenge()
             case "reset":
                 self._reset(command)
+            case "stats":
+                await self._stats()
             case "stop" | "s":
                 self._stop()
             case "tournament" | "t":
@@ -285,6 +292,85 @@ class User_Interface:
 
         self.game_manager.matchmaking.opponents.reset_release_time(perf_type)
         print("Matchmaking has been reset.")
+
+    async def _stats(self) -> None:
+        """Display bot statistics and performance information."""
+        print("\n=== Bot Statistics ===")
+
+        account = None
+        try:
+            account = await self.api.get_account()
+            print(f"👤 Username: {account['username']}")
+
+            # Rating information
+            perfs = account.get('perfs', {})
+            if perfs:
+                print("\nRatings:")
+                for perf_type, perf_data in perfs.items():
+                    if 'rating' in perf_data:
+                        rating = perf_data['rating']
+                        provisional = "?" if perf_data.get('provisional', False) else ""
+                        print(f"  {perf_type.title()}: {rating}{provisional}")
+        except Exception as e:
+            print(f"Could not retrieve account info: {e}")
+
+        # Total games today
+        start_of_day = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = start_of_day + timedelta(days=1)
+        since = int(start_of_day.timestamp() * 1000)
+        until = int(end_of_day.timestamp() * 1000)
+        total_games_today = 0
+        rating_changes = defaultdict(lambda: {'diff': 0, 'wins': 0, 'losses': 0, 'draws': 0})
+        if account:
+            try:
+                async for game in self.api.get_user_games(account['username'], since=since, until=until):
+                    total_games_today += 1
+                    user_id = account['id']
+                    if game['players']['white']['user']['id'] == user_id:
+                        player = game['players']['white']
+                        bot_color = 'white'
+                    elif game['players']['black']['user']['id'] == user_id:
+                        player = game['players']['black']
+                        bot_color = 'black'
+                    else:
+                        continue
+                    key = game['speed'] if game['variant'] == 'standard' else game['variant']
+                    if 'ratingDiff' in player:
+                        rating_changes[key]['diff'] += player['ratingDiff']
+                    # Determine result
+                    winner = game.get('winner')
+                    if winner == bot_color:
+                        rating_changes[key]['wins'] += 1
+                    elif winner and winner != bot_color:
+                        rating_changes[key]['losses'] += 1
+                    elif game.get('status') == 'draw' or not winner:
+                        rating_changes[key]['draws'] += 1
+            except Exception as e:
+                print(f"Could not retrieve games today: {e}")
+                total_games_today = "N/A"
+        else:
+            total_games_today = "N/A"
+        print(f"\nTotal Games Today: {total_games_today}")
+        if rating_changes and total_games_today != "N/A":
+            print("\nToday's Rating Changes:")
+            for key, data in rating_changes.items():
+                diff = data['diff']
+                wins = data['wins']
+                losses = data['losses']
+                draws = data['draws']
+                sign = "+" if diff > 0 else ""
+                print(f"  {key.title()}: {sign}{diff} (W: {wins} L: {losses} D: {draws})")
+
+        # Memory usage
+        process = psutil.Process()
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        print(f"\nMemory Usage: {memory_mb:.1f} MB")
+
+        # CPU usage
+        cpu_percent = process.cpu_percent(interval=0.1)
+        print(f"CPU Usage: {cpu_percent:.1f}%")
+
+        print("=" * 25)
 
     def _stop(self) -> None:
         if self.game_manager.stop_matchmaking():
