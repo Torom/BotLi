@@ -4,16 +4,17 @@ import logging
 import os
 import signal
 import sys
-from datetime import datetime, timezone, timedelta
-from engine import Engine
+from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import TypeVar
+
 import psutil
 
 from api import API
 from botli_dataclasses import Challenge_Request
 from config import Config
-from collections import defaultdict
+from engine import Engine
 from enums import Challenge_Color, Perf_Type, Variant
 from event_handler import Event_Handler
 from game_manager import Game_Manager
@@ -296,7 +297,7 @@ class User_Interface:
         """Display bot statistics and performance information."""
         print("\n=== Bot Statistics ===")
 
-        # Account information
+        account = None
         try:
             account = await self.api.get_account()
             print(f"👤 Username: {account['username']}")
@@ -314,40 +315,40 @@ class User_Interface:
             print(f"Could not retrieve account info: {e}")
 
         # Total games today
-        start_of_day = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        start_of_day = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         end_of_day = start_of_day + timedelta(days=1)
         since = int(start_of_day.timestamp() * 1000)
         until = int(end_of_day.timestamp() * 1000)
         total_games_today = 0
         rating_changes = defaultdict(lambda: {'diff': 0, 'wins': 0, 'losses': 0, 'draws': 0})
-        try:
-            async for game in self.api.get_user_games(account['username'], since=since, until=until):
-                total_games_today += 1
-                user_id = account['id']
-                if game['players']['white']['user']['id'] == user_id:
-                    player = game['players']['white']
-                    bot_color = 'white'
-                elif game['players']['black']['user']['id'] == user_id:
-                    player = game['players']['black']
-                    bot_color = 'black'
-                else:
-                    continue
-                if game['variant'] == 'standard':
-                    key = game['speed']
-                else:
-                    key = game['variant']
-                if 'ratingDiff' in player:
-                    rating_changes[key]['diff'] += player['ratingDiff']
-                # Determine result
-                winner = game.get('winner')
-                if winner == bot_color:
-                    rating_changes[key]['wins'] += 1
-                elif winner and winner != bot_color:
-                    rating_changes[key]['losses'] += 1
-                elif game.get('status') == 'draw' or not winner:
-                    rating_changes[key]['draws'] += 1
-        except Exception as e:
-            print(f"Could not retrieve games today: {e}")
+        if account:
+            try:
+                async for game in self.api.get_user_games(account['username'], since=since, until=until):
+                    total_games_today += 1
+                    user_id = account['id']
+                    if game['players']['white']['user']['id'] == user_id:
+                        player = game['players']['white']
+                        bot_color = 'white'
+                    elif game['players']['black']['user']['id'] == user_id:
+                        player = game['players']['black']
+                        bot_color = 'black'
+                    else:
+                        continue
+                    key = game['speed'] if game['variant'] == 'standard' else game['variant']
+                    if 'ratingDiff' in player:
+                        rating_changes[key]['diff'] += player['ratingDiff']
+                    # Determine result
+                    winner = game.get('winner')
+                    if winner == bot_color:
+                        rating_changes[key]['wins'] += 1
+                    elif winner and winner != bot_color:
+                        rating_changes[key]['losses'] += 1
+                    elif game.get('status') == 'draw' or not winner:
+                        rating_changes[key]['draws'] += 1
+            except Exception as e:
+                print(f"Could not retrieve games today: {e}")
+                total_games_today = "N/A"
+        else:
             total_games_today = "N/A"
         print(f"\nTotal Games Today: {total_games_today}")
         if rating_changes and total_games_today != "N/A":
