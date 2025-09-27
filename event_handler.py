@@ -73,7 +73,6 @@ class Event_Handler:
         rated_str = "Rated" if challenge_event["rated"] else "Casual"
         color_str = f"Color: {challenge_event['color'].capitalize()}"
         variant_str = f"Variant: {challenge_event['variant']['name']}"
-        delimiter = 5 * " "
 
         print(128 * "_")
-        print(delimiter.join([id_str, challenger_str, tc_str, rated_str, color_str, variant_str]))
+        print(" • ".join([id_str, challenger_str, tc_str, rated_str, color_str, variant_str]))
