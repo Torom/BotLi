@@ -105,7 +105,14 @@ To challenge other players with similar ratings, type:
 matchmaking
 ```
 
-Change the settings in `matchmaking` in the config to change how this bot challenges other players. The bot will pause matchmaking for incoming challenges. To exit the matchmaking mode type:
+Change the settings in `matchmaking` in the config to change how this bot challenges other players. The bot will pause matchmaking for incoming challenges.
+
+**Note**: Lichess has a strict limit for bot vs. bot games. It is **strongly** recommended to adjust the `matchmaking` `delay` according to the time control. The recommended formula is as follows, all values in seconds:
+```python
+delay = 864 - 1.34 * initial_time - 91.76 * increment
+```
+
+To exit the matchmaking mode type:
 ```
 stop
 ```
@@ -201,8 +208,6 @@ WantedBy=multi-user.target
 ```
 
 If the service should run with matchmaking the `matchmaking` command must be appended at the end of the `ExecStart` line.
-
-**Note**: If you want the bot to run in matchmaking mode for a long time, it is recommended to set the `matchmaking` `delay` higher to avoid problems with the Lichess rate limit. I recommend the following formula: `delay = 430 - 2 * initial_time - 160 * increment`
 
 ## Acknowledgements
 Thanks to the Lichess team, especially T. Alexander Lystad and Thibault Duplessis for working with the LeelaChessZero team to get this API up. Thanks to the [Niklas Fiekas](https://github.com/niklasf) and his [python-chess](https://github.com/niklasf/python-chess) code which allows engine communication seamlessly. In addition, the idea of this bot is based on [lichess-bot-devs/lichess-bot](https://github.com/lichess-bot-devs/lichess-bot).
