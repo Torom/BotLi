@@ -10,7 +10,8 @@ class Challenge_Validator:
     def __init__(self, config: Config, game_manager: Game_Manager) -> None:
         self.config = config
         self.game_manager = game_manager
-        self.time_controls = self._get_time_controls(self.config.challenge.time_controls)
+        self.bot_time_controls = self._get_time_controls(self.config.challenge.bot_time_controls)
+        self.human_time_controls = self._get_time_controls(self.config.challenge.human_time_controls)
         self.min_increment = 0 if config.challenge.min_increment is None else config.challenge.min_increment
         self.max_increment = 180 if config.challenge.max_increment is None else config.challenge.max_increment
         self.min_initial = 0 if config.challenge.min_initial is None else config.challenge.min_initial
@@ -60,11 +61,13 @@ class Challenge_Validator:
 
         increment: int = challenge_event["timeControl"]["increment"]
         initial: int = challenge_event["timeControl"]["limit"]
-        if not self.config.challenge.time_controls:
+        speeds = self.config.challenge.bot_time_controls if is_bot else self.config.challenge.human_time_controls
+        if not speeds:
             print("No time control is allowed according to config.")
             return Decline_Reason.GENERIC
 
-        if speed not in self.config.challenge.time_controls and (initial, increment) not in self.time_controls:
+        time_controls = self.bot_time_controls if is_bot else self.human_time_controls
+        if speed not in speeds and (initial, increment) not in time_controls:
             print(f'Time control "{speed}" is not allowed according to config.')
             return Decline_Reason.TIME_CONTROL
 

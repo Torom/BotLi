@@ -444,7 +444,8 @@ class Config:
             ("max_takebacks", int, '"max_takebacks" must be an integer.'),
             ("bullet_with_increment_only", bool, '"bullet_with_increment_only" must be a bool.'),
             ("variants", list, '"variants" must be a list of variants.'),
-            ("time_controls", list | None, '"time_controls" must be a list of speeds or time controls.'),
+            ("bot_time_controls", list | None, '"bot_time_controls" must be a list of speeds or time controls.'),
+            ("human_time_controls", list | None, '"human_time_controls" must be a list of speeds or time controls.'),
             ("bot_modes", list | None, '"bot_modes" must be a list of game modes.'),
             ("human_modes", list | None, '"human_modes" must be a list of game modes.'),
         ]
@@ -460,7 +461,8 @@ class Config:
             challenge_section.get("min_initial"),
             challenge_section.get("max_initial"),
             challenge_section["variants"],
-            challenge_section["time_controls"] or [],
+            challenge_section["bot_time_controls"] or [],
+            challenge_section["human_time_controls"] or [],
             challenge_section["bot_modes"] or [],
             challenge_section["human_modes"] or [],
         )

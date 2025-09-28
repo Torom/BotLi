@@ -154,7 +154,7 @@ challenge:                                # Incoming challenges.
   variants:                               # Chess variants to accept (https://lichess.org/variant).
     - standard
     - chess960
-#   - fromPosition
+    - fromPosition
 #   - antichess
 #   - atomic
 #   - crazyhouse
@@ -162,12 +162,17 @@ challenge:                                # Incoming challenges.
 #   - kingOfTheHill
 #   - racingKings
 #   - threeCheck
-  time_controls:                          # Speeds or time controls in initial_minutes+increment_seconds format to accept.
+  bot_time_controls:                      # Speeds or time controls in initial_minutes+increment_seconds format to accept against BOTs.
     - bullet
     - blitz
     - rapid
 #   - classical
 #   - 25+0
+  human_time_controls:                    # Speeds or time controls in initial_minutes+increment_seconds format to accept against humans.
+    - bullet
+    - blitz
+    - rapid
+    - classical
   bot_modes:                              # Game modes to accept against BOTs.
 #   - casual                              # Unrated games.
     - rated                               # Rated games

@@ -141,7 +141,8 @@ class Challenge_Config:
     min_initial: int | None
     max_initial: int | None
     variants: list[str]
-    time_controls: list[str]
+    bot_time_controls: list[str]
+    human_time_controls: list[str]
     bot_modes: list[str]
     human_modes: list[str]
 
