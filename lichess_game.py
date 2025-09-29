@@ -84,10 +84,8 @@ class Lichess_Game:
 
     @staticmethod
     def _get_board(game_info: Game_Information) -> chess.Board:
-        if game_info.variant == Variant.CHESS960:
+        if game_info.variant in {Variant.CHESS960, Variant.FROM_POSITION}:
             board = chess.Board(game_info.initial_fen, chess960=True)
-        elif game_info.variant == Variant.FROM_POSITION:
-            board = chess.Board(game_info.initial_fen)
         else:
             VariantBoard = find_variant(game_info.variant_name)
             board = VariantBoard()
@@ -114,7 +112,7 @@ class Lichess_Game:
                         return key
 
         if board.uci_variant == "chess":
-            if board.chess960:
+            if game_info.variant == Variant.CHESS960:
                 if key := check_engine_key("chess960"):
                     return key
 
@@ -394,7 +392,7 @@ class Lichess_Game:
 
             return
 
-        if self.board.chess960:
+        if self.game_info.variant == Variant.CHESS960:
             if key := check_book_key("chess960"):
                 return key
 
