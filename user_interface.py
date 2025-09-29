@@ -83,7 +83,7 @@ class User_Interface:
 
             while True:
                 command = (await asyncio.to_thread(input)).split()
-                if len(command) > 0:
+                if command:
                     await self._handle_command(command)
 
     async def _handle_bot_status(self, title: str | None, allow_upgrade: bool) -> None:
@@ -111,7 +111,7 @@ class User_Interface:
                 "This will upgrade your account to a BOT account.\n"
                 "WARNING: This is irreversible. The account will only be able to play as a BOT."
             )
-            approval = input("Do you want to continue? [y/N]: ")
+            approval = await asyncio.to_thread(input, "Do you want to continue? [y/N]: ")
 
             if approval.lower() not in ["y", "yes"]:
                 print("Upgrade aborted.")
