@@ -211,7 +211,7 @@ class Chatter:
         if not config.offer_draw.enabled or too_low_rating or no_draw_against_humans:
             return f"{self.username} will neither accept nor offer draws."
 
-        max_score = config.offer_draw.score / 100
+        max_score = abs(config.offer_draw.score) / 100
 
         return (
             f"{self.username} offers draw at move {config.offer_draw.min_game_length} or later "
