@@ -4,6 +4,7 @@ import struct
 import time
 from collections.abc import Awaitable, Callable, Iterable
 from itertools import islice
+from operator import itemgetter
 from typing import Any, Literal
 
 import chess
@@ -100,9 +101,13 @@ class Lichess_Game:
         suffixes: list[str] = []
         if game_info.tournament_id is not None:
             suffixes.append("tournament")
-        suffixes.append("human" if game_info.opponent_is_human else "bot")
-        suffixes.append("white" if is_white else "black")
-        suffixes.append("rated" if game_info.rated else "casual")
+        suffixes.extend(
+            (
+                "human" if game_info.opponent_is_human else "bot",
+                "white" if is_white else "black",
+                "rated" if game_info.rated else "casual",
+            )
+        )
 
         def check_engine_key(base_name: str) -> str | None:
             for i in range(len(suffixes), -1, -1):
@@ -374,9 +379,13 @@ class Lichess_Game:
         suffixes: list[str] = []
         if self.game_info.tournament_id is not None:
             suffixes.append("tournament")
-        suffixes.append("human" if self.game_info.opponent_is_human else "bot")
-        suffixes.append("white" if self.is_white else "black")
-        suffixes.append("rated" if self.game_info.rated else "casual")
+        suffixes.extend(
+            (
+                "human" if self.game_info.opponent_is_human else "bot",
+                "white" if self.is_white else "black",
+                "rated" if self.game_info.rated else "casual",
+            )
+        )
 
         def check_book_key(base_name: str) -> str | None:
             for i in range(len(suffixes), -1, -1):
@@ -494,9 +503,9 @@ class Lichess_Game:
             return max(moves, key=win_performance)
 
         if self.config.online_moves.opening_explorer.anti:
-            return min(moves, key=lambda move: move["performance"])
+            return min(moves, key=itemgetter("performance"))
 
-        return max(moves, key=lambda move: move["performance"])
+        return max(moves, key=itemgetter("performance"))
 
     async def _make_cloud_move(self) -> Move_Response | None:
         out_of_book = self.out_of_cloud_counter >= 5
@@ -758,7 +767,8 @@ class Lichess_Game:
         message = f"Syzygy:  {self._format_move(result.move):14} {egtb_info}"
         return Move_Response(result.move, message, is_draw=offer_draw, is_lost=resign)
 
-    def _value_to_wdl(self, value: int, halfmove_clock: int) -> Literal[-2, -1, 0, 1, 2]:
+    @staticmethod
+    def _value_to_wdl(value: int, halfmove_clock: int) -> Literal[-2, -1, 0, 1, 2]:
         if value > 0:
             if value + halfmove_clock <= 100:
                 return 2
@@ -823,7 +833,7 @@ class Lichess_Game:
         uci_move: str = response["moves"][0]["uci"]
         dtz: int = response["dtz"]
         dtm: int | None = response["dtm"]
-        offer_draw = outcome in ["draw", "blessed loss"]
+        offer_draw = outcome in {"draw", "blessed loss"}
         resign = outcome == "loss"
         move = chess.Move.from_uci(uci_move)
         message = f"EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}"
@@ -867,7 +877,8 @@ class Lichess_Game:
 
         return delimiter.join((score, depth, nodes, nps, time_str, hashfull, tbhits))
 
-    def _format_number(self, number: int) -> str:
+    @staticmethod
+    def _format_number(number: int) -> str:
         units: list[tuple[str, int, int]] = [
             ("T", 1_000_000_000_000, 999_950_000_000),
             ("G", 1_000_000_000, 999_950_000),
@@ -891,7 +902,8 @@ class Lichess_Game:
 
         return str(score.pov(self.board.turn))
 
-    def _format_egtb_info(self, outcome: str, dtz: int | None = None, dtm: int | None = None) -> str:
+    @staticmethod
+    def _format_egtb_info(outcome: str, dtz: int | None = None, dtm: int | None = None) -> str:
         outcome_str = f"{outcome:>7}"
         dtz_str = f"DTZ: {dtz}" if dtz else ""
         dtm_str = f"DTM: {dtm}" if dtm else ""
@@ -899,7 +911,8 @@ class Lichess_Game:
 
         return delimiter.join(filter(None, [outcome_str, dtz_str, dtm_str]))
 
-    def _format_book_info(self, weight: float, learn: int) -> str:
+    @staticmethod
+    def _format_book_info(weight: float, learn: int) -> str:
         output = f"{weight:>5.0f} %"
         if learn:
             output += f"     Performance: {learn >> 20}"
@@ -931,7 +944,7 @@ class Lichess_Game:
         if self.syzygy_config.enabled and self.syzygy_config.instant_play:
             sources.append(self._make_syzygy_move)
 
-        if self.config.online_moves.online_egtb.enabled and self.board.uci_variant in ["chess", "antichess", "atomic"]:
+        if self.config.online_moves.online_egtb.enabled and self.board.uci_variant in {"chess", "antichess", "atomic"}:
             sources.append(self._make_egtb_move)
 
         return sources

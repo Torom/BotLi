@@ -113,7 +113,7 @@ class User_Interface:
             )
             approval = await asyncio.to_thread(input, "Do you want to continue? [y/N]: ")
 
-            if approval.lower() not in ["y", "yes"]:
+            if approval.lower() not in {"y", "yes"}:
                 print("Upgrade aborted.")
                 sys.exit()
 
@@ -212,8 +212,12 @@ class User_Interface:
 
         challenges: list[Challenge_Request] = []
         for _ in range(count):
-            challenges.append(challenge_request.replaced(color=Challenge_Color.WHITE))
-            challenges.append(challenge_request.replaced(color=Challenge_Color.BLACK))
+            challenges.extend(
+                (
+                    challenge_request.replaced(color=Challenge_Color.WHITE),
+                    challenge_request.replaced(color=Challenge_Color.BLACK),
+                )
+            )
 
         self.game_manager.request_challenge(*challenges)
         print(f"Challenges for {count} game pairs against {challenge_request.opponent_username} added to the queue.")
@@ -311,12 +315,14 @@ class User_Interface:
         self.config.whitelist.append(command[1].lower())
         print(f"Added {command[1]} to the whitelist.")
 
-    def _help(self) -> None:
+    @staticmethod
+    def _help() -> None:
         print("These commands are supported by BotLi:\n")
         for key, value in COMMANDS.items():
             print(f"{key:11}\t\t# {value}")
 
-    def _find_enum(self, name: str, enum_type: type[EnumT]) -> EnumT:
+    @staticmethod
+    def _find_enum(name: str, enum_type: type[EnumT]) -> EnumT:
         for enum in enum_type:
             if enum.lower() == name.lower():
                 return enum

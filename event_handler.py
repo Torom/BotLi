@@ -62,7 +62,8 @@ class Event_Handler:
                 case _:
                     print(event)
 
-    def _print_challenge_event(self, challenge_event: dict[str, Any]) -> None:
+    @staticmethod
+    def _print_challenge_event(challenge_event: dict[str, Any]) -> None:
         id_str = f"ID: {challenge_event['id']}"
         title = challenge_event["challenger"].get("title") or ""
         name = challenge_event["challenger"]["name"]

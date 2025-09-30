@@ -101,5 +101,6 @@ class Challenge_Validator:
             print("Casual is not allowed according to config.")
             return Decline_Reason.RATED
 
-    def _get_time_controls(self, speeds: list[str]) -> list[tuple[int, int]]:
+    @staticmethod
+    def _get_time_controls(speeds: list[str]) -> list[tuple[int, int]]:
         return [parse_time_control(speed) for speed in speeds if "+" in speed]

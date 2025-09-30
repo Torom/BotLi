@@ -85,11 +85,11 @@ class Challenge_Request:
         for arg in args:
             if "+" in arg:
                 initial_time, increment = parse_time_control(arg)
-            elif arg.lower() in ["true", "yes", "rated"]:
+            elif arg.lower() in {"true", "yes", "rated"}:
                 rated = True
-            elif arg.lower() in ["false", "no", "unrated", "casual"]:
+            elif arg.lower() in {"false", "no", "unrated", "casual"}:
                 rated = False
-            elif arg.lower() in ["white", "black", "random"]:
+            elif arg.lower() in {"white", "black", "random"}:
                 color = Challenge_Color(arg.lower())
             elif found_variant := find_variant(arg):
                 variant = found_variant

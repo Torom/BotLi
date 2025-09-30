@@ -170,7 +170,8 @@ class Chatter:
 
         await self.api.send_chat_message(self.game_info.id_, room, message)
 
-    def _get_cpu(self) -> str:
+    @staticmethod
+    def _get_cpu() -> str:
         cpu = ""
         if os.path.exists("/proc/cpuinfo"):
             with open("/proc/cpuinfo", encoding="utf-8") as cpuinfo:
@@ -193,7 +194,8 @@ class Chatter:
 
         return f"{cpu} {cores}c/{threads}t @ {cpu_freq:.2f}GHz"
 
-    def _get_ram(self) -> str:
+    @staticmethod
+    def _get_ram() -> str:
         mem_bytes = psutil.virtual_memory().total
         mem_gib = mem_bytes / (1024.0**3)
 

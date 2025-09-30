@@ -60,7 +60,8 @@ class Opponents:
 
         self.busy_bots.clear()
 
-    def _filter_bots(self, bots: list[Bot], matchmaking_type: Matchmaking_Type) -> list[Bot]:
+    @staticmethod
+    def _filter_bots(bots: list[Bot], matchmaking_type: Matchmaking_Type) -> list[Bot]:
         def bot_filter(bot: Bot) -> bool:
             if matchmaking_type.perf_type not in bot.rating_diffs:
                 return False
@@ -137,9 +138,8 @@ class Opponents:
         except PermissionError:
             print("Saving the matchmaking file failed due to missing write permissions.")
 
-    def _update_format(
-        self, list_format: list[dict[str, Any]]
-    ) -> defaultdict[str, defaultdict[Perf_Type, Matchmaking_Data]]:
+    @staticmethod
+    def _update_format(list_format: list[dict[str, Any]]) -> defaultdict[str, defaultdict[Perf_Type, Matchmaking_Data]]:
         dict_format: defaultdict[str, defaultdict[Perf_Type, Matchmaking_Data]] = defaultdict(
             lambda: defaultdict(Matchmaking_Data)
         )

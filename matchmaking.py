@@ -216,8 +216,8 @@ class Matchmaking:
             if matchmaking_type.config_multiplier:
                 matchmaking_type.multiplier = matchmaking_type.config_multiplier
             else:
-                min_rating_diff = matchmaking_type.min_rating_diff if matchmaking_type.min_rating_diff else 0
-                max_rating_diff = matchmaking_type.max_rating_diff if matchmaking_type.max_rating_diff else 600
+                min_rating_diff = matchmaking_type.min_rating_diff or 0
+                max_rating_diff = matchmaking_type.max_rating_diff or 600
 
                 bot_count = self._get_bot_count(matchmaking_type.perf_type, min_rating_diff, max_rating_diff)
                 perf_type_count = len({matchmaking_type.perf_type for matchmaking_type in self.types})
@@ -241,7 +241,8 @@ class Matchmaking:
 
         return sum(map(bot_filter, self.online_bots))
 
-    def _variant_to_perf_type(self, variant: Variant, initial_time: int, increment: int) -> Perf_Type:
+    @staticmethod
+    def _variant_to_perf_type(variant: Variant, initial_time: int, increment: int) -> Perf_Type:
         if variant != Variant.STANDARD:
             return Perf_Type(variant)
 
@@ -257,8 +258,9 @@ class Matchmaking:
 
         return Perf_Type.CLASSICAL
 
-    def _perf_type_to_variant(self, perf_type: Perf_Type) -> Variant:
-        if perf_type in [Perf_Type.BULLET, Perf_Type.BLITZ, Perf_Type.RAPID, Perf_Type.CLASSICAL]:
+    @staticmethod
+    def _perf_type_to_variant(perf_type: Perf_Type) -> Variant:
+        if perf_type in {Perf_Type.BULLET, Perf_Type.BLITZ, Perf_Type.RAPID, Perf_Type.CLASSICAL}:
             return Variant.STANDARD
 
         return Variant(perf_type)
