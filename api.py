@@ -297,11 +297,6 @@ class API:
         async with self.lichess_session.get(f"/api/tournament/{tournament_id}") as response:
             return await response.json()
 
-    @retry(**JSON_RETRY_CONDITIONS)
-    async def get_rating_history(self, username: str) -> list[dict[str, Any]]:
-        async with self.lichess_session.get(f"/api/user/{username}/rating-history") as response:
-            response.raise_for_status()
-            return await response.json()
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_user_status(self, username: str) -> dict[str, Any]:
@@ -413,9 +408,3 @@ class API:
             print(e)
             return False
 
-    @retry(**JSON_RETRY_CONDITIONS)
-    async def get_user_activity(self, username: str) -> list:
-        """Fetches the activity feed of a user from Lichess."""
-        async with self.lichess_session.get(f"/api/user/{username}/activity") as response:
-            response.raise_for_status()
-            return await response.json()
