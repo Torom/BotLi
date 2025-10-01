@@ -1,11 +1,10 @@
 import argparse
 import asyncio
+import datetime
 import logging
 import os
 import signal
 import sys
-from collections import defaultdict
-from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import TypeVar
 
@@ -314,52 +313,68 @@ class User_Interface:
         except Exception as e:
             print(f"Could not retrieve account info: {e}")
 
-        # Total games today
-        start_of_day = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
-        end_of_day = start_of_day + timedelta(days=1)
-        since = int(start_of_day.timestamp() * 1000)
-        until = int(end_of_day.timestamp() * 1000)
-        total_games_today = 0
-        rating_changes = defaultdict(lambda: {'diff': 0, 'wins': 0, 'losses': 0, 'draws': 0})
+        # Use new API functions for stats
         if account:
             try:
+                today = datetime.datetime.now(datetime.UTC).date()
+                start_of_day = datetime.datetime.combine(today, datetime.datetime.min.time(), tzinfo=datetime.UTC)
+                end_of_day = start_of_day + datetime.timedelta(days=1)
+                since = int(start_of_day.timestamp() * 1000)
+                until = int(end_of_day.timestamp() * 1000)
+                stats = {}
+                total_games = 0
+                # Calculate rating changes for today by variant
+                rating_diffs = {}
                 async for game in self.api.get_user_games(account['username'], since=since, until=until):
-                    total_games_today += 1
+                    variant = game.get('variant', 'standard').title()
+                    perf = game.get('perf', variant)
                     user_id = account['id']
-                    if game['players']['white']['user']['id'] == user_id:
-                        player = game['players']['white']
-                        bot_color = 'white'
-                    elif game['players']['black']['user']['id'] == user_id:
-                        player = game['players']['black']
-                        bot_color = 'black'
+                    if perf not in stats:
+                        stats[perf] = {'games': 0, 'wins': 0, 'draws': 0, 'losses': 0}
+                    stats[perf]['games'] += 1
+                    total_games += 1
+                    # Rating diff
+                    player = None
+                    if 'players' in game:
+                        if 'white' in game['players'] and game['players']['white']['user']['id'] == user_id:
+                            player = game['players']['white']
+                        elif 'black' in game['players'] and game['players']['black']['user']['id'] == user_id:
+                            player = game['players']['black']
+                    if player and 'ratingDiff' in player:
+                        rating_diffs.setdefault(perf, 0)
+                        rating_diffs[perf] += player['ratingDiff']
+                    # Results
+                    result = game.get('winner')
+                    if result:
+                        if game['players'][result]['user']['id'] == user_id:
+                            stats[perf]['wins'] += 1
+                        else:
+                            stats[perf]['losses'] += 1
+                    elif game.get('status') == 'draw':
+                        stats[perf]['draws'] += 1
+                print(f"\nTotal Games Today: {total_games}")
+                for perf, data in stats.items():
+                    line = f"Played {data['games']} {perf} games"
+                    details = []
+                    if data['wins']:
+                        details.append(f"{data['wins']} win{'s' if data['wins'] != 1 else ''}")
+                    if data['draws']:
+                        details.append(f"{data['draws']} draw{'s' if data['draws'] != 1 else ''}")
+                    if data['losses']:
+                        details.append(f"{data['losses']} loss{'es' if data['losses'] != 1 else ''}")
+                    # Add rating diff
+                    diff = rating_diffs.get(perf, 0)
+                    if diff > 0:
+                        details.append(f"+{diff} rating")
+                    elif diff < 0:
+                        details.append(f"{diff} rating")
                     else:
-                        continue
-                    key = game['speed'] if game['variant'] == 'standard' else game['variant']
-                    if 'ratingDiff' in player:
-                        rating_changes[key]['diff'] += player['ratingDiff']
-                    # Determine result
-                    winner = game.get('winner')
-                    if winner == bot_color:
-                        rating_changes[key]['wins'] += 1
-                    elif winner and winner != bot_color:
-                        rating_changes[key]['losses'] += 1
-                    elif game.get('status') == 'draw' or not winner:
-                        rating_changes[key]['draws'] += 1
+                        details.append("no rating change")
+                    if details:
+                        line += ": " + " ".join(details)
+                    print(line)
             except Exception as e:
                 print(f"Could not retrieve games today: {e}")
-                total_games_today = "N/A"
-        else:
-            total_games_today = "N/A"
-        print(f"\nTotal Games Today: {total_games_today}")
-        if rating_changes and total_games_today != "N/A":
-            print("\nToday's Rating Changes:")
-            for key, data in rating_changes.items():
-                diff = data['diff']
-                wins = data['wins']
-                losses = data['losses']
-                draws = data['draws']
-                sign = "+" if diff > 0 else ""
-                print(f"  {key.title()}: {sign}{diff} (W: {wins} L: {losses} D: {draws})")
 
         # Memory usage
         process = psutil.Process()
