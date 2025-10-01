@@ -301,7 +301,6 @@ class User_Interface:
             account = await self.api.get_account()
             print(f"👤 Username: {account['username']}")
 
-            # Rating information
             perfs = account.get('perfs', {})
             if perfs:
                 print("\nRatings:")
@@ -313,7 +312,6 @@ class User_Interface:
         except Exception as e:
             print(f"Could not retrieve account info: {e}")
 
-        # Use new API functions for stats
         if account:
             try:
                 today = datetime.datetime.now(datetime.UTC).date()
@@ -323,7 +321,6 @@ class User_Interface:
                 until = int(end_of_day.timestamp() * 1000)
                 stats = {}
                 total_games = 0
-                # Calculate rating changes for today by variant
                 rating_diffs = {}
                 async for game in self.api.get_user_games(account['username'], since=since, until=until):
                     variant = game.get('variant', 'standard').title()
@@ -333,7 +330,6 @@ class User_Interface:
                         stats[perf] = {'games': 0, 'wins': 0, 'draws': 0, 'losses': 0}
                     stats[perf]['games'] += 1
                     total_games += 1
-                    # Rating diff
                     player = None
                     if 'players' in game:
                         if 'white' in game['players'] and game['players']['white']['user']['id'] == user_id:
@@ -343,7 +339,6 @@ class User_Interface:
                     if player and 'ratingDiff' in player:
                         rating_diffs.setdefault(perf, 0)
                         rating_diffs[perf] += player['ratingDiff']
-                    # Results
                     result = game.get('winner')
                     if result:
                         if game['players'][result]['user']['id'] == user_id:
@@ -362,7 +357,6 @@ class User_Interface:
                         details.append(f"{data['draws']} draw{'s' if data['draws'] != 1 else ''}")
                     if data['losses']:
                         details.append(f"{data['losses']} loss{'es' if data['losses'] != 1 else ''}")
-                    # Add rating diff
                     diff = rating_diffs.get(perf, 0)
                     if diff > 0:
                         details.append(f"+{diff} rating")
@@ -376,12 +370,10 @@ class User_Interface:
             except Exception as e:
                 print(f"Could not retrieve games today: {e}")
 
-        # Memory usage
         process = psutil.Process()
         memory_mb = process.memory_info().rss / 1024 / 1024
         print(f"\nMemory Usage: {memory_mb:.1f} MB")
 
-        # CPU usage
         cpu_percent = process.cpu_percent(interval=0.1)
         print(f"CPU Usage: {cpu_percent:.1f}%")
 
