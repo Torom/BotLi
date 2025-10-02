@@ -162,7 +162,7 @@ class Config:
 
             if not os.access(settings["path"], os.X_OK):
                 try:
-                    current_mode = os.stat(settings["path]).st_mode
+                    current_mode = os.stat(settings["path"]).st_mode
                     os.chmod(settings["path"], current_mode | 0o111)
                     print(f'Automatically granted execute permission to "{settings["path"]}"')  
                 except (PermissionError, OSError) as e: 
