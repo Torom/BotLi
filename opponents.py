@@ -35,7 +35,7 @@ class Opponents:
         username, color, matchmaking_type = self.last_opponent
         data = self.opponent_dict[username][matchmaking_type.perf_type]
 
-        data.multiplier = 1 if success else data.multiplier * 2
+        data.multiplier = 1 if success else abs(data.multiplier * 2)
         timeout = (game_duration + self.delay) * matchmaking_type.multiplier * data.multiplier
 
         if data.release_time > datetime.now():
@@ -50,6 +50,23 @@ class Opponents:
             data.color = Challenge_Color.BLACK
         else:
             data.color = Challenge_Color.WHITE
+
+        self.busy_bots.clear()
+        self._save(self.matchmaking_file)
+
+    def set_timeout(self, wait_seconds: int) -> None:
+        username, _, matchmaking_type = self.last_opponent
+        data = self.opponent_dict[username][matchmaking_type.perf_type]
+
+        if data.multiplier == 1:
+            data.multiplier = -1
+
+        data.release_time = max(data.release_time, datetime.now() + timedelta(seconds=wait_seconds))
+
+        release_str = data.release_time.isoformat(sep=" ", timespec="seconds")
+        print(f"{username} will not be challenged to a new game pair before {release_str}.")
+
+        data.color = Challenge_Color.WHITE
 
         self.busy_bots.clear()
         self._save(self.matchmaking_file)

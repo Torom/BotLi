@@ -92,6 +92,8 @@ class Matchmaking:
         response = await self.challenger.create(challenge_request)
         if response.success:
             self.game_start_time = datetime.now()
+        elif not response.has_reached_rate_limit and response.wait_seconds:
+            self.opponents.set_timeout(response.wait_seconds)
         elif not (response.has_reached_rate_limit or response.is_misconfigured):
             self.opponents.add_timeout(False, self.current_type.estimated_game_duration)
         else:
@@ -234,7 +236,7 @@ class Matchmaking:
             if abs(bot.rating_diffs[perf_type]) < min_rating_diff:
                 return False
 
-            if self.opponents.opponent_dict[bot.username][perf_type].multiplier > 1:
+            if self.opponents.opponent_dict[bot.username][perf_type].multiplier != 1:
                 return False
 
             return True

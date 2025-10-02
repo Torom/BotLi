@@ -12,7 +12,7 @@ from enums import Challenge_Color, Perf_Type, Variant
 from utils import find_variant, parse_time_control
 
 
-@dataclass
+@dataclass(kw_only=True)
 class API_Challenge_Reponse:
     challenge_id: str | None = None
     was_accepted: bool = False
@@ -318,6 +318,9 @@ class Matchmaking_Data:
         dict_ = {}
         if self.release_time > datetime.now():
             dict_["release_time"] = self.release_time.isoformat(timespec="seconds")
+
+        if self.multiplier == -1 and "release_time" in dict_:
+            dict_["multiplier"] = -1
 
         if self.multiplier > 1:
             dict_["multiplier"] = self.multiplier

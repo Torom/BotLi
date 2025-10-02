@@ -113,11 +113,14 @@ class API:
                 },
                 timeout=aiohttp.ClientTimeout(total=challenge_request.timeout),
             ) as response:
-                if response.status == 429:
-                    json_response = await response.json()
+                if response.status != 200:
+                    json_response: dict[str, Any] = await response.json()
                     queue.put_nowait(
                         API_Challenge_Reponse(
-                            has_reached_rate_limit=True,
+                            error=json_response.get("error"),
+                            invalid_initial="clock.limit" in json_response,
+                            invalid_increment="clock.increment" in json_response,
+                            has_reached_rate_limit=response.status == 429,
                             wait_seconds=json_response.get("ratelimit", {}).get("seconds"),
                         )
                     )
@@ -130,12 +133,9 @@ class API:
                     data: dict[str, Any] = json.loads(line)
                     queue.put_nowait(
                         API_Challenge_Reponse(
-                            data.get("id"),
-                            data.get("done") == "accepted",
-                            data.get("error"),
-                            data.get("done") == "declined",
-                            "clock.limit" in data,
-                            "clock.increment" in data,
+                            challenge_id=data.get("id"),
+                            was_accepted=data.get("done") == "accepted",
+                            was_declined=data.get("done") == "declined",
                         )
                     )
 
