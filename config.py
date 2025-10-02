@@ -169,7 +169,7 @@ class Config:
                     raise RuntimeError(
                         f'The engine "{settings["path"]}" doesnt have execute (x) permission and '
                         f"could not be automatically fixed. Try: chmod +x {settings['path']}. Error: {e}"
-                    ) from e 
+                    ) from e
 
             limits_settings = settings["limits"] or {}
 
