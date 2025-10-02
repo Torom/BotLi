@@ -53,10 +53,9 @@ class Matchmaking:
 
         if next_opponent is None:
             print(f"No opponent available for matchmaking type {self.current_type.name}.")
-            if self.config.matchmaking.selection == "weighted_random":
-                self.current_type = None
-            else:
-                self.current_type = self._get_next_type()
+            self.current_type = (
+                None if self.config.matchmaking.selection == "weighted_random" else self._get_next_type()
+            )
 
             if self.current_type is None:
                 return Challenge_Response(no_opponent=True)
@@ -109,21 +108,13 @@ class Matchmaking:
             game_duration += self.current_type.estimated_game_duration
 
         self.opponents.add_timeout(not was_aborted, game_duration)
-
-        if self.config.matchmaking.selection == "cyclic":
-            self.current_type = self._get_next_type()
-        else:
-            self.current_type = None
+        self.current_type = self._get_next_type() if self.config.matchmaking.selection == "cyclic" else None
 
     def _get_next_type(self) -> Matchmaking_Type | None:
-        last_type = self.types[-1]
-        for i, matchmaking_type in enumerate(self.types):
-            if matchmaking_type == last_type:
-                return
-
-            if matchmaking_type == self.current_type:
-                print(f"Matchmaking type: {self.types[i + 1]}")
-                return self.types[i + 1]
+        for current, next_item in zip(self.types, self.types[1:], strict=False):
+            if current == self.current_type:
+                print(f"Matchmaking type: {next_item}")
+                return next_item
 
     def _get_matchmaking_types(self) -> list[Matchmaking_Type]:
         matchmaking_types: list[Matchmaking_Type] = []
