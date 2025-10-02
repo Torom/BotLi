@@ -161,10 +161,15 @@ class Config:
                 raise RuntimeError(f'The engine "{settings["path"]}" file does not exist.')
 
             if not os.access(settings["path"], os.X_OK):
-                raise RuntimeError(
-                    f'The engine "{settings["path"]}" doesnt have execute (x) permission. '
-                    f"Try: chmod +x {settings['path']}"
-                )
+                try:
+                    current_mode = os.stat(settings["path]).st_mode
+                    os.chmod(settings["path"], current_mode | 0o111)
+                    print(f'Automatically granted execute permission to "{settings["path"]}"')  
+                except (PermissionError, OSError) as e: 
+                    raise RuntimeError(  
+                        f'The engine "{settings["path"]}" doesnt have execute (x) permission and '  
+                        f'could not be automatically fixed. Try: chmod +x {settings["path"]}. Error: {e}'  
+                    )
 
             limits_settings = settings["limits"] or {}
 
