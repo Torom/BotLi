@@ -348,8 +348,10 @@ class User_Interface:
                     elif game.get('status') == 'draw':
                         stats[perf]['draws'] += 1
                 print(f"\nTotal Games Today: {total_games}")
+                lines = []
+                max_prefix_len = 0
                 for perf, data in stats.items():
-                    line = f"Played {data['games']} {perf} games"
+                    prefix = f"Played {data['games']} {perf} games"
                     details = []
                     if data['wins']:
                         details.append(f"{data['wins']} win{'s' if data['wins'] != 1 else ''}")
@@ -365,8 +367,11 @@ class User_Interface:
                     else:
                         details.append("no rating change")
                     if details:
-                        line += ": " + " ".join(details)
-                    print(line)
+                        lines.append((prefix, details))
+                        max_prefix_len = max(max_prefix_len, len(prefix) + 2)
+
+                for prefix, details in lines:
+                    print(f"{prefix:<{max_prefix_len}}: {' '.join(details)}")
             except Exception as e:
                 print(f"Could not retrieve games today: {e}")
 
