@@ -405,6 +405,7 @@ class Config:
             ("consecutive_moves", int, '"consecutive_moves" must be an integer.'),
             ("min_game_length", int, '"min_game_length" must be an integer.'),
             ("against_humans", bool, '"against_humans" must be a bool.'),
+            ("claim_draw_enabled", bool, '"claim_draw_enabled" must be a bool.'),
         ]
 
         Config._validate_config_section(offer_draw_section, "offer_draw", offer_draw_sections)
@@ -416,6 +417,7 @@ class Config:
             offer_draw_section["min_game_length"],
             offer_draw_section["against_humans"],
             offer_draw_section.get("min_rating"),
+            offer_draw_section["claim_draw_enabled"],
         )
 
     @staticmethod

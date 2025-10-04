@@ -134,6 +134,7 @@ offer_draw:
   consecutive_moves: 5                    # How many moves in a row the absolute value of the score has to be below the draw value
   min_game_length: 30                     # Earliest move in which draw is offered.
   against_humans: true                    # Activate whether these settings should apply against humans.
+  claim_draw_enabled: true                # Enable automatic draw claiming by repetition/fiftymoverule
 # min_rating: 2300                        # Minimum rating of opponent to offer draw.
 
 resign:
