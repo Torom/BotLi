@@ -120,7 +120,7 @@ class Offer_Draw_Config:
     min_game_length: int
     against_humans: bool
     min_rating: int | None
-
+    claim_draw_enabled: bool
 
 @dataclass
 class Resign_Config:
