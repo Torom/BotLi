@@ -101,7 +101,7 @@ class API:
     async def claim_draw(self, game_id: str) -> bool:
         try:
            async with self.lichess_session.post(f"/api/bot/game/{game_id}/claim-draw") as response:
-               response. raise_for_status)
+               response. raise_for_status()
                return True
         except aiohttp.ClientResponseError as e:
             print(e)
