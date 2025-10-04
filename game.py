@@ -6,7 +6,7 @@ from botli_dataclasses import Game_Information
 from chatter import Chatter
 from config import Config
 from lichess_game import Lichess_Game
-from utils import ColorLogger  
+from utils import ColorLogger
 
 
 class Game:
@@ -15,7 +15,7 @@ class Game:
         self.config = config
         self.username = username
         self.game_id = game_id
-        self.color_logger = color_logger 
+        self.color_logger = color_logger
 
         self.takeback_count = 0
         self.was_aborted = False

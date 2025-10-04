@@ -7,8 +7,6 @@ from itertools import islice
 from operator import itemgetter
 from typing import Any, Literal
 
-from utils import ColorLogger
-
 import chess
 import chess.engine
 import chess.gaviota
@@ -30,6 +28,7 @@ from config import Config
 from configs import Engine_Config, Syzygy_Config
 from engine import Engine
 from enums import Variant
+from utils import ColorLogger
 
 
 class Lichess_Game:
@@ -48,7 +47,7 @@ class Lichess_Game:
         self.api = api
         self.config = config
         self.game_info = game_info
-        self.color_logger = color_logger  
+        self.color_logger = color_logger
         self.board = board
         self.syzygy_config = syzygy_config
         self.white_time: float = self.game_info.state["wtime"] / 1000
@@ -75,7 +74,9 @@ class Lichess_Game:
         self.last_pv: list[chess.Move] = []
 
     @classmethod
-    async def acreate(cls, api: API, config: Config, username: str, game_info: Game_Information, color_logger: ColorLogger) -> "Lichess_Game":
+    async def acreate(
+        cls, api: API, config: Config, username: str, game_info: Game_Information, color_logger: ColorLogger
+    ) -> "Lichess_Game":
         board = cls._get_board(game_info)
         is_white = game_info.white_name == username
         engine_key = cls._get_engine_key(config, board, is_white, game_info)
@@ -163,8 +164,8 @@ class Lichess_Game:
                 self.board.push(move_response.move)
                 await self.engine.start_pondering(self.board)
 
-                message = f"{move_response.public_message} {move_response.private_message}".strip()  
-                self.color_logger.print(message, self.game_info.id_)  
+                message = f"{move_response.public_message} {move_response.private_message}".strip()
+                self.color_logger.print(message, self.game_info.id_)
                 self.last_pv = move_response.pv
                 return Lichess_Move(
                     move_response.move.uci(),
@@ -178,7 +179,7 @@ class Lichess_Game:
             self.scores.append(info["score"])
 
         message = f"Engine:  {self._format_move(move):14} {self._format_engine_info(info)}"
-        self.color_logger.print(message, self.game_info.id_) 
+        self.color_logger.print(message, self.game_info.id_)
         self.last_message = message
         self.last_pv = info.get("pv", [])
 
