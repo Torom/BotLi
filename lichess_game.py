@@ -7,6 +7,8 @@ from itertools import islice
 from operator import itemgetter
 from typing import Any, Literal
 
+from utils import ColorLogger
+
 import chess
 import chess.engine
 import chess.gaviota
@@ -41,6 +43,7 @@ class Lichess_Game:
         syzygy_config: Syzygy_Config,
         engine_key: str,
         engine: Engine,
+        color_logger: ColorLogger,
     ) -> None:
         self.api = api
         self.config = config
@@ -71,7 +74,7 @@ class Lichess_Game:
         self.last_pv: list[chess.Move] = []
 
     @classmethod
-    async def acreate(cls, api: API, config: Config, username: str, game_info: Game_Information) -> "Lichess_Game":
+    async def acreate(cls, api: API, config: Config, username: str, game_info: Game_Information, color_logger: ColorLogger) -> "Lichess_Game":
         board = cls._get_board(game_info)
         is_white = game_info.white_name == username
         engine_key = cls._get_engine_key(config, board, is_white, game_info)
@@ -81,7 +84,7 @@ class Lichess_Game:
             syzygy_config,
             game_info.black_opponent if is_white else game_info.white_opponent,
         )
-        return cls(api, config, username, game_info, board, syzygy_config, engine_key, engine)
+        return cls(api, config, username, game_info, board, syzygy_config, engine_key, engine, color_logger)
 
     @staticmethod
     def _get_board(game_info: Game_Information) -> chess.Board:
@@ -159,8 +162,8 @@ class Lichess_Game:
                 self.board.push(move_response.move)
                 await self.engine.start_pondering(self.board)
 
-                print(f"{move_response.public_message} {move_response.private_message}".strip())
-                self.last_message = move_response.public_message
+                message = f"{move_response.public_message} {move_response.private_message}".strip()  
+                self.color_logger.print(message, self.game_id)  
                 self.last_pv = move_response.pv
                 return Lichess_Move(
                     move_response.move.uci(),
@@ -174,7 +177,7 @@ class Lichess_Game:
             self.scores.append(info["score"])
 
         message = f"Engine:  {self._format_move(move):14} {self._format_engine_info(info)}"
-        print(message)
+        self.color_logger.print(message, self.game_id) 
         self.last_message = message
         self.last_pv = info.get("pv", [])
 
@@ -332,7 +335,7 @@ class Lichess_Game:
             try:
                 entries = list(book_reader.find_all(self.board))
             except struct.error:
-                print(f'Skipping book "{name}" due to error.')
+                self.color_logger.print(f'Skipping book "{name}" due to error.')
                 continue
 
             if not entries:
@@ -591,7 +594,7 @@ class Lichess_Game:
 
         if response["status"] != "ok":
             if response["status"] != "unknown":
-                print(f"ChessDB: {response['status']}")
+                self.color_logger.print(f"ChessDB: {response['status']}")
             self.out_of_chessdb_counter += 1
             return
 
