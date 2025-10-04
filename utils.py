@@ -1,6 +1,9 @@
 import textwrap
 from datetime import datetime, timedelta
 
+from rich.console import Console  
+from rich.style import Style  
+
 from enums import Variant
 
 ALIASES = {
@@ -47,3 +50,30 @@ def parse_time_control(time_control: str) -> tuple[int, int]:
     initial_time = int(float(initial_time_str) * 60)
     increment = int(increment_str)
     return initial_time, increment
+
+class ColorLogger:  
+    def __init__(self):  
+        self.console = Console()  
+        self.game_colors = {}  
+        self.available_colors = [  
+            "red", "green", "yellow", "blue", "magenta", "cyan",  
+            "bright_red", "bright_green", "bright_yellow",   
+            "bright_blue", "bright_magenta", "bright_cyan"  
+        ]  
+        self.color_index = 0  
+      
+    def assign_color(self, game_id: str) -> str:  
+        if game_id not in self.game_colors:  
+            self.game_colors[game_id] = self.available_colors[self.color_index % len(self.available_colors)]  
+            self.color_index += 1  
+        return self.game_colors[game_id]  
+      
+    def print(self, message: str, game_id: str | None = None):  
+        if game_id:  
+            color = self.assign_color(game_id)  
+            self.console.print(message, style=Style(color=color))  
+        else:  
+            self.console.print(message)  
+      
+    def remove_color(self, game_id: str):  
+        self.game_colors.pop(game_id, None)
