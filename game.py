@@ -117,7 +117,7 @@ class Game:
         opponents_str = f"{info.white_str}   -   {info.black_str}"
         message = " • ".join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
 
-        self.color_logger.print(f"\n{message}\n{128 * '‾'}", self.game_id)
+        self.color_logger.print(f"\n{message}\n{128 * '‾'}", self.game_info.id_)
 
     def _print_result_message(
         self, game_state: dict[str, Any], lichess_game: Lichess_Game, info: Game_Information
