@@ -122,6 +122,7 @@ class Offer_Draw_Config:
     min_rating: int | None
     claim_draw_enabled: bool
 
+
 @dataclass
 class Resign_Config:
     enabled: bool

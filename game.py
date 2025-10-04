@@ -86,7 +86,7 @@ class Game:
 
             if self.config.offer_draw.claim_draw_enabled and lichess_game.is_our_turn:
                 if lichess_game.board.is_fifty_moves() or lichess_game.board.is_repetition(count=3):
-                    print ("Claiming draw by repetition/fifty-move rule...")
+                    print("Claiming draw by repetition/fifty-move rule...")
                     await self.api.claim_draw(self.game_id)
                     continue
 
