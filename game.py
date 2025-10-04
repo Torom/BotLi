@@ -6,6 +6,7 @@ from botli_dataclasses import Game_Information
 from chatter import Chatter
 from config import Config
 from lichess_game import Lichess_Game
+from utils import ColorLogger  
 
 
 class Game:
@@ -14,6 +15,7 @@ class Game:
         self.config = config
         self.username = username
         self.game_id = game_id
+        self.color_logger = color_logger
 
         self.takeback_count = 0
         self.was_aborted = False
@@ -115,7 +117,7 @@ class Game:
         opponents_str = f"{info.white_str}   -   {info.black_str}"
         message = " • ".join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
 
-        print(f"\n{message}\n{128 * '‾'}")
+        self.color_logger.print(f"\n{message}\n{128 * '‾'}", self.game_id)
 
     def _print_result_message(
         self, game_state: dict[str, Any], lichess_game: Lichess_Game, info: Game_Information
@@ -180,4 +182,4 @@ class Game:
         opponents_str = f"{info.white_str} {white_result} - {black_result} {info.black_str}"
         message = " • ".join([info.id_str, opponents_str, message])
 
-        print(f"{message}\n{128 * '‾'}")
+        self.color_logger.print(f"{message}\n{128 * '‾'}", self.game_id)
