@@ -10,7 +10,7 @@ from utils import ColorLogger
 
 
 class Game:
-    def __init__(self, api: API, config: Config, username: str, game_id: str) -> None:
+    def __init__(self, api: API, config: Config, username: str, game_id: str, color_logger: ColorLogger) -> None:
         self.api = api
         self.config = config
         self.username = username
