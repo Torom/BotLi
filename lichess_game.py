@@ -163,7 +163,7 @@ class Lichess_Game:
                 await self.engine.start_pondering(self.board)
 
                 message = f"{move_response.public_message} {move_response.private_message}".strip()  
-                self.color_logger.print(message, self.game_id)  
+                self.color_logger.print(message, self.game_info.id_)  
                 self.last_pv = move_response.pv
                 return Lichess_Move(
                     move_response.move.uci(),
@@ -177,7 +177,7 @@ class Lichess_Game:
             self.scores.append(info["score"])
 
         message = f"Engine:  {self._format_move(move):14} {self._format_engine_info(info)}"
-        self.color_logger.print(message, self.game_id) 
+        self.color_logger.print(message, self.game_info.id_) 
         self.last_message = message
         self.last_pv = info.get("pv", [])
 
@@ -335,7 +335,7 @@ class Lichess_Game:
             try:
                 entries = list(book_reader.find_all(self.board))
             except struct.error:
-                self.color_logger.print(f'Skipping book "{name}" due to error.')
+                self.color_logger.print(f'Skipping book "{name}" due to error.', self.game_info.id_)
                 continue
 
             if not entries:
@@ -594,7 +594,7 @@ class Lichess_Game:
 
         if response["status"] != "ok":
             if response["status"] != "unknown":
-                self.color_logger.print(f"ChessDB: {response['status']}")
+                self.color_logger.print(f"ChessDB: {response['status']}", self.game_info.id_)
             self.out_of_chessdb_counter += 1
             return
 
