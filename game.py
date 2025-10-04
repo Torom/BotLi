@@ -56,7 +56,10 @@ class Game:
                     continue
                 case "opponentGone":
                     if not self.move_task and event.get("claimWinInSeconds") == 0:
-                        await self.api.claim_victory(self.game_id)
+                        if lichess_game.has_insufficient_material:
+                            await self.api.claim_draw(self.game_id)
+                        else:
+                            await self.api.claim_victory(self.game_id)
                     continue
                 case "gameFull":
                     event = event["state"]
@@ -170,6 +173,8 @@ class Game:
                     message = f"Game drawn. {out_of_time_player} ran out of time."
                 case "insufficientMaterialClaim":
                     message = "Game drawn due to insufficient material claim."
+                case "timeout":
+                    message = "Game drawn. One player left the game."
                 case _:
                     self.was_aborted = True
                     message = "Game aborted."
