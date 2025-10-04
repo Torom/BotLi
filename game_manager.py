@@ -13,7 +13,7 @@ from utils import ColorLogger, get_future_timestamp
 
 
 class Game_Manager:
-    def __init__(self, api: API, config: Config, username: str) -> None:
+    def __init__(self, api: API, config: Config, username: str, color_logger: ColorLogger) -> None:
         self.api = api
         self.config = config
         self.username = username
