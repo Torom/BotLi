@@ -48,6 +48,7 @@ class Lichess_Game:
         self.api = api
         self.config = config
         self.game_info = game_info
+        self.color_logger = color_logger  
         self.board = board
         self.syzygy_config = syzygy_config
         self.white_time: float = self.game_info.state["wtime"] / 1000
