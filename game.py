@@ -28,7 +28,7 @@ class Game:
         game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self._task = asyncio.create_task(self.api.get_game_stream(self.game_id, game_stream_queue))
         info = Game_Information.from_gameFull_event(await game_stream_queue.get())
-        lichess_game = await Lichess_Game.acreate(self.api, self.config, self.username, info)
+        lichess_game = await Lichess_Game.acreate(self.api, self.config, self.username, info, self.color_logger)
         chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
 
         self._print_game_information(info)
