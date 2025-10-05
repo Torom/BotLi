@@ -165,6 +165,7 @@ class Lichess_Game:
                 await self.engine.start_pondering(self.board)
 
                 message = f"{move_response.public_message} {move_response.private_message}".strip()
+                self.last_message = move_response.public_message
                 self.color_logger.print(message, self.game_info.id_)
                 self.last_pv = move_response.pv
                 return Lichess_Move(
