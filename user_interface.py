@@ -337,14 +337,14 @@ class User_Interface:
 
                         if variant_total > 0:
                             win_rate = (wins + 0.5 * draws) / variant_total * 100 if variant_total > 0 else 0
-                            
+
                             rating_diff = 0
                             if isinstance(results.get('rp'), dict):
                                 rp_data = results['rp']
                                 before = rp_data.get('before', 0)
                                 after = rp_data.get('after', 0)
                                 rating_diff = after - before
-                            
+
                             results_parts = []
                             if wins > 0:
                                 results_parts.append(f"{wins} win{'s' if wins != 1 else ''}")
@@ -352,13 +352,13 @@ class User_Interface:
                                 results_parts.append(f"{draws} draw{'s' if draws != 1 else ''}")
                             if losses > 0:
                                 results_parts.append(f"{losses} loss{'es' if losses != 1 else ''}")
-                            
+
                             results_str = ", ".join(results_parts)
-                            
                             diff_str = f"+{rating_diff}" if rating_diff > 0 else str(rating_diff)
-                            
                             variant_name = variant.title()
-                            print(f"{variant_name:<15}: ({variant_total} game{'s' if variant_total != 1 else ''}: {results_str} • {win_rate:.1f}% win rate • {diff_str})")
+                            print(f"{variant_name:<15}: ("
+                                  f"{variant_total} game{'s' if variant_total != 1 else ''}: "
+                                  f"{results_str} • {win_rate:.1f}% win rate • {diff_str})")
 
             else:
                 print("\nNo games played today.")
