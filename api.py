@@ -34,7 +34,6 @@ MOVE_RETRY_CONDITIONS = {
 }
 STREAM_TIMEOUT = aiohttp.ClientTimeout(sock_connect=5.0, sock_read=9.0)
 
-
 class API:
     def __init__(self, config: Config) -> None:
         self.lichess_session = aiohttp.ClientSession(
@@ -283,6 +282,7 @@ class API:
         async with self.lichess_session.get(f"/api/tournament/{tournament_id}") as response:
             return await response.json()
 
+
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_user_status(self, username: str) -> dict[str, Any]:
         async with self.lichess_session.get("/api/users/status", params={"ids": username}) as response:
@@ -298,6 +298,12 @@ class API:
                 print(f"Takeback error: {json_response['error']}")
                 return False
             return True
+
+    @retry(**JSON_RETRY_CONDITIONS)
+    async def get_user_activity(self, username: str) -> dict[str, Any]:
+        """Get the user's recent activity"""
+        async with self.lichess_session.get(f"/api/user/{username}/activity") as response:
+            return await response.json()
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def join_team(self, team: str, password: str | None) -> bool:
@@ -392,3 +398,4 @@ class API:
         except aiohttp.ClientResponseError as e:
             print(e)
             return False
+
