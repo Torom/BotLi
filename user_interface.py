@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import datetime
 import logging
 import os
 import signal
@@ -296,89 +295,81 @@ class User_Interface:
         """Display bot statistics and performance information."""
         print("\n=== Bot Statistics ===")
 
-        account = None
         try:
             account = await self.api.get_account()
             print(f"👤 Username: {account['username']}")
 
             perfs = account.get('perfs', {})
             if perfs:
-                print("\nRatings:")
+                print("\nCurrent Ratings:")
                 for perf_type, perf_data in perfs.items():
                     if 'rating' in perf_data:
                         rating = perf_data['rating']
                         provisional = "?" if perf_data.get('provisional', False) else ""
-                        print(f"  {perf_type.title()}: {rating}{provisional}")
+                        print(f"  {perf_type.title():<15}: {rating}{provisional}")
+
+            activity = await self.api.get_user_activity(account['username'])
+            if activity and isinstance(activity, list) and len(activity) > 0:
+                today_activity = activity[0]
+
+                if 'games' in today_activity:
+                    games = today_activity['games']
+                    print("\nToday's Games:")
+
+                    total_games = 0
+                    try:
+                        for variant_data in games.values():
+                            if isinstance(variant_data, dict):
+                                total_games += sum(count for count in variant_data.values() if isinstance(count, int))
+                    except Exception:
+                        total_games = 0
+
+                    print(f"Total Games: {total_games}")
+
+                    for variant, results in games.items():
+                        if not isinstance(results, dict):
+                            continue
+
+                        wins = results.get('win', 0) if isinstance(results.get('win'), int) else 0
+                        losses = results.get('loss', 0) if isinstance(results.get('loss'), int) else 0
+                        draws = results.get('draw', 0) if isinstance(results.get('draw'), int) else 0
+                        variant_total = wins + losses + draws
+
+                        if variant_total > 0:
+                            win_rate = (wins + 0.5 * draws) / variant_total * 100 if variant_total > 0 else 0
+                            
+                            rating_diff = 0
+                            if isinstance(results.get('rp'), dict):
+                                rp_data = results['rp']
+                                before = rp_data.get('before', 0)
+                                after = rp_data.get('after', 0)
+                                rating_diff = after - before
+                            
+                            results_parts = []
+                            if wins > 0:
+                                results_parts.append(f"{wins} win{'s' if wins != 1 else ''}")
+                            if draws > 0:
+                                results_parts.append(f"{draws} draw{'s' if draws != 1 else ''}")
+                            if losses > 0:
+                                results_parts.append(f"{losses} loss{'es' if losses != 1 else ''}")
+                            
+                            results_str = ", ".join(results_parts)
+                            
+                            diff_str = f"+{rating_diff}" if rating_diff > 0 else str(rating_diff)
+                            
+                            variant_name = variant.title()
+                            print(f"{variant_name:<15}: ({variant_total} game{'s' if variant_total != 1 else ''}: {results_str} • {win_rate:.1f}% win rate • {diff_str})")
+
+            else:
+                print("\nNo games played today.")
+
         except Exception as e:
-            print(f"Could not retrieve account info: {e}")
+            print(f"Could not retrieve stats: {e}")
 
-        if account:
-            try:
-                today = datetime.datetime.now(datetime.UTC).date()
-                start_of_day = datetime.datetime.combine(today, datetime.datetime.min.time(), tzinfo=datetime.UTC)
-                end_of_day = start_of_day + datetime.timedelta(days=1)
-                since = int(start_of_day.timestamp() * 1000)
-                until = int(end_of_day.timestamp() * 1000)
-                stats = {}
-                total_games = 0
-                rating_diffs = {}
-                async for game in self.api.get_user_games(account['username'], since=since, until=until):
-                    variant = game.get('variant', 'standard').title()
-                    perf = game.get('perf', variant)
-                    user_id = account['id']
-                    if perf not in stats:
-                        stats[perf] = {'games': 0, 'wins': 0, 'draws': 0, 'losses': 0}
-                    stats[perf]['games'] += 1
-                    total_games += 1
-                    player = None
-                    if 'players' in game:
-                        if 'white' in game['players'] and game['players']['white']['user']['id'] == user_id:
-                            player = game['players']['white']
-                        elif 'black' in game['players'] and game['players']['black']['user']['id'] == user_id:
-                            player = game['players']['black']
-                    if player and 'ratingDiff' in player:
-                        rating_diffs.setdefault(perf, 0)
-                        rating_diffs[perf] += player['ratingDiff']
-                    result = game.get('winner')
-                    if result:
-                        if game['players'][result]['user']['id'] == user_id:
-                            stats[perf]['wins'] += 1
-                        else:
-                            stats[perf]['losses'] += 1
-                    elif game.get('status') == 'draw':
-                        stats[perf]['draws'] += 1
-                print(f"\nTotal Games Today: {total_games}")
-                lines = []
-                max_prefix_len = 0
-                for perf, data in stats.items():
-                    prefix = f"Played {data['games']} {perf} games"
-                    details = []
-                    if data['wins']:
-                        details.append(f"{data['wins']} win{'s' if data['wins'] != 1 else ''}")
-                    if data['draws']:
-                        details.append(f"{data['draws']} draw{'s' if data['draws'] != 1 else ''}")
-                    if data['losses']:
-                        details.append(f"{data['losses']} loss{'es' if data['losses'] != 1 else ''}")
-                    diff = rating_diffs.get(perf, 0)
-                    if diff > 0:
-                        details.append(f"+{diff} rating")
-                    elif diff < 0:
-                        details.append(f"{diff} rating")
-                    else:
-                        details.append("no rating change")
-                    if details:
-                        lines.append((prefix, details))
-                        max_prefix_len = max(max_prefix_len, len(prefix) + 2)
-
-                for prefix, details in lines:
-                    print(f"{prefix:<{max_prefix_len}}: {' '.join(details)}")
-            except Exception as e:
-                print(f"Could not retrieve games today: {e}")
-
+        print("\nSystem Information:")
         process = psutil.Process()
         memory_mb = process.memory_info().rss / 1024 / 1024
-        print(f"\nMemory Usage: {memory_mb:.1f} MB")
-
+        print(f"Memory Usage: {memory_mb:.1f} MB")
         cpu_percent = process.cpu_percent(interval=0.1)
         print(f"CPU Usage: {cpu_percent:.1f}%")
 
