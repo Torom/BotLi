@@ -88,6 +88,16 @@ class API:
             return False
 
     @retry(**BASIC_RETRY_CONDITIONS)
+    async def claim_draw(self, game_id: str) -> bool:
+        try:
+            async with self.lichess_session.post(f"https://lichess.org/api/bot/game/{game_id}/claim-draw") as response:
+                response.raise_for_status()
+                return True
+        except aiohttp.ClientResponseError as e:
+            print(e)
+            return False
+
+    @retry(**BASIC_RETRY_CONDITIONS)
     async def claim_victory(self, game_id: str) -> bool:
         try:
             async with self.lichess_session.post(f"/api/bot/game/{game_id}/claim-victory") as response:

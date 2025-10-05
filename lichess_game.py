@@ -218,6 +218,10 @@ class Lichess_Game:
         return len(self.board.move_stack) < 2
 
     @property
+    def has_insufficient_material(self) -> bool:
+        return self.board.has_insufficient_material(self.is_white)
+
+    @property
     def own_time(self) -> float:
         return self.white_time if self.is_white else self.black_time
 
