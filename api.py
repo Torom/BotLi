@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import time
-from collections.abc import AsyncGenerator
 from typing import Any
 
 import aiohttp
