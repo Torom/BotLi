@@ -227,7 +227,13 @@ class Matchmaking:
             if abs(bot.rating_diffs[perf_type]) < min_rating_diff:
                 return False
 
-            if self.opponents.opponent_dict[bot.username][perf_type].multiplier != 1:
+            if (
+                self.opponents.opponent_dict[bot.username][perf_type].multiplier == -1
+                and self.opponents.opponent_dict[bot.username][perf_type].release_time > datetime.now()
+            ):
+                return False
+
+            if self.opponents.opponent_dict[bot.username][perf_type].multiplier > 1:
                 return False
 
             return True
