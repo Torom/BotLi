@@ -239,10 +239,10 @@ class Chatter:
         message = f"Challenge criteria - Bots: {bot_tc} ({bot_modes}). Humans: {human_tc} ({human_modes})."
 
         if c.min_increment is not None or c.max_increment is not None:
-        message += f" Increment: {c.min_increment or 0}-{c.max_increment or 180}s."
+            message += f" Increment: {c.min_increment or 0}-{c.max_increment or 180}s."
 
         if c.min_initial is not None or c.max_initial is not None:
-        message += f" Initial: {c.min_initial or 0}-{c.max_initial or 315360000}s."
+            message += f" Initial: {c.min_initial or 0}-{c.max_initial or 315360000}s."
 
         return message
 
