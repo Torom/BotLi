@@ -28,7 +28,7 @@ jobs:
       uses: astral-sh/setup-uv@v7
     - name: Install BotLi
       run: |
-        uv sync --locked --dev
+        uv sync --dev
     - name: Analysing the code with pyright
       run: |
         uv run pyright --pythonversion 3.11
