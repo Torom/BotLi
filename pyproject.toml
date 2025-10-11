@@ -1,0 +1,44 @@
+[project]
+name = "botli"
+version = "0.1.0"
+description = "A highly configurable interface between Lichess API and UCI chess engines"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "AGPL-3.0-or-later"
+authors = [
+    { name = "Torsten Hellwig" }
+]
+dependencies = [
+    "aiohttp[speedups]==3.13.0",
+    "chess==1.11.2",
+    "psutil==7.1.0",
+    "pyyaml==6.0.3",
+    "tenacity==9.1.2",
+]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.406",
+    "ruff>=0.14.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Torom/BotLi"
+Issues = "https://github.com/Torom/BotLi/issues"
+Discord = "https://discord.gg/6aS945KMFD"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["ARG", "ASYNC", "B", "C4", "E", "F", "FIX", "FURB", "I", "N", "PERF", "PIE", "PL", "RET", "RUF", "SIM", "SLF", "UP", "W"]
+ignore = ["ASYNC109", "PLR2004", "RET502", "RET503", "SIM103"]
+
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.pylint]
+max-args = 10
+max-statements = 100
+max-returns = 24
+max-branches = 24

@@ -4,12 +4,12 @@ on:
   push:
     paths:
       - '.github/workflows/ruff.yml'
-      - '.ruff.toml'
+      - 'pyproject.toml'
       - '**.py'
   pull_request:
     paths:
       - '.github/workflows/ruff.yml'
-      - '.ruff.toml'
+      - 'pyproject.toml'
       - '**.py'
 
 jobs:

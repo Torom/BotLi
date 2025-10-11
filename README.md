@@ -17,17 +17,24 @@ First, ask yourself if there is a good reason to create another bot. If you are 
 
 Please refrain from creating another Stockfish bot. There are already enough of them, and that is **not** what the Lichess bot API is intended for.
 
-- **NOTE: Only Python 3.11 or later is supported!**
 - Download the repo into BotLi directory: `git clone https://github.com/Torom/BotLi.git`
 - Navigate to the directory in cmd/Terminal: `cd BotLi`
 - Copy `config.yml.default` to `config.yml`
-
-Install all requirements:
-```bash
-python -m pip install -r requirements.txt
-```
-
 - Customize the `config.yml` according to your needs.
+
+## Recommended: uv
+[uv](https://github.com/astral-sh/uv) is a modern Python project manager that handles dependencies and can also install Python itself. The readme assumes that uv is used.
+
+ - [Install uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation)
+ - Install requirements: `uv sync`
+
+## pip
+**NOTE: Only Python 3.11 or later is supported!**
+
+Install requirements:
+```bash
+python3 -m pip install .
+```
 
 ## Lichess OAuth
 - Create an account for your bot on [Lichess.org](https://lichess.org/signup).
@@ -89,7 +96,7 @@ In this mode the bot is controlled by commands entered into the console.
 To start the bot, type:
 
 ```bash
-python user_interface.py
+uv run user_interface.py
 ```
 The bot automatically accepts challenges. Which challenges are accepted is defined in the config in the section `challenge`.
 
@@ -145,7 +152,7 @@ This mode is used automatically when BotLi is used without an interactive termin
 
 Note that commands consisting of several words are delimited by `"`. Any number of commands can be passed this way:
 ```bash
-python user_interface.py matchmaking "tournament TOURNAMENT_ID" "create COUNT USERNAME"
+uv run user_interface.py matchmaking "tournament TOURNAMENT_ID" "create COUNT USERNAME"
 ```
 
 ### Matchmaking
@@ -153,7 +160,7 @@ python user_interface.py matchmaking "tournament TOURNAMENT_ID" "create COUNT US
 To let the bot challenge other bots in non interactive mode, start it like this:
 
 ```bash
-python user_interface.py matchmaking
+uv run user_interface.py matchmaking
 ```
 
 **CAUTION**: Lichess will rate limit you if you let matchmaking run too long without adjusting the delay accordingly.
@@ -162,12 +169,12 @@ python user_interface.py matchmaking
 
 To join a tournament in non interactive mode, start it like this:
 ```bash
-python user_interface.py "tournament TOURNAMENT_ID TEAM_ID PASSWORD"
+uv run user_interface.py "tournament TOURNAMENT_ID TEAM_ID PASSWORD"
 ```
 
 You can also join multiple tournaments this way:
 ```bash
-python user_interface.py "tournament TOURNAMENT_ID TEAM_ID PASSWORD" "tournament TOURNAMENT2_ID TEAM2_ID PASSWORD2"
+uv run user_interface.py "tournament TOURNAMENT_ID TEAM_ID PASSWORD" "tournament TOURNAMENT2_ID TEAM2_ID PASSWORD2"
 ```
 
 ## Upgrade to Bot account
@@ -178,7 +185,7 @@ In non interactive mode the `--upgrade` flag must be set at start.
 
 
 ```bash
-python user_interface.py --upgrade
+uv run user_interface.py --upgrade
 ```
 
 The account **cannot have played any game** before becoming a Bot account. The upgrade is **irreversible**. The account will only be able to play as a Bot.
@@ -195,8 +202,8 @@ Wants=network-online.target
 
 [Service]
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=/usr/bin/python3 /home/ubuntu/BotLi/user_interface.py
-WorkingDirectory=/home/ubuntu/BotLi
+ExecStart=~/.local/bin/uv run user_interface.py
+WorkingDirectory=~/BotLi
 User=ubuntu
 Group=ubuntu
 Restart=on-failure
