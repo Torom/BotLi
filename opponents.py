@@ -4,9 +4,9 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any
 
-from botli_dataclasses import Bot, Matchmaking_Data, Matchmaking_Type
-from enums import Challenge_Color, Perf_Type
-from exceptions import NoOpponentException
+from botli_dataclasses import Bot, MatchmakingData, MatchmakingType
+from enums import ChallengeColor, PerfType
+from exceptions import NoOpponentError
 
 
 class Opponents:
@@ -15,17 +15,17 @@ class Opponents:
         self.matchmaking_file = f"{username}_matchmaking.json"
         self.opponent_dict = self._load(self.matchmaking_file)
         self.busy_bots: list[Bot] = []
-        self.last_opponent: tuple[str, Challenge_Color, Matchmaking_Type]
+        self.last_opponent: tuple[str, ChallengeColor, MatchmakingType]
 
     def get_opponent(
-        self, online_bots: list[Bot], matchmaking_type: Matchmaking_Type
-    ) -> tuple[Bot, Challenge_Color] | None:
+        self, online_bots: list[Bot], matchmaking_type: MatchmakingType
+    ) -> tuple[Bot, ChallengeColor] | None:
         for bot in self._filter_bots(online_bots, matchmaking_type):
             if bot in self.busy_bots:
                 continue
 
             data = self.opponent_dict[bot.username][matchmaking_type.perf_type]
-            if data.color == Challenge_Color.BLACK or data.release_time <= datetime.now():
+            if data.color == ChallengeColor.BLACK or data.release_time <= datetime.now():
                 self.last_opponent = (bot.username, data.color, matchmaking_type)
                 return bot, data.color
 
@@ -46,10 +46,10 @@ class Opponents:
         release_str = data.release_time.isoformat(sep=" ", timespec="seconds")
         print(f"{username} will not be challenged to a new game pair before {release_str}.")
 
-        if success and color == Challenge_Color.WHITE:
-            data.color = Challenge_Color.BLACK
+        if success and color == ChallengeColor.WHITE:
+            data.color = ChallengeColor.BLACK
         else:
-            data.color = Challenge_Color.WHITE
+            data.color = ChallengeColor.WHITE
 
         self.busy_bots.clear()
         self._save(self.matchmaking_file)
@@ -66,19 +66,19 @@ class Opponents:
         release_str = data.release_time.isoformat(sep=" ", timespec="seconds")
         print(f"{username} will not be challenged to a new game pair before {release_str}.")
 
-        data.color = Challenge_Color.WHITE
+        data.color = ChallengeColor.WHITE
 
         self.busy_bots.clear()
         self._save(self.matchmaking_file)
 
-    def reset_release_time(self, perf_type: Perf_Type) -> None:
+    def reset_release_time(self, perf_type: PerfType) -> None:
         for perf_types in self.opponent_dict.values():
             perf_types[perf_type].release_time = datetime.now()
 
         self.busy_bots.clear()
 
     @staticmethod
-    def _filter_bots(bots: list[Bot], matchmaking_type: Matchmaking_Type) -> list[Bot]:
+    def _filter_bots(bots: list[Bot], matchmaking_type: MatchmakingType) -> list[Bot]:
         def bot_filter(bot: Bot) -> bool:
             if matchmaking_type.perf_type not in bot.rating_diffs:
                 return False
@@ -95,13 +95,13 @@ class Opponents:
 
         bots = sorted(filter(bot_filter, bots), key=lambda bot: abs(bot.rating_diffs[matchmaking_type.perf_type]))
         if not bots:
-            raise NoOpponentException
+            raise NoOpponentError
 
         return bots
 
-    def _load(self, matchmaking_file: str) -> defaultdict[str, defaultdict[Perf_Type, Matchmaking_Data]]:
+    def _load(self, matchmaking_file: str) -> defaultdict[str, defaultdict[PerfType, MatchmakingData]]:
         if not os.path.isfile(matchmaking_file):
-            return defaultdict(lambda: defaultdict(Matchmaking_Data))
+            return defaultdict(lambda: defaultdict(MatchmakingData))
 
         with open(matchmaking_file, encoding="utf-8") as file:
             try:
@@ -111,19 +111,19 @@ class Opponents:
 
             except json.JSONDecodeError as e:
                 print(f'Error while processing the file "{matchmaking_file}": {e}')
-                return defaultdict(lambda: defaultdict(Matchmaking_Data))
+                return defaultdict(lambda: defaultdict(MatchmakingData))
 
             except PermissionError:
                 print("Loading the matchmaking file failed due to missing read permissions.")
-                return defaultdict(lambda: defaultdict(Matchmaking_Data))
+                return defaultdict(lambda: defaultdict(MatchmakingData))
 
             return defaultdict(
-                lambda: defaultdict(Matchmaking_Data),
+                lambda: defaultdict(MatchmakingData),
                 {
                     username: defaultdict(
-                        Matchmaking_Data,
+                        MatchmakingData,
                         {
-                            Perf_Type(perf_type): Matchmaking_Data.from_dict(matchmaking_dict)
+                            PerfType(perf_type): MatchmakingData.from_dict(matchmaking_dict)
                             for perf_type, matchmaking_dict in perf_types.items()
                         },
                     )
@@ -131,7 +131,7 @@ class Opponents:
                 },
             )
 
-    def _min_opponent_dict(self) -> dict[str, dict[Perf_Type, dict[str, Any]]]:
+    def _min_opponent_dict(self) -> dict[str, dict[PerfType, dict[str, Any]]]:
         return {
             username: user_dict
             for username, perf_types in self.opponent_dict.items()
@@ -156,22 +156,22 @@ class Opponents:
             print("Saving the matchmaking file failed due to missing write permissions.")
 
     @staticmethod
-    def _update_format(list_format: list[dict[str, Any]]) -> defaultdict[str, defaultdict[Perf_Type, Matchmaking_Data]]:
-        dict_format: defaultdict[str, defaultdict[Perf_Type, Matchmaking_Data]] = defaultdict(
-            lambda: defaultdict(Matchmaking_Data)
+    def _update_format(list_format: list[dict[str, Any]]) -> defaultdict[str, defaultdict[PerfType, MatchmakingData]]:
+        dict_format: defaultdict[str, defaultdict[PerfType, MatchmakingData]] = defaultdict(
+            lambda: defaultdict(MatchmakingData)
         )
         for old_dict in list_format:
             username = old_dict.pop("username")
 
-            perf_types: defaultdict[Perf_Type, Matchmaking_Data] = defaultdict(Matchmaking_Data)
+            perf_types: defaultdict[PerfType, MatchmakingData] = defaultdict(MatchmakingData)
             for perf_type, value in old_dict.items():
                 release_time = (
                     datetime.fromisoformat(value["release_time"]) if "release_time" in value else datetime.now()
                 )
                 multiplier = value.get("multiplier", 1)
-                color = Challenge_Color(value["color"]) if "color" in value else Challenge_Color.WHITE
+                color = ChallengeColor(value["color"]) if "color" in value else ChallengeColor.WHITE
 
-                perf_types[Perf_Type(perf_type)] = Matchmaking_Data(release_time, multiplier, color)
+                perf_types[PerfType(perf_type)] = MatchmakingData(release_time, multiplier, color)
 
             dict_format[username] = perf_types
 

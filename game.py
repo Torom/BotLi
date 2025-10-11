@@ -2,10 +2,10 @@ import asyncio
 from typing import Any
 
 from api import API
-from botli_dataclasses import Game_Information
+from botli_dataclasses import GameInformation
 from chatter import Chatter
 from config import Config
-from lichess_game import Lichess_Game
+from lichess_game import LichessGame
 
 
 class Game:
@@ -25,8 +25,8 @@ class Game:
     async def run(self) -> None:
         game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self._task = asyncio.create_task(self.api.get_game_stream(self.game_id, game_stream_queue))
-        info = Game_Information.from_gameFull_event(await game_stream_queue.get())
-        lichess_game = await Lichess_Game.acreate(self.api, self.config, self.username, info)
+        info = GameInformation.from_game_full_event(await game_stream_queue.get())
+        lichess_game = await LichessGame.acreate(self.api, self.config, self.username, info)
         chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
 
         self._print_game_information(info)
@@ -94,7 +94,7 @@ class Game:
             self.abortion_task.cancel()
         await lichess_game.close()
 
-    async def _make_move(self, lichess_game: Lichess_Game, chatter: Chatter) -> None:
+    async def _make_move(self, lichess_game: LichessGame, chatter: Chatter) -> None:
         lichess_move = await lichess_game.make_move()
         if lichess_move.resign:
             await self.api.resign_game(self.game_id)
@@ -103,7 +103,7 @@ class Game:
             await chatter.print_eval()
         self.move_task = None
 
-    async def _abortion_task(self, lichess_game: Lichess_Game, chatter: Chatter, abortion_seconds: int) -> None:
+    async def _abortion_task(self, lichess_game: LichessGame, chatter: Chatter, abortion_seconds: int) -> None:
         await asyncio.sleep(abortion_seconds)
 
         if not lichess_game.is_our_turn and lichess_game.is_abortable:
@@ -114,14 +114,14 @@ class Game:
         self.abortion_task = None
 
     @staticmethod
-    def _print_game_information(info: Game_Information) -> None:
+    def _print_game_information(info: GameInformation) -> None:
         opponents_str = f"{info.white_str}   -   {info.black_str}"
         message = " • ".join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
 
         print(f"\n{message}\n{128 * '‾'}")
 
     def _print_result_message(
-        self, game_state: dict[str, Any], lichess_game: Lichess_Game, info: Game_Information
+        self, game_state: dict[str, Any], lichess_game: LichessGame, info: GameInformation
     ) -> None:
         if winner := game_state.get("winner"):
             if winner == "white":

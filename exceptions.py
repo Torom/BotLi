@@ -1,2 +1,2 @@
-class NoOpponentException(Exception):
+class NoOpponentError(Exception):
     pass

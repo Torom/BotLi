@@ -1,13 +1,13 @@
 from enum import StrEnum
 
 
-class Challenge_Color(StrEnum):
+class ChallengeColor(StrEnum):
     WHITE = "white"
     BLACK = "black"
     RANDOM = "random"
 
 
-class Decline_Reason(StrEnum):
+class DeclineReason(StrEnum):
     GENERIC = "generic"
     LATER = "later"
     TOO_FAST = "tooFast"
@@ -34,7 +34,7 @@ class Variant(StrEnum):
     THREE_CHECK = "threeCheck"
 
 
-class Perf_Type(StrEnum):
+class PerfType(StrEnum):
     BULLET = "bullet"
     BLITZ = "blitz"
     RAPID = "rapid"
@@ -49,6 +49,6 @@ class Perf_Type(StrEnum):
     THREE_CHECK = "threeCheck"
 
 
-class Busy_Reason(StrEnum):
+class BusyReason(StrEnum):
     OFFLINE = "offline"
     PLAYING = "playing"

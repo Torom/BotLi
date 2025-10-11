@@ -2,11 +2,11 @@ import random
 from datetime import datetime, timedelta
 
 from api import API
-from botli_dataclasses import Bot, Challenge_Request, Challenge_Response, Matchmaking_Type
+from botli_dataclasses import Bot, ChallengeRequest, ChallengeResponse, MatchmakingType
 from challenger import Challenger
 from config import Config
-from enums import Busy_Reason, Perf_Type, Variant
-from exceptions import NoOpponentException
+from enums import BusyReason, PerfType, Variant
+from exceptions import NoOpponentError
 from opponents import Opponents
 
 
@@ -18,15 +18,15 @@ class Matchmaking:
         self.next_update = datetime.now()
         self.timeout = max(config.matchmaking.timeout, 1)
         self.types = self._get_matchmaking_types()
-        self.suspended_types: list[Matchmaking_Type] = []
+        self.suspended_types: list[MatchmakingType] = []
         self.opponents = Opponents(config.matchmaking.delay, username)
         self.challenger = Challenger(api)
 
         self.game_start_time: datetime = datetime.now()
         self.online_bots: list[Bot] = []
-        self.current_type: Matchmaking_Type | None = None
+        self.current_type: MatchmakingType | None = None
 
-    async def create_challenge(self) -> Challenge_Response | None:
+    async def create_challenge(self) -> ChallengeResponse | None:
         if await self._call_update():
             return
 
@@ -40,16 +40,16 @@ class Matchmaking:
 
         try:
             next_opponent = self.opponents.get_opponent(self.online_bots, self.current_type)
-        except NoOpponentException:
+        except NoOpponentError:
             print(f"Suspending matchmaking type {self.current_type.name} because no suitable opponent is available.")
             self.suspended_types.append(self.current_type)
             self.types.remove(self.current_type)
             self.current_type = None
             if not self.types:
                 print("No usable matchmaking type configured.")
-                return Challenge_Response(is_misconfigured=True)
+                return ChallengeResponse(is_misconfigured=True)
 
-            return Challenge_Response(no_opponent=True)
+            return ChallengeResponse(no_opponent=True)
 
         if next_opponent is None:
             print(f"No opponent available for matchmaking type {self.current_type.name}.")
@@ -58,27 +58,27 @@ class Matchmaking:
             )
 
             if self.current_type is None:
-                return Challenge_Response(no_opponent=True)
+                return ChallengeResponse(no_opponent=True)
 
             return
 
         opponent, color = next_opponent
 
         match await self._get_busy_reason(opponent):
-            case Busy_Reason.PLAYING:
+            case BusyReason.PLAYING:
                 rating_diff = opponent.rating_diffs[self.current_type.perf_type]
                 print(f"Skipping {opponent.username} ({rating_diff:+}) as {color} ...")
                 self.opponents.busy_bots.append(opponent)
                 return
 
-            case Busy_Reason.OFFLINE:
+            case BusyReason.OFFLINE:
                 print(f"Removing {opponent.username} from online bots ...")
                 self.online_bots.remove(opponent)
                 return
 
         rating_diff = opponent.rating_diffs[self.current_type.perf_type]
         print(f"Challenging {opponent.username} ({rating_diff:+}) as {color} to {self.current_type.name} ...")
-        challenge_request = Challenge_Request(
+        challenge_request = ChallengeRequest(
             opponent.username,
             self.current_type.initial_time,
             self.current_type.increment,
@@ -110,14 +110,14 @@ class Matchmaking:
         self.opponents.add_timeout(not was_aborted, game_duration)
         self.current_type = self._get_next_type() if self.config.matchmaking.selection == "cyclic" else None
 
-    def _get_next_type(self) -> Matchmaking_Type | None:
+    def _get_next_type(self) -> MatchmakingType | None:
         for current, next_item in zip(self.types, self.types[1:], strict=False):
             if current == self.current_type:
                 print(f"Matchmaking type: {next_item}")
                 return next_item
 
-    def _get_matchmaking_types(self) -> list[Matchmaking_Type]:
-        matchmaking_types: list[Matchmaking_Type] = []
+    def _get_matchmaking_types(self) -> list[MatchmakingType]:
+        matchmaking_types: list[MatchmakingType] = []
         for name, type_config in self.config.matchmaking.types.items():
             initial_time, increment = type_config.tc.split("+")
             initial_time = int(float(initial_time) * 60) if initial_time else 0
@@ -128,7 +128,7 @@ class Matchmaking:
             weight = 1.0 if type_config.weight is None else type_config.weight
 
             matchmaking_types.append(
-                Matchmaking_Type(
+                MatchmakingType(
                     name,
                     initial_time,
                     increment,
@@ -177,8 +177,8 @@ class Matchmaking:
                 blacklisted_bot_count += 1
                 continue
 
-            rating_diffs: dict[Perf_Type, int] = {}
-            for perf_type in Perf_Type:
+            rating_diffs: dict[PerfType, int] = {}
+            for perf_type in PerfType:
                 if perf_type not in bot["perfs"]:
                     continue
 
@@ -192,11 +192,11 @@ class Matchmaking:
         self.next_update = datetime.now() + timedelta(minutes=30.0)
         return online_bots
 
-    async def _get_user_ratings(self) -> dict[Perf_Type, int]:
+    async def _get_user_ratings(self) -> dict[PerfType, int]:
         user = await self.api.get_account()
 
-        performances: dict[Perf_Type, int] = {}
-        for perf_type in Perf_Type:
+        performances: dict[PerfType, int] = {}
+        for perf_type in PerfType:
             if perf_type in user["perfs"]:
                 performances[perf_type] = user["perfs"][perf_type]["rating"]
             else:
@@ -216,7 +216,7 @@ class Matchmaking:
                 perf_type_count = len({matchmaking_type.perf_type for matchmaking_type in self.types})
                 matchmaking_type.multiplier = bot_count * perf_type_count
 
-    def _get_bot_count(self, perf_type: Perf_Type, min_rating_diff: int, max_rating_diff: int) -> int:
+    def _get_bot_count(self, perf_type: PerfType, min_rating_diff: int, max_rating_diff: int) -> int:
         def bot_filter(bot: Bot) -> bool:
             if perf_type not in bot.rating_diffs:
                 return False
@@ -241,33 +241,33 @@ class Matchmaking:
         return sum(map(bot_filter, self.online_bots))
 
     @staticmethod
-    def _variant_to_perf_type(variant: Variant, initial_time: int, increment: int) -> Perf_Type:
+    def _variant_to_perf_type(variant: Variant, initial_time: int, increment: int) -> PerfType:
         if variant != Variant.STANDARD:
-            return Perf_Type(variant)
+            return PerfType(variant)
 
         estimated_game_duration = initial_time + increment * 40
         if estimated_game_duration < 179:
-            return Perf_Type.BULLET
+            return PerfType.BULLET
 
         if estimated_game_duration < 479:
-            return Perf_Type.BLITZ
+            return PerfType.BLITZ
 
         if estimated_game_duration < 1499:
-            return Perf_Type.RAPID
+            return PerfType.RAPID
 
-        return Perf_Type.CLASSICAL
+        return PerfType.CLASSICAL
 
     @staticmethod
-    def _perf_type_to_variant(perf_type: Perf_Type) -> Variant:
-        if perf_type in {Perf_Type.BULLET, Perf_Type.BLITZ, Perf_Type.RAPID, Perf_Type.CLASSICAL}:
+    def _perf_type_to_variant(perf_type: PerfType) -> Variant:
+        if perf_type in {PerfType.BULLET, PerfType.BLITZ, PerfType.RAPID, PerfType.CLASSICAL}:
             return Variant.STANDARD
 
         return Variant(perf_type)
 
-    async def _get_busy_reason(self, bot: Bot) -> Busy_Reason | None:
+    async def _get_busy_reason(self, bot: Bot) -> BusyReason | None:
         bot_status = await self.api.get_user_status(bot.username)
         if "online" not in bot_status:
-            return Busy_Reason.OFFLINE
+            return BusyReason.OFFLINE
 
         if "playing" in bot_status:
-            return Busy_Reason.PLAYING
+            return BusyReason.PLAYING

@@ -3,24 +3,24 @@ from typing import Any, Literal
 
 
 @dataclass
-class Limit_Config:
+class LimitConfig:
     time: float | None
     depth: int | None
     nodes: int | None
 
 
 @dataclass
-class Engine_Config:
+class EngineConfig:
     path: str
     ponder: bool
     silence_stderr: bool
     move_overhead_multiplier: float
     uci_options: dict[str, Any]
-    limits: Limit_Config
+    limits: LimitConfig
 
 
 @dataclass
-class Syzygy_Config:
+class SyzygyConfig:
     enabled: bool
     paths: list[str]
     max_pieces: int
@@ -28,14 +28,14 @@ class Syzygy_Config:
 
 
 @dataclass
-class Gaviota_Config:
+class GaviotaConfig:
     enabled: bool
     paths: list[str]
     max_pieces: int
 
 
 @dataclass
-class Books_Config:
+class BooksConfig:
     selection: Literal["weighted_random", "uniform_random", "best_move"]
     max_depth: int | None
     allow_repetitions: bool | None
@@ -43,15 +43,15 @@ class Books_Config:
 
 
 @dataclass
-class Opening_Books_Config:
+class OpeningBooksConfig:
     enabled: bool
     priority: int
     read_learn: bool | None
-    books: dict[str, Books_Config]
+    books: dict[str, BooksConfig]
 
 
 @dataclass
-class Opening_Explorer_Config:
+class OpeningExplorerConfig:
     enabled: bool
     priority: int
     player: str | None
@@ -69,7 +69,7 @@ class Opening_Explorer_Config:
 
 
 @dataclass
-class Lichess_Cloud_Config:
+class LichessCloudConfig:
     enabled: bool
     priority: int
     only_without_book: bool
@@ -84,7 +84,7 @@ class Lichess_Cloud_Config:
 
 
 @dataclass
-class ChessDB_Config:
+class ChessDBConfig:
     enabled: bool
     priority: int
     only_without_book: bool
@@ -98,22 +98,22 @@ class ChessDB_Config:
 
 
 @dataclass
-class Online_EGTB_Config:
+class OnlineEGTBConfig:
     enabled: bool
     min_time: int
     timeout: int
 
 
 @dataclass
-class Online_Moves_Config:
-    opening_explorer: Opening_Explorer_Config
-    lichess_cloud: Lichess_Cloud_Config
-    chessdb: ChessDB_Config
-    online_egtb: Online_EGTB_Config
+class OnlineMovesConfig:
+    opening_explorer: OpeningExplorerConfig
+    lichess_cloud: LichessCloudConfig
+    chessdb: ChessDBConfig
+    online_egtb: OnlineEGTBConfig
 
 
 @dataclass
-class Offer_Draw_Config:
+class OfferDrawConfig:
     enabled: bool
     score: int
     consecutive_moves: int
@@ -123,7 +123,7 @@ class Offer_Draw_Config:
 
 
 @dataclass
-class Resign_Config:
+class ResignConfig:
     enabled: bool
     score: int
     consecutive_moves: int
@@ -132,7 +132,7 @@ class Resign_Config:
 
 
 @dataclass
-class Challenge_Config:
+class ChallengeConfig:
     concurrency: int
     max_takebacks: int
     bullet_with_increment_only: bool
@@ -148,7 +148,7 @@ class Challenge_Config:
 
 
 @dataclass
-class Matchmaking_Type_Config:
+class MatchmakingTypeConfig:
     tc: str
     rated: bool | None
     variant: (
@@ -172,15 +172,15 @@ class Matchmaking_Type_Config:
 
 
 @dataclass
-class Matchmaking_Config:
+class MatchmakingConfig:
     delay: int
     timeout: int
     selection: Literal["weighted_random", "sequential"]
-    types: dict[str, Matchmaking_Type_Config]
+    types: dict[str, MatchmakingTypeConfig]
 
 
 @dataclass
-class Messages_Config:
+class MessagesConfig:
     greeting: str | None
     goodbye: str | None
     greeting_spectators: str | None

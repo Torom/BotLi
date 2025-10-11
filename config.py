@@ -9,23 +9,23 @@ from typing import Any
 import yaml
 
 from configs import (
-    Books_Config,
-    Challenge_Config,
-    ChessDB_Config,
-    Engine_Config,
-    Gaviota_Config,
-    Lichess_Cloud_Config,
-    Limit_Config,
-    Matchmaking_Config,
-    Matchmaking_Type_Config,
-    Messages_Config,
-    Offer_Draw_Config,
-    Online_EGTB_Config,
-    Online_Moves_Config,
-    Opening_Books_Config,
-    Opening_Explorer_Config,
-    Resign_Config,
-    Syzygy_Config,
+    BooksConfig,
+    ChallengeConfig,
+    ChessDBConfig,
+    EngineConfig,
+    GaviotaConfig,
+    LichessCloudConfig,
+    LimitConfig,
+    MatchmakingConfig,
+    MatchmakingTypeConfig,
+    MessagesConfig,
+    OfferDrawConfig,
+    OnlineEGTBConfig,
+    OnlineMovesConfig,
+    OpeningBooksConfig,
+    OpeningExplorerConfig,
+    ResignConfig,
+    SyzygyConfig,
 )
 
 
@@ -33,16 +33,16 @@ from configs import (
 class Config:
     url: str
     token: str
-    engines: dict[str, Engine_Config]
-    syzygy: dict[str, Syzygy_Config]
-    gaviota: Gaviota_Config
-    opening_books: Opening_Books_Config
-    online_moves: Online_Moves_Config
-    offer_draw: Offer_Draw_Config
-    resign: Resign_Config
-    challenge: Challenge_Config
-    matchmaking: Matchmaking_Config
-    messages: Messages_Config
+    engines: dict[str, EngineConfig]
+    syzygy: dict[str, SyzygyConfig]
+    gaviota: GaviotaConfig
+    opening_books: OpeningBooksConfig
+    online_moves: OnlineMovesConfig
+    offer_draw: OfferDrawConfig
+    resign: ResignConfig
+    challenge: ChallengeConfig
+    matchmaking: MatchmakingConfig
+    messages: MessagesConfig
     whitelist: list[str]
     blacklist: list[str]
     online_blacklists: list[str]
@@ -137,7 +137,7 @@ class Config:
         Config._validate_config_section(config, "config", sections)
 
     @staticmethod
-    def _get_engine_configs(engines_section: dict[str, dict[str, Any]]) -> dict[str, Engine_Config]:
+    def _get_engine_configs(engines_section: dict[str, dict[str, Any]]) -> dict[str, EngineConfig]:
         engines_sections: list[tuple[str, type | UnionType, str]] = [
             ("dir", str, '"dir" must be a string wrapped in quotes.'),
             ("name", str, '"name" must be a string wrapped in quotes.'),
@@ -148,7 +148,7 @@ class Config:
             ("limits", dict | None, '"limits" must be a dictionary with indented keys followed by colons.'),
         ]
 
-        engine_configs: dict[str, Engine_Config] = {}
+        engine_configs: dict[str, EngineConfig] = {}
         for key, settings in engines_section.items():
             Config._validate_config_section(settings, f"engine.{key}", engines_sections)
 
@@ -168,19 +168,19 @@ class Config:
 
             limits_settings = settings["limits"] or {}
 
-            engine_configs[key] = Engine_Config(
+            engine_configs[key] = EngineConfig(
                 settings["path"],
                 settings["ponder"],
                 settings["silence_stderr"],
                 settings["move_overhead_multiplier"],
                 settings["uci_options"] or {},
-                Limit_Config(limits_settings.get("time"), limits_settings.get("depth"), limits_settings.get("nodes")),
+                LimitConfig(limits_settings.get("time"), limits_settings.get("depth"), limits_settings.get("nodes")),
             )
 
         return engine_configs
 
     @staticmethod
-    def _get_syzygy_configs(syzygy_section: dict[str, dict[str, Any]]) -> dict[str, Syzygy_Config]:
+    def _get_syzygy_configs(syzygy_section: dict[str, dict[str, Any]]) -> dict[str, SyzygyConfig]:
         syzygy_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("paths", list, '"paths" must be a list.'),
@@ -188,26 +188,26 @@ class Config:
             ("instant_play", bool, '"instant_play" must be a bool.'),
         ]
 
-        syzygy_configs: dict[str, Syzygy_Config] = {}
+        syzygy_configs: dict[str, SyzygyConfig] = {}
         for key, settings in syzygy_section.items():
             Config._validate_config_section(settings, f"syzygy.{key}", syzygy_sections)
 
             if not settings["enabled"]:
-                syzygy_configs[key] = Syzygy_Config(False, [], 0, False)
+                syzygy_configs[key] = SyzygyConfig(False, [], 0, False)
                 continue
 
             for path in settings["paths"]:
                 if not os.path.isdir(path):
                     raise RuntimeError(f'Your {key} syzygy path "{path}" is not a directory.')
 
-            syzygy_configs[key] = Syzygy_Config(
+            syzygy_configs[key] = SyzygyConfig(
                 settings["enabled"], settings["paths"], settings["max_pieces"], settings["instant_play"]
             )
 
         return syzygy_configs
 
     @staticmethod
-    def _get_gaviota_config(gaviota_section: dict[str, Any]) -> Gaviota_Config:
+    def _get_gaviota_config(gaviota_section: dict[str, Any]) -> GaviotaConfig:
         gaviota_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("paths", list, '"paths" must be a list.'),
@@ -221,10 +221,10 @@ class Config:
                 if not os.path.isdir(path):
                     raise RuntimeError(f'Your gaviota directory "{path}" is not a directory.')
 
-        return Gaviota_Config(gaviota_section["enabled"], gaviota_section["paths"], gaviota_section["max_pieces"])
+        return GaviotaConfig(gaviota_section["enabled"], gaviota_section["paths"], gaviota_section["max_pieces"])
 
     @staticmethod
-    def _get_opening_books_config(config: dict[str, Any]) -> Opening_Books_Config:
+    def _get_opening_books_config(config: dict[str, Any]) -> OpeningBooksConfig:
         opening_books_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("priority", int, '"priority" must be an integer.'),
@@ -234,14 +234,14 @@ class Config:
         Config._validate_config_section(config["opening_books"], "opening_books", opening_books_sections)
 
         if not config["opening_books"]["enabled"]:
-            return Opening_Books_Config(False, 0, None, {})
+            return OpeningBooksConfig(False, 0, None, {})
 
         opening_book_types_sections: list[tuple[str, type | UnionType, str]] = [
             ("selection", str, '"selection" must be one of "weighted_random", "uniform_random" or "best_move".'),
             ("names", list, '"names" must be a list of book names.'),
         ]
 
-        books: dict[str, Books_Config] = {}
+        books: dict[str, BooksConfig] = {}
         for section, settings in config["opening_books"]["books"].items():
             Config._validate_config_section(settings, f"opening_books.{section}", opening_book_types_sections)
 
@@ -255,11 +255,11 @@ class Config:
 
                 names[book_name] = config["books"][book_name]
 
-            books[section] = Books_Config(
+            books[section] = BooksConfig(
                 settings["selection"], settings.get("max_depth"), settings.get("allow_repetitions"), names
             )
 
-        return Opening_Books_Config(
+        return OpeningBooksConfig(
             config["opening_books"]["enabled"],
             config["opening_books"]["priority"],
             config["opening_books"].get("read_learn"),
@@ -267,7 +267,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_opening_explorer_config(opening_explorer_section: dict[str, Any]) -> Opening_Explorer_Config:
+    def _get_opening_explorer_config(opening_explorer_section: dict[str, Any]) -> OpeningExplorerConfig:
         opening_explorer_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("priority", int, '"priority" must be an integer.'),
@@ -286,7 +286,7 @@ class Config:
             opening_explorer_section, "online_moves.opening_explorer", opening_explorer_sections
         )
 
-        return Opening_Explorer_Config(
+        return OpeningExplorerConfig(
             opening_explorer_section["enabled"],
             opening_explorer_section["priority"],
             opening_explorer_section.get("player"),
@@ -304,7 +304,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_lichess_cloud_config(lichess_cloud_section: dict[str, Any]) -> Lichess_Cloud_Config:
+    def _get_lichess_cloud_config(lichess_cloud_section: dict[str, Any]) -> LichessCloudConfig:
         lichess_cloud_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("priority", int, '"priority" must be an integer.'),
@@ -319,7 +319,7 @@ class Config:
 
         Config._validate_config_section(lichess_cloud_section, "online_moves.lichess_cloud", lichess_cloud_sections)
 
-        return Lichess_Cloud_Config(
+        return LichessCloudConfig(
             lichess_cloud_section["enabled"],
             lichess_cloud_section["priority"],
             lichess_cloud_section["only_without_book"],
@@ -334,7 +334,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_chessdb_config(chessdb_section: dict[str, Any]) -> ChessDB_Config:
+    def _get_chessdb_config(chessdb_section: dict[str, Any]) -> ChessDBConfig:
         chessdb_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("priority", int, '"priority" must be an integer.'),
@@ -348,7 +348,7 @@ class Config:
 
         Config._validate_config_section(chessdb_section, "online_moves.chessdb", chessdb_sections)
 
-        return ChessDB_Config(
+        return ChessDBConfig(
             chessdb_section["enabled"],
             chessdb_section["priority"],
             chessdb_section["only_without_book"],
@@ -362,7 +362,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_online_egtb_config(online_egtb_section: dict[str, Any]) -> Online_EGTB_Config:
+    def _get_online_egtb_config(online_egtb_section: dict[str, Any]) -> OnlineEGTBConfig:
         online_egtb_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("min_time", int, '"min_time" must be an integer.'),
@@ -371,12 +371,12 @@ class Config:
 
         Config._validate_config_section(online_egtb_section, "online_moves.online_egtb", online_egtb_sections)
 
-        return Online_EGTB_Config(
+        return OnlineEGTBConfig(
             online_egtb_section["enabled"], online_egtb_section["min_time"], online_egtb_section["timeout"]
         )
 
     @staticmethod
-    def _get_online_moves_config(online_moves_section: dict[str, dict[str, Any]]) -> Online_Moves_Config:
+    def _get_online_moves_config(online_moves_section: dict[str, dict[str, Any]]) -> OnlineMovesConfig:
         online_moves_sections: list[tuple[str, type | UnionType, str]] = [
             (
                 "opening_explorer",
@@ -390,7 +390,7 @@ class Config:
 
         Config._validate_config_section(online_moves_section, "online_moves", online_moves_sections)
 
-        return Online_Moves_Config(
+        return OnlineMovesConfig(
             Config._get_opening_explorer_config(online_moves_section["opening_explorer"]),
             Config._get_lichess_cloud_config(online_moves_section["lichess_cloud"]),
             Config._get_chessdb_config(online_moves_section["chessdb"]),
@@ -398,7 +398,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_offer_draw_config(offer_draw_section: dict[str, Any]) -> Offer_Draw_Config:
+    def _get_offer_draw_config(offer_draw_section: dict[str, Any]) -> OfferDrawConfig:
         offer_draw_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("score", int, '"score" must be an integer.'),
@@ -409,7 +409,7 @@ class Config:
 
         Config._validate_config_section(offer_draw_section, "offer_draw", offer_draw_sections)
 
-        return Offer_Draw_Config(
+        return OfferDrawConfig(
             offer_draw_section["enabled"],
             offer_draw_section["score"],
             offer_draw_section["consecutive_moves"],
@@ -419,7 +419,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_resign_config(resign_section: dict[str, Any]) -> Resign_Config:
+    def _get_resign_config(resign_section: dict[str, Any]) -> ResignConfig:
         resign_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
             ("score", int, '"score" must be an integer.'),
@@ -429,7 +429,7 @@ class Config:
 
         Config._validate_config_section(resign_section, "resign", resign_sections)
 
-        return Resign_Config(
+        return ResignConfig(
             resign_section["enabled"],
             resign_section["score"],
             resign_section["consecutive_moves"],
@@ -438,7 +438,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_challenge_config(challenge_section: dict[str, Any]) -> Challenge_Config:
+    def _get_challenge_config(challenge_section: dict[str, Any]) -> ChallengeConfig:
         challenge_sections: list[tuple[str, type | UnionType, str]] = [
             ("concurrency", int, '"concurrency" must be an integer.'),
             ("max_takebacks", int, '"max_takebacks" must be an integer.'),
@@ -452,7 +452,7 @@ class Config:
 
         Config._validate_config_section(challenge_section, "challenge", challenge_sections)
 
-        return Challenge_Config(
+        return ChallengeConfig(
             challenge_section["concurrency"],
             challenge_section["max_takebacks"],
             challenge_section["bullet_with_increment_only"],
@@ -468,7 +468,7 @@ class Config:
         )
 
     @staticmethod
-    def _get_matchmaking_config(matchmaking_section: dict[str, Any]) -> Matchmaking_Config:
+    def _get_matchmaking_config(matchmaking_section: dict[str, Any]) -> MatchmakingConfig:
         matchmaking_sections: list[tuple[str, type | UnionType, str]] = [
             ("delay", int, '"delay" must be an integer.'),
             ("timeout", int, '"timeout" must be an integer.'),
@@ -478,7 +478,7 @@ class Config:
 
         Config._validate_config_section(matchmaking_section, "matchmaking", matchmaking_sections)
 
-        types: dict[str, Matchmaking_Type_Config] = {}
+        types: dict[str, MatchmakingTypeConfig] = {}
         for matchmaking_type, matchmaking_options in matchmaking_section["types"].items():
             if not isinstance(matchmaking_options, dict):
                 raise TypeError(
@@ -495,7 +495,7 @@ class Config:
                     "initial_minutes+increment_seconds format."
                 )
 
-            types[matchmaking_type] = Matchmaking_Type_Config(
+            types[matchmaking_type] = MatchmakingTypeConfig(
                 matchmaking_options["tc"],
                 matchmaking_options.get("rated"),
                 matchmaking_options.get("variant"),
@@ -505,12 +505,12 @@ class Config:
                 matchmaking_options.get("max_rating_diff"),
             )
 
-        return Matchmaking_Config(
+        return MatchmakingConfig(
             matchmaking_section["delay"], matchmaking_section["timeout"], matchmaking_section["selection"], types
         )
 
     @staticmethod
-    def _get_messages_config(messages_section: dict[str, str]) -> Messages_Config:
+    def _get_messages_config(messages_section: dict[str, str]) -> MessagesConfig:
         messages_sections: list[tuple[str, type | UnionType, str]] = [
             ("greeting", str, '"greeting" must be a string wrapped in quotes.'),
             ("goodbye", str, '"goodbye" must be a string wrapped in quotes.'),
@@ -527,7 +527,7 @@ class Config:
                     print(f'Ignoring message "{subsection[0]}": "!printeval" is not allowed in messages.')
                     del messages_section[messages_section[subsection[0]]]
 
-        return Messages_Config(
+        return MessagesConfig(
             messages_section.get("greeting"),
             messages_section.get("goodbye"),
             messages_section.get("greeting_spectators"),
@@ -542,7 +542,7 @@ class Config:
             )
             commit_date = output.decode("utf-8").strip()
             output = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL)
-            commit_SHA = output.decode("utf-8").strip()[:7]
-            return f"{commit_date}-{commit_SHA}"
+            commit_sha = output.decode("utf-8").strip()[:7]
+            return f"{commit_date}-{commit_sha}"
         except (FileNotFoundError, subprocess.CalledProcessError):
             return "nogit"

@@ -8,12 +8,12 @@ import chess
 import chess.engine
 from chess.polyglot import MemoryMappedReader
 
-from enums import Challenge_Color, Perf_Type, Variant
+from enums import ChallengeColor, PerfType, Variant
 from utils import find_variant, parse_time_control
 
 
 @dataclass(kw_only=True)
-class API_Challenge_Reponse:
+class ApiChallengeResponse:
     challenge_id: str | None = None
     was_accepted: bool = False
     error: str | None = None
@@ -26,7 +26,7 @@ class API_Challenge_Reponse:
 
 
 @dataclass
-class Book_Settings:
+class BookSettings:
     selection: Literal["weighted_random", "uniform_random", "best_move"] = "best_move"
     max_depth: int | None = None
     allow_repetitions: bool | None = None
@@ -36,7 +36,7 @@ class Book_Settings:
 @dataclass
 class Bot:
     username: str
-    rating_diffs: dict[Perf_Type, int]
+    rating_diffs: dict[PerfType, int]
 
     def __eq__(self, value: object) -> bool:
         if isinstance(value, Bot):
@@ -64,21 +64,21 @@ class Challenge:
 
 
 @dataclass
-class Challenge_Request:
+class ChallengeRequest:
     opponent_username: str
     initial_time: int
     increment: int
     rated: bool
-    color: Challenge_Color
+    color: ChallengeColor
     variant: Variant
     timeout: int
 
     @classmethod
-    def parse_from_command(cls, args: list[str], timeout: int) -> "Challenge_Request":
+    def parse_from_command(cls, args: list[str], timeout: int) -> "ChallengeRequest":
         opponent_username = None
         initial_time = 60
         increment = 1
-        color = Challenge_Color.RANDOM
+        color = ChallengeColor.RANDOM
         rated = True
         variant = Variant.STANDARD
 
@@ -90,7 +90,7 @@ class Challenge_Request:
             elif arg.lower() in {"false", "no", "unrated", "casual"}:
                 rated = False
             elif arg.lower() in {"white", "black", "random"}:
-                color = Challenge_Color(arg.lower())
+                color = ChallengeColor(arg.lower())
             elif found_variant := find_variant(arg):
                 variant = found_variant
             elif opponent_username is None:
@@ -101,13 +101,13 @@ class Challenge_Request:
         if opponent_username is None:
             raise ValueError("Username is required.")
 
-        return Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, timeout)
+        return ChallengeRequest(opponent_username, initial_time, increment, rated, color, variant, timeout)
 
-    def replaced(self, **changes: Any) -> "Challenge_Request":
+    def replaced(self, **changes: Any) -> "ChallengeRequest":
         return replace(self, **changes)
 
     def __eq__(self, value: object) -> bool:
-        if isinstance(value, Challenge_Request):
+        if isinstance(value, ChallengeRequest):
             return value.opponent_username == self.opponent_username
 
         return NotImplemented
@@ -117,7 +117,7 @@ class Challenge_Request:
 
 
 @dataclass(kw_only=True)
-class Challenge_Response:
+class ChallengeResponse:
     challenge_id: str | None = None
     success: bool = False
     no_opponent: bool = False
@@ -127,22 +127,22 @@ class Challenge_Response:
 
 
 @dataclass
-class Chat_Message:
+class ChatMessage:
     username: str
     text: str
     room: Literal["player", "spectator"]
 
     @classmethod
-    def from_chatLine_event(cls, chatLine_event: dict[str, Any]) -> "Chat_Message":
-        username = chatLine_event["username"]
-        text = chatLine_event["text"]
-        room = chatLine_event["room"]
+    def from_chat_line_event(cls, chat_line_event: dict[str, Any]) -> "ChatMessage":
+        username = chat_line_event["username"]
+        text = chat_line_event["text"]
+        room = chat_line_event["room"]
 
         return cls(username, text, room)
 
 
 @dataclass(frozen=True)
-class Game_Information:
+class GameInformation:
     id_: str
     white_title: str | None
     white_name: str
@@ -165,29 +165,29 @@ class Game_Information:
     tournament_id: str | None
 
     @classmethod
-    def from_gameFull_event(cls, gameFull_event: dict[str, Any]) -> "Game_Information":
-        assert gameFull_event["type"] == "gameFull"
+    def from_game_full_event(cls, game_full_event: dict[str, Any]) -> "GameInformation":
+        assert game_full_event["type"] == "gameFull"
 
-        id_ = gameFull_event["id"]
-        white_title = gameFull_event["white"].get("title")
-        white_name = gameFull_event["white"].get("name", "AI")
-        white_rating = gameFull_event["white"].get("rating")
-        white_ai_level = gameFull_event["white"].get("aiLevel")
-        white_provisional = gameFull_event["white"].get("provisional", False)
-        black_title = gameFull_event["black"].get("title")
-        black_name = gameFull_event["black"].get("name", "AI")
-        black_rating = gameFull_event["black"].get("rating")
-        black_ai_level = gameFull_event["black"].get("aiLevel")
-        black_provisional = gameFull_event["black"].get("provisional", False)
-        initial_time_ms = gameFull_event["clock"]["initial"]
-        increment_ms = gameFull_event["clock"]["increment"]
-        speed = gameFull_event["speed"]
-        rated = gameFull_event["rated"]
-        variant = Variant(gameFull_event["variant"]["key"])
-        variant_name = gameFull_event["variant"]["name"]
-        initial_fen = gameFull_event["initialFen"]
-        state = gameFull_event["state"]
-        tournament_id = gameFull_event.get("tournamentId")
+        id_ = game_full_event["id"]
+        white_title = game_full_event["white"].get("title")
+        white_name = game_full_event["white"].get("name", "AI")
+        white_rating = game_full_event["white"].get("rating")
+        white_ai_level = game_full_event["white"].get("aiLevel")
+        white_provisional = game_full_event["white"].get("provisional", False)
+        black_title = game_full_event["black"].get("title")
+        black_name = game_full_event["black"].get("name", "AI")
+        black_rating = game_full_event["black"].get("rating")
+        black_ai_level = game_full_event["black"].get("aiLevel")
+        black_provisional = game_full_event["black"].get("provisional", False)
+        initial_time_ms = game_full_event["clock"]["initial"]
+        increment_ms = game_full_event["clock"]["increment"]
+        speed = game_full_event["speed"]
+        rated = game_full_event["rated"]
+        variant = Variant(game_full_event["variant"]["key"])
+        variant_name = game_full_event["variant"]["name"]
+        initial_fen = game_full_event["initialFen"]
+        state = game_full_event["state"]
+        tournament_id = game_full_event.get("tournamentId")
 
         return cls(
             id_,
@@ -287,32 +287,32 @@ class Game_Information:
 
 
 @dataclass
-class Gaviota_Result:
+class GaviotaResult:
     move: chess.Move
     wdl: Literal[-2, -1, 0, 1, 2]
     dtm: int
 
 
 @dataclass
-class Lichess_Move:
+class LichessMove:
     uci_move: str
     offer_draw: bool
     resign: bool
 
 
 @dataclass
-class Matchmaking_Data:
+class MatchmakingData:
     release_time: datetime = datetime.min
     multiplier: int = 1
-    color: Challenge_Color = Challenge_Color.WHITE
+    color: ChallengeColor = ChallengeColor.WHITE
 
     @classmethod
-    def from_dict(cls, dict_: dict[str, Any]) -> "Matchmaking_Data":
+    def from_dict(cls, dict_: dict[str, Any]) -> "MatchmakingData":
         release_time = datetime.fromisoformat(dict_["release_time"]) if "release_time" in dict_ else datetime.now()
         multiplier = dict_.get("multiplier", 1)
-        color = Challenge_Color(dict_["color"]) if "color" in dict_ else Challenge_Color.WHITE
+        color = ChallengeColor(dict_["color"]) if "color" in dict_ else ChallengeColor.WHITE
 
-        return Matchmaking_Data(release_time, multiplier, color)
+        return MatchmakingData(release_time, multiplier, color)
 
     def to_dict(self) -> dict[str, Any]:
         dict_ = {}
@@ -325,20 +325,20 @@ class Matchmaking_Data:
         if self.multiplier > 1:
             dict_["multiplier"] = self.multiplier
 
-        if self.color == Challenge_Color.BLACK:
-            dict_["color"] = Challenge_Color.BLACK
+        if self.color == ChallengeColor.BLACK:
+            dict_["color"] = ChallengeColor.BLACK
 
         return dict_
 
 
 @dataclass
-class Matchmaking_Type:
+class MatchmakingType:
     name: str
     initial_time: int
     increment: int
     rated: bool
     variant: Variant
-    perf_type: Perf_Type
+    perf_type: PerfType
     config_multiplier: int | None
     multiplier: int
     weight: float
@@ -368,7 +368,7 @@ class Matchmaking_Type:
         return delimiter.join([self.name, tc_str, rated_str, variant_str])
 
     def __eq__(self, value: object) -> bool:
-        if isinstance(value, Matchmaking_Type):
+        if isinstance(value, MatchmakingType):
             return value.name == self.name
 
         return NotImplemented
@@ -378,7 +378,7 @@ class Matchmaking_Type:
 
 
 @dataclass
-class Move_Response:
+class MoveResponse:
     move: chess.Move
     public_message: str
     private_message: str = field(default="", kw_only=True)
@@ -389,8 +389,8 @@ class Move_Response:
 
 
 @dataclass
-class Move_Source:
-    method: Callable[[], Awaitable[Move_Response | None]]
+class MoveSource:
+    method: Callable[[], Awaitable[MoveResponse | None]]
     priority: int
     conditions: list[bool] = field(default_factory=list)
 
@@ -400,14 +400,14 @@ class Move_Source:
 
 
 @dataclass
-class Syzygy_Result:
+class SyzygyResult:
     move: chess.Move
     wdl: Literal[-2, -1, 0, 1, 2]
     dtz: int
 
 
 @dataclass
-class Tournament_Request:
+class TournamentRequest:
     id_: str
     team: str | None
     password: str | None

@@ -8,12 +8,12 @@ from enum import StrEnum
 from typing import TypeVar
 
 from api import API
-from botli_dataclasses import Challenge_Request
+from botli_dataclasses import ChallengeRequest
 from config import Config
 from engine import Engine
-from enums import Challenge_Color, Perf_Type, Variant
-from event_handler import Event_Handler
-from game_manager import Game_Manager
+from enums import ChallengeColor, PerfType, Variant
+from event_handler import EventHandler
+from game_manager import GameManager
 from logo import LOGO
 
 try:
@@ -41,7 +41,7 @@ COMMANDS = {
 EnumT = TypeVar("EnumT", bound=StrEnum)
 
 
-class User_Interface:
+class UserInterface:
     async def main(self, commands: list[str], config_path: str, allow_upgrade: bool) -> None:
         self.config = Config.from_yaml(config_path)
         print(f"{LOGO} • {self.config.version}", end="", flush=True)
@@ -57,10 +57,10 @@ class User_Interface:
             await self._test_engines()
             await self._download_online_blacklists()
 
-            self.game_manager = Game_Manager(self.api, self.config, username)
+            self.game_manager = GameManager(self.api, self.config, username)
             self.game_manager_task = asyncio.create_task(self.game_manager.run())
 
-            self.event_handler = Event_Handler(self.api, self.config, username, self.game_manager)
+            self.event_handler = EventHandler(self.api, self.config, username, self.game_manager)
             self.event_handler_task = asyncio.create_task(self.event_handler.run())
 
             signal.signal(signal.SIGTERM, self.signal_handler)
@@ -181,7 +181,7 @@ class User_Interface:
             return
 
         try:
-            challenge_request = Challenge_Request.parse_from_command(command[1:], 60)
+            challenge_request = ChallengeRequest.parse_from_command(command[1:], 60)
         except ValueError as e:
             print(e)
             return
@@ -205,17 +205,17 @@ class User_Interface:
             return
 
         try:
-            challenge_request = Challenge_Request.parse_from_command(command[2:], 60)
+            challenge_request = ChallengeRequest.parse_from_command(command[2:], 60)
         except ValueError as e:
             print(e)
             return
 
-        challenges: list[Challenge_Request] = []
+        challenges: list[ChallengeRequest] = []
         for _ in range(count):
             challenges.extend(
                 (
-                    challenge_request.replaced(color=Challenge_Color.WHITE),
-                    challenge_request.replaced(color=Challenge_Color.BLACK),
+                    challenge_request.replaced(color=ChallengeColor.WHITE),
+                    challenge_request.replaced(color=ChallengeColor.BLACK),
                 )
             )
 
@@ -266,13 +266,13 @@ class User_Interface:
         variant = Variant(last_challenge_event["variant"]["key"])
 
         if event_color == "white":
-            color = Challenge_Color.BLACK
+            color = ChallengeColor.BLACK
         elif event_color == "black":
-            color = Challenge_Color.WHITE
+            color = ChallengeColor.WHITE
         else:
-            color = Challenge_Color.RANDOM
+            color = ChallengeColor.RANDOM
 
-        challenge_request = Challenge_Request(opponent_username, initial_time, increment, rated, color, variant, 300)
+        challenge_request = ChallengeRequest(opponent_username, initial_time, increment, rated, color, variant, 300)
         self.game_manager.request_challenge(challenge_request)
         print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 
@@ -282,7 +282,7 @@ class User_Interface:
             return
 
         try:
-            perf_type = self._find_enum(command[1], Perf_Type)
+            perf_type = self._find_enum(command[1], PerfType)
         except ValueError as e:
             print(e)
             return
@@ -362,4 +362,4 @@ if __name__ == "__main__":
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    asyncio.run(User_Interface().main(args.commands, args.config, args.upgrade), debug=args.debug)
+    asyncio.run(UserInterface().main(args.commands, args.config, args.upgrade), debug=args.debug)

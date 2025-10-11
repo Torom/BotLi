@@ -7,9 +7,9 @@ from typing import Any
 import aiohttp
 from tenacity import before_sleep_log, retry, retry_if_exception_type, wait_fixed
 
-from botli_dataclasses import API_Challenge_Reponse, Challenge_Request
+from botli_dataclasses import ApiChallengeResponse, ChallengeRequest
 from config import Config
-from enums import Decline_Reason, Variant
+from enums import DeclineReason, Variant
 
 logger = logging.getLogger(__name__)
 BASIC_RETRY_CONDITIONS = {
@@ -108,7 +108,7 @@ class API:
             return False
 
     async def create_challenge(
-        self, challenge_request: Challenge_Request, queue: asyncio.Queue[API_Challenge_Reponse]
+        self, challenge_request: ChallengeRequest, queue: asyncio.Queue[ApiChallengeResponse]
     ) -> None:
         try:
             async with self.lichess_session.post(
@@ -126,7 +126,7 @@ class API:
                 if response.status != 200:
                     json_response: dict[str, Any] = await response.json()
                     queue.put_nowait(
-                        API_Challenge_Reponse(
+                        ApiChallengeResponse(
                             error=json_response.get("error"),
                             invalid_initial="clock.limit" in json_response,
                             invalid_increment="clock.increment" in json_response,
@@ -142,7 +142,7 @@ class API:
 
                     data: dict[str, Any] = json.loads(line)
                     queue.put_nowait(
-                        API_Challenge_Reponse(
+                        ApiChallengeResponse(
                             challenge_id=data.get("id"),
                             was_accepted=data.get("done") == "accepted",
                             was_declined=data.get("done") == "declined",
@@ -150,12 +150,12 @@ class API:
                     )
 
         except (aiohttp.ClientError, json.JSONDecodeError) as e:
-            queue.put_nowait(API_Challenge_Reponse(error=str(e)))
+            queue.put_nowait(ApiChallengeResponse(error=str(e)))
         except TimeoutError:
-            queue.put_nowait(API_Challenge_Reponse(has_timed_out=True))
+            queue.put_nowait(ApiChallengeResponse(has_timed_out=True))
 
     @retry(**BASIC_RETRY_CONDITIONS)
-    async def decline_challenge(self, challenge_id: str, reason: Decline_Reason) -> bool:
+    async def decline_challenge(self, challenge_id: str, reason: DeclineReason) -> bool:
         try:
             async with self.lichess_session.post(
                 f"/api/challenge/{challenge_id}/decline", data={"reason": reason}

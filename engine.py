@@ -5,7 +5,7 @@ import subprocess
 import chess
 import chess.engine
 
-from configs import Engine_Config, Limit_Config, Syzygy_Config
+from configs import EngineConfig, LimitConfig, SyzygyConfig
 
 
 class Engine:
@@ -15,7 +15,7 @@ class Engine:
         engine: chess.engine.UciProtocol,
         ponder: bool,
         opponent: chess.engine.Opponent,
-        limit_config: Limit_Config,
+        limit_config: LimitConfig,
     ) -> None:
         self.transport = transport
         self.engine = engine
@@ -25,7 +25,7 @@ class Engine:
 
     @classmethod
     async def from_config(
-        cls, engine_config: Engine_Config, syzygy_config: Syzygy_Config, opponent: chess.engine.Opponent
+        cls, engine_config: EngineConfig, syzygy_config: SyzygyConfig, opponent: chess.engine.Opponent
     ) -> "Engine":
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
@@ -37,11 +37,11 @@ class Engine:
         return cls(transport, engine, engine_config.ponder, opponent, engine_config.limits)
 
     @classmethod
-    async def test(cls, engine_config: Engine_Config) -> None:
+    async def test(cls, engine_config: EngineConfig) -> None:
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
         transport, engine = await chess.engine.popen_uci(engine_config.path, stderr=stderr)
-        await cls._configure_engine(engine, engine_config, Syzygy_Config(False, [], 0, False))
+        await cls._configure_engine(engine, engine_config, SyzygyConfig(False, [], 0, False))
         result = await engine.play(chess.Board(), chess.engine.Limit(time=0.1), info=chess.engine.INFO_ALL)
 
         if not result.move:
@@ -52,7 +52,7 @@ class Engine:
 
     @staticmethod
     async def _configure_engine(
-        engine: chess.engine.UciProtocol, engine_config: Engine_Config, syzygy_config: Syzygy_Config
+        engine: chess.engine.UciProtocol, engine_config: EngineConfig, syzygy_config: SyzygyConfig
     ) -> None:
         for name, value in engine_config.uci_options.items():
             if name.lower() in chess.engine.MANAGED_OPTIONS:

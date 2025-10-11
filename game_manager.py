@@ -4,7 +4,7 @@ from collections import deque
 from typing import Any
 
 from api import API
-from botli_dataclasses import Challenge, Challenge_Request, Tournament, Tournament_Request
+from botli_dataclasses import Challenge, ChallengeRequest, Tournament, TournamentRequest
 from challenger import Challenger
 from config import Config
 from game import Game
@@ -12,7 +12,7 @@ from matchmaking import Matchmaking
 from utils import get_future_timestamp
 
 
-class Game_Manager:
+class GameManager:
     def __init__(self, api: API, config: Config, username: str) -> None:
         self.api = api
         self.config = config
@@ -22,7 +22,7 @@ class Game_Manager:
         self.changed_event = Event()
         self.matchmaking = Matchmaking(api, config, username)
 
-        self.challenge_requests: deque[Challenge_Request] = deque()
+        self.challenge_requests: deque[ChallengeRequest] = deque()
         self.current_matchmaking_game_id: str | None = None
         self.is_rate_limited = False
         self.is_running = True
@@ -32,7 +32,7 @@ class Game_Manager:
         self.reserved_game_spots = 0
         self.started_game_events: deque[dict[str, Any]] = deque()
         self.tasks: dict[Task[None], Game] = {}
-        self.tournament_requests: deque[Tournament_Request] = deque()
+        self.tournament_requests: deque[TournamentRequest] = deque()
         self.tournament_ids_to_leave: deque[str] = deque()
         self.unstarted_tournaments: dict[str, Tournament] = {}
         self.tournaments_to_join: deque[Tournament] = deque()
@@ -90,7 +90,7 @@ class Game_Manager:
             self.open_challenges.append(challenge)
             self.changed_event.set()
 
-    def request_challenge(self, *challenge_requests: Challenge_Request) -> None:
+    def request_challenge(self, *challenge_requests: ChallengeRequest) -> None:
         self.challenge_requests.extend(challenge_requests)
         self.changed_event.set()
 
@@ -124,14 +124,14 @@ class Game_Manager:
         return True
 
     def request_tournament_joining(self, tournament_id: str, team: str | None, password: str | None) -> None:
-        self.tournament_requests.append(Tournament_Request(tournament_id, team, password))
+        self.tournament_requests.append(TournamentRequest(tournament_id, team, password))
         self.changed_event.set()
 
     def request_tournament_leaving(self, tournament_id: str) -> None:
         self.tournament_ids_to_leave.append(tournament_id)
         self.changed_event.set()
 
-    async def _process_tournament_request(self, tournament_request: Tournament_Request) -> None:
+    async def _process_tournament_request(self, tournament_request: TournamentRequest) -> None:
         if tournament_request.id_ in self.unstarted_tournaments:
             return
 
@@ -291,7 +291,7 @@ class Game_Manager:
         else:
             self._set_next_matchmaking(1)
 
-    def _get_next_challenge_request(self) -> Challenge_Request | None:
+    def _get_next_challenge_request(self) -> ChallengeRequest | None:
         if not self.challenge_requests:
             return
 
@@ -319,7 +319,7 @@ class Game_Manager:
 
         return self.tournaments_to_join.popleft()
 
-    async def _create_challenge(self, challenge_request: Challenge_Request) -> None:
+    async def _create_challenge(self, challenge_request: ChallengeRequest) -> None:
         print(f"Challenging {challenge_request.opponent_username} ...")
         response = await self.challenger.create(challenge_request)
 
