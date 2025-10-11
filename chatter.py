@@ -37,6 +37,7 @@ class Chatter:
         self.opponent_username = self.game_info.black_name if lichess_game.is_white else self.game_info.white_name
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
+        self.challenge_message = self._get_challenge_message(config)
         self.name_message = self._get_name_message(config.version)
         self.ram_message = self._get_ram()
         self.player_greeting = self._format_message(config.messages.greeting)
@@ -228,22 +229,22 @@ class Chatter:
         return f"{self.username} running {self.lichess_game.engine.name} (BotLi {version})"
 
     def _get_challenge_message(self, config: Config) -> str:
-    c = config.challenge
+        c = config.challenge
 
-    bot_tc = ", ".join(c.bot_time_controls) if c.bot_time_controls else "None"
-    bot_modes = ", ".join(c.bot_modes) if c.bot_modes else "None"
-    human_tc = ", ".join(c.human_time_controls) if c.human_time_controls else "None"
-    human_modes = ", ".join(c.human_modes) if c.human_modes else "None"
+        bot_tc = ", ".join(c.bot_time_controls) if c.bot_time_controls else "None"
+        bot_modes = ", ".join(c.bot_modes) if c.bot_modes else "None"
+        human_tc = ", ".join(c.human_time_controls) if c.human_time_controls else "None"
+        human_modes = ", ".join(c.human_modes) if c.human_modes else "None"
 
-    message = f"Challenge criteria - Bots: {bot_tc} ({bot_modes}). Humans: {human_tc} ({human_modes})."
+        message = f"Challenge criteria - Bots: {bot_tc} ({bot_modes}). Humans: {human_tc} ({human_modes})."
 
-    if c.min_increment is not None or c.max_increment is not None:
+        if c.min_increment is not None or c.max_increment is not None:
         message += f" Increment: {c.min_increment or 0}-{c.max_increment or 180}s."
 
-    if c.min_initial is not None or c.max_initial is not None:
+        if c.min_initial is not None or c.max_initial is not None:
         message += f" Initial: {c.min_initial or 0}-{c.max_initial or 315360000}s."
 
-    return message
+        return message
 
 
     def _format_message(self, message: str | None) -> str | None:
