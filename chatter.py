@@ -21,6 +21,7 @@ COMMANDS = {
     "quiet": "Stops automatic evaluation printing (use after !printeval).",
     "ram": "Displays the amount of system memory (RAM).",
     "takeback": "Shows how many takebacks are allowed and how many the opponent has used.",
+    "challenge": "Shows the time controls and game modes the bot accepts for challenge.",
 }
 SPECTATOR_COMMANDS = {"pv": "Shows the principal variation (best line of play) from the latest position."}
 
@@ -95,6 +96,8 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
             case "draw":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.draw_message)
+            case "challenge":
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.challenge_message)
             case "eval":
                 await self._send_last_message(chat_message.room)
             case "motor":
@@ -223,6 +226,25 @@ class Chatter:
 
     def _get_name_message(self, version: str) -> str:
         return f"{self.username} running {self.lichess_game.engine.name} (BotLi {version})"
+
+    def _get_challenge_message(self, config: Config) -> str:
+    c = config.challenge
+
+    bot_tc = ", ".join(c.bot_time_controls) if c.bot_time_controls else "None"
+    bot_modes = ", ".join(c.bot_modes) if c.bot_modes else "None"
+    human_tc = ", ".join(c.human_time_controls) if c.human_time_controls else "None"
+    human_modes = ", ".join(c.human_modes) if c.human_modes else "None"
+
+    message = f"Challenge criteria - Bots: {bot_tc} ({bot_modes}). Humans: {human_tc} ({human_modes})."
+
+    if c.min_increment is not None or c.max_increment is not None:
+        message += f" Increment: {c.min_increment or 0}-{c.max_increment or 180}s."
+
+    if c.min_initial is not None or c.max_initial is not None:
+        message += f" Initial: {c.min_initial or 0}-{c.max_initial or 315360000}s."
+
+    return message
+
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:
