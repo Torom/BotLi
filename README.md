@@ -202,8 +202,8 @@ Wants=network-online.target
 
 [Service]
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=~/.local/bin/uv run user_interface.py
-WorkingDirectory=~/BotLi
+ExecStart=/home/ubuntu/.local/bin/uv run user_interface.py
+WorkingDirectory=/home/ubuntu/BotLi
 User=ubuntu
 Group=ubuntu
 Restart=on-failure
