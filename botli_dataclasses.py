@@ -38,9 +38,9 @@ class Bot:
     username: str
     rating_diffs: dict[Perf_Type, int]
 
-    def __eq__(self, __o: object) -> bool:
-        if isinstance(__o, Bot):
-            return __o.username == self.username
+    def __eq__(self, value: object) -> bool:
+        if isinstance(value, Bot):
+            return value.username == self.username
 
         return NotImplemented
 
@@ -53,9 +53,9 @@ class Challenge:
     challenge_id: str
     opponent_username: str
 
-    def __eq__(self, __o: object) -> bool:
-        if isinstance(__o, Challenge):
-            return __o.challenge_id == self.challenge_id
+    def __eq__(self, value: object) -> bool:
+        if isinstance(value, Challenge):
+            return value.challenge_id == self.challenge_id
 
         return NotImplemented
 
@@ -106,9 +106,9 @@ class Challenge_Request:
     def replaced(self, **changes: Any) -> "Challenge_Request":
         return replace(self, **changes)
 
-    def __eq__(self, __o: object) -> bool:
-        if isinstance(__o, Challenge_Request):
-            return __o.opponent_username == self.opponent_username
+    def __eq__(self, value: object) -> bool:
+        if isinstance(value, Challenge_Request):
+            return value.opponent_username == self.opponent_username
 
         return NotImplemented
 
@@ -367,9 +367,9 @@ class Matchmaking_Type:
 
         return delimiter.join([self.name, tc_str, rated_str, variant_str])
 
-    def __eq__(self, __o: object) -> bool:
-        if isinstance(__o, Matchmaking_Type):
-            return __o.name == self.name
+    def __eq__(self, value: object) -> bool:
+        if isinstance(value, Matchmaking_Type):
+            return value.name == self.name
 
         return NotImplemented
 
