@@ -11,6 +11,7 @@ from lichess_game import Lichess_Game
 from utils import ml_print
 
 COMMANDS = {
+    "challenge": "Shows the time controls and game modes the bot accepts for challenge.",
     "cpu": "Shows information about the bot's CPU (processor, cores, threads, frequency).",
     "draw": "Explains the bot's draw offering/accepting policy based on evaluation and game length.",
     "eval": "Shows the latest position evaluation.",
@@ -21,7 +22,6 @@ COMMANDS = {
     "quiet": "Stops automatic evaluation printing (use after !printeval).",
     "ram": "Displays the amount of system memory (RAM).",
     "takeback": "Shows how many takebacks are allowed and how many the opponent has used.",
-    "challenge": "Shows the time controls and game modes the bot accepts for challenge.",
 }
 SPECTATOR_COMMANDS = {"pv": "Shows the principal variation (best line of play) from the latest position."}
 
@@ -229,23 +229,20 @@ class Chatter:
         return f"{self.username} running {self.lichess_game.engine.name} (BotLi {version})"
 
     def _get_challenge_message(self, config: Config) -> str:
-        c = config.challenge
-
-        bot_tc = ", ".join(c.bot_time_controls) if c.bot_time_controls else "None"
-        bot_modes = ", ".join(c.bot_modes) if c.bot_modes else "None"
-        human_tc = ", ".join(c.human_time_controls) if c.human_time_controls else "None"
-        human_modes = ", ".join(c.human_modes) if c.human_modes else "None"
+        bot_tc = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "None"
+        bot_modes = ", ".join(config.challenge.bot_modes) if config.challenge.bot_modes else "None"
+        human_tc = ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "None"
+        human_modes = ", ".join(config.challenge.human_modes) if config.challenge.human_modes else "None"
 
         message = f"Challenge criteria - Bots: {bot_tc} ({bot_modes}). Humans: {human_tc} ({human_modes})."
 
-        if c.min_increment is not None or c.max_increment is not None:
-            message += f" Increment: {c.min_increment or 0}-{c.max_increment or 180}s."
+        if config.challenge.min_increment is not None or config.challenge.max_increment is not None:
+            message += f" Increment: {config.challenge.min_increment or 0}-{config.challenge.max_increment or 180}s."
 
-        if c.min_initial is not None or c.max_initial is not None:
-            message += f" Initial: {c.min_initial or 0}-{c.max_initial or 315360000}s."
+        if config.challenge.min_initial is not None or config.challenge.max_initial is not None:
+            message += f" Initial: {config.challenge.min_initial or 0}-{config.challenge.max_initial or 315360000}s."
 
         return message
-
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:
