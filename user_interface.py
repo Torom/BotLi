@@ -7,6 +7,8 @@ import sys
 from enum import StrEnum
 from typing import TypeVar
 
+import psutil
+
 from api import API
 from botli_dataclasses import ChallengeRequest
 from config import Config
@@ -33,6 +35,7 @@ COMMANDS = {
     "quit": "Exits the bot.",
     "rechallenge": "Challenges the opponent to the last received challenge.",
     "reset": "Resets matchmaking. Usage: reset PERF_TYPE",
+    "stats": "Shows bot statistics and performance information.",
     "stop": "Stops matchmaking mode.",
     "tournament": "Joins tournament. Usage: tournament ID [TEAM_ID] [PASSWORD]",
     "whitelist": "Temporarily whitelists a user. Use config for permanent whitelisting. Usage: whitelist USERNAME",
@@ -158,6 +161,8 @@ class UserInterface:
                 self._rechallenge()
             case "reset":
                 self._reset(command)
+            case "stats":
+                await self._stats()
             case "stop" | "s":
                 self._stop()
             case "tournament" | "t":
@@ -289,6 +294,90 @@ class UserInterface:
 
         self.game_manager.matchmaking.opponents.reset_release_time(perf_type)
         print("Matchmaking has been reset.")
+
+    async def _stats(self) -> None:
+        """Display bot statistics and performance information."""
+        print("\n=== Bot Statistics ===")
+
+        try:
+            account = await self.api.get_account()
+            print(f"👤 Username: {account['username']}")
+
+            perfs = account.get('perfs', {})
+            if perfs:
+                print("\nCurrent Ratings:")
+                for perf_type, perf_data in perfs.items():
+                    if 'rating' in perf_data:
+                        rating = perf_data['rating']
+                        provisional = "?" if perf_data.get('provisional', False) else ""
+                        print(f"  {perf_type.title():<15}: {rating}{provisional}")
+
+            activity = await self.api.get_user_activity(account['username'])
+            if activity and isinstance(activity, list) and len(activity) > 0:
+                today_activity = activity[0]
+
+                if 'games' in today_activity:
+                    games = today_activity['games']
+                    print("\nToday's Games:")
+
+                    total_games = 0
+                    try:
+                        for variant_data in games.values():
+                            if isinstance(variant_data, dict):
+                                total_games += sum(count for count in variant_data.values() if isinstance(count, int))
+                    except Exception:
+                        total_games = 0
+
+                    print(f"Total Games: {total_games}")
+
+                    for variant, results in games.items():
+                        if not isinstance(results, dict):
+                            continue
+
+                        wins = results.get('win', 0) if isinstance(results.get('win'), int) else 0
+                        losses = results.get('loss', 0) if isinstance(results.get('loss'), int) else 0
+                        draws = results.get('draw', 0) if isinstance(results.get('draw'), int) else 0
+                        variant_total = wins + losses + draws
+
+                        if variant_total > 0:
+                            win_rate = (wins + 0.5 * draws) / variant_total * 100 if variant_total > 0 else 0
+
+                            rating_diff = 0
+                            if isinstance(results.get('rp'), dict):
+                                rp_data = results['rp']
+                                before = rp_data.get('before', 0)
+                                after = rp_data.get('after', 0)
+                                rating_diff = after - before
+
+                            results_parts = []
+                            if wins > 0:
+                                results_parts.append(f"{wins} win{'s' if wins != 1 else ''}")
+                            if draws > 0:
+                                results_parts.append(f"{draws} draw{'s' if draws != 1 else ''}")
+                            if losses > 0:
+                                results_parts.append(f"{losses} loss{'es' if losses != 1 else ''}")
+
+                            results_str = ", ".join(results_parts)
+                            diff_str = f"+{rating_diff}" if rating_diff > 0 else str(rating_diff)
+                            variant_name = variant.title()
+                            print(f"{variant_name:<15}: ("
+                                  f"{variant_total} game{'s' if variant_total != 1 else ''}: "
+                                  f"{results_str} • {win_rate:.1f}% win rate • {diff_str})")
+
+            else:
+                print("\nNo games played today.")
+
+        except Exception as e:
+            print(f"Could not retrieve stats: {e}")
+
+        print("\nSystem Information:")
+        process = psutil.Process()
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        print(f"Memory Usage: {memory_mb:.1f} MB")
+        cpu_percent = process.cpu_percent(interval=0.1)
+        print(f"CPU Usage: {cpu_percent:.1f}%")
+
+        print("=" * 25)
 
     def _stop(self) -> None:
         if self.game_manager.stop_matchmaking():
