@@ -9,7 +9,7 @@ authors = [
     { name = "Torsten Hellwig" }
 ]
 dependencies = [
-    "aiohttp[speedups]==3.13.0",
+    "aiohttp[speedups]==3.13.1",
     "chess==1.11.2",
     "psutil==7.1.0",
     "pyyaml==6.0.3",
