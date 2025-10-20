@@ -229,12 +229,12 @@ class Chatter:
         return f"{self.username} running {self.lichess_game.engine.name} (BotLi {version})"
 
     def _get_challenge_message(self, config: Config) -> str:
-        B_TC = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "None"
-        B_M = ", ".join(config.challenge.bot_modes) if config.challenge.bot_modes else "None"
-        H_TC = ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "None"
-        H_M = ", ".join(config.challenge.human_modes) if config.challenge.human_modes else "None"
+        b_tc = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "None"
+        b_m = ", ".join(config.challenge.bot_modes) if config.challenge.bot_modes else "None"
+        h_tc = ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "None"
+        h_m = ", ".join(config.challenge.human_modes) if config.challenge.human_modes else "None"
 
-        message = f"Challenge criteria - B: {B_TC} ({B_M}). H: {H_TC} ({H_M})."
+        message = f"Challenge criteria - B: {b_tc} ({b_m}). H: {h_tc} ({h_m})."
 
         if config.challenge.min_increment is not None or config.challenge.max_increment is not None:
             message += f" Increment: {config.challenge.min_increment or 0}-{config.challenge.max_increment or 180}s."
