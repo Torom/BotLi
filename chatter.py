@@ -5,12 +5,13 @@ from collections import defaultdict
 import psutil
 
 from api import API
-from botli_dataclasses import ChatMessage, GameInformation
+from botli_dataclasses import Chat_Message, Game_Information
 from config import Config
-from lichess_game import LichessGame
+from lichess_game import Lichess_Game
 from utils import ml_print
 
 COMMANDS = {
+    "chall": "Shows the time controls and game modes the bot accepts for challenge.",
     "cpu": "Shows information about the bot's CPU (processor, cores, threads, frequency).",
     "draw": "Explains the bot's draw offering/accepting policy based on evaluation and game length.",
     "eval": "Shows the latest position evaluation.",
@@ -27,7 +28,7 @@ SPECTATOR_COMMANDS = {"pv": "Shows the principal variation (best line of play) f
 
 class Chatter:
     def __init__(
-        self, api: API, config: Config, username: str, game_information: GameInformation, lichess_game: LichessGame
+        self, api: API, config: Config, username: str, game_information: Game_Information, lichess_game: Lichess_Game
     ) -> None:
         self.api = api
         self.username = username
@@ -36,6 +37,7 @@ class Chatter:
         self.opponent_username = self.game_info.black_name if lichess_game.is_white else self.game_info.white_name
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
+        self.challenge_message = self._get_challenge_message(config)
         self.name_message = self._get_name_message(config.version)
         self.ram_message = self._get_ram()
         self.player_greeting = self._format_message(config.messages.greeting)
@@ -44,8 +46,8 @@ class Chatter:
         self.spectator_goodbye = self._format_message(config.messages.goodbye_spectators)
         self.print_eval_rooms: set[str] = set()
 
-    async def handle_chat_message(self, chat_line_event: dict, takeback_count: int, max_takebacks: int) -> None:
-        chat_message = ChatMessage.from_chat_line_event(chat_line_event)
+    async def handle_chat_message(self, chatLine_Event: dict, takeback_count: int, max_takebacks: int) -> None:
+        chat_message = Chat_Message.from_chatLine_event(chatLine_Event)
 
         if chat_message.username == "lichess":
             if chat_message.room == "player":
@@ -89,12 +91,14 @@ class Chatter:
             ("Too bad you weren't there. Feel free to challenge me again, I will accept the challenge if possible."),
         )
 
-    async def _handle_command(self, chat_message: ChatMessage, takeback_count: int, max_takebacks: int) -> None:
+    async def _handle_command(self, chat_message: Chat_Message, takeback_count: int, max_takebacks: int) -> None:
         match chat_message.text[1:].lower():
             case "cpu":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
             case "draw":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.draw_message)
+            case "chall":
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.challenge_message)
             case "eval":
                 await self._send_last_message(chat_message.room)
             case "motor":
@@ -223,6 +227,22 @@ class Chatter:
 
     def _get_name_message(self, version: str) -> str:
         return f"{self.username} running {self.lichess_game.engine.name} (BotLi {version})"
+
+    def _get_challenge_message(self, config: Config) -> str:
+        B_TC = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "None"
+        B_M = ", ".join(config.challenge.bot_modes) if config.challenge.bot_modes else "None"
+        H_TC = ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "None"
+        H_M = ", ".join(config.challenge.human_modes) if config.challenge.human_modes else "None"
+
+        message = f"Challenge criteria - Bots: {B_TC} ({B_M}). Humans: {H_TC} ({H_M})."
+
+        if config.challenge.min_increment is not None or config.challenge.max_increment is not None:
+            message += f" Increment: {config.challenge.min_increment or 0}-{config.challenge.max_increment or 180}s."
+
+        if config.challenge.min_initial is not None or config.challenge.max_initial is not None:
+            message += f" Initial: {config.challenge.min_initial or 0}-{config.challenge.max_initial or 315360000}s."
+
+        return message
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:
