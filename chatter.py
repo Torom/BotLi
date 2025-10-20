@@ -46,8 +46,8 @@ class Chatter:
         self.spectator_goodbye = self._format_message(config.messages.goodbye_spectators)
         self.print_eval_rooms: set[str] = set()
 
-    async def handle_chat_message(self, chat_Line_Event: dict, takeback_count: int, max_takebacks: int) -> None:
-        chat_message = Chat_Message.from_chatLine_event(chat_Line_Event)
+    async def handle_chat_message(self, chat_Line_event: dict, takeback_count: int, max_takebacks: int) -> None:
+        chat_message = Chat_Message.from_chatLine_event(chat_Line_event)
 
         if chat_message.username == "lichess":
             if chat_message.room == "player":
