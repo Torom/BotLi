@@ -234,7 +234,7 @@ class Chatter:
         H_TC = ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "None"
         H_M = ", ".join(config.challenge.human_modes) if config.challenge.human_modes else "None"
 
-        message = f"Challenge criteria - Bots: {B_TC} ({B_M}). Humans: {H_TC} ({H_M})."
+        message = f"Challenge criteria - B: {B_TC} ({B_M}). H: {H_TC} ({H_M})."
 
         if config.challenge.min_increment is not None or config.challenge.max_increment is not None:
             message += f" Increment: {config.challenge.min_increment or 0}-{config.challenge.max_increment or 180}s."
