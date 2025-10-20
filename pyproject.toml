@@ -11,7 +11,7 @@ authors = [
 dependencies = [
     "aiohttp[speedups]==3.13.1",
     "chess==1.11.2",
-    "psutil==7.1.0",
+    "psutil==7.1.1",
     "pyyaml==6.0.3",
     "tenacity==9.1.2",
 ]
