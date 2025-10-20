@@ -5,9 +5,9 @@ from collections import defaultdict
 import psutil
 
 from api import API
-from botli_dataclasses import Chat_Message, Game_Information
+from botli_dataclasses import ChatMessage, GameInformation
 from config import Config
-from lichess_game import Lichess_Game
+from lichess_game import LichessGame
 from utils import ml_print
 
 COMMANDS = {
