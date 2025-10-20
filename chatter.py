@@ -47,7 +47,7 @@ class Chatter:
         self.print_eval_rooms: set[str] = set()
 
     async def handle_chat_message(self, chat_line_event: dict, takeback_count: int, max_takebacks: int) -> None:
-        chat_message = ChatMessage.from_chat_line_event(chat_Line_event)
+        chat_message = ChatMessage.from_chat_line_event(chat_line_event)
 
         if chat_message.username == "lichess":
             if chat_message.room == "player":
