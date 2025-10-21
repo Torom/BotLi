@@ -11,6 +11,7 @@ from lichess_game import LichessGame
 from utils import ml_print
 
 COMMANDS = {
+    "chall": "Shows the time controls and game modes the bot accepts for challenge.",
     "cpu": "Shows information about the bot's CPU (processor, cores, threads, frequency).",
     "draw": "Explains the bot's draw offering/accepting policy based on evaluation and game length.",
     "eval": "Shows the latest position evaluation.",
@@ -36,6 +37,7 @@ class Chatter:
         self.opponent_username = self.game_info.black_name if lichess_game.is_white else self.game_info.white_name
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
+        self.challenge_message = self._get_challenge_message(config)
         self.name_message = self._get_name_message(config.version)
         self.ram_message = self._get_ram()
         self.player_greeting = self._format_message(config.messages.greeting)
@@ -95,6 +97,8 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
             case "draw":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.draw_message)
+            case "chall":
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.challenge_message)
             case "eval":
                 await self._send_last_message(chat_message.room)
             case "motor":
@@ -223,6 +227,22 @@ class Chatter:
 
     def _get_name_message(self, version: str) -> str:
         return f"{self.username} running {self.lichess_game.engine.name} (BotLi {version})"
+
+    def _get_challenge_message(self, config: Config) -> str:
+        b_tc = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "None"
+        b_m = ", ".join(config.challenge.bot_modes) if config.challenge.bot_modes else "None"
+        h_tc = ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "None"
+        h_m = ", ".join(config.challenge.human_modes) if config.challenge.human_modes else "None"
+
+        message = f"Challenge criteria - B: {b_tc} ({b_m}). H: {h_tc} ({h_m})."
+
+        if config.challenge.min_increment is not None or config.challenge.max_increment is not None:
+            message += f" Increment: {config.challenge.min_increment or 0}-{config.challenge.max_increment or 180}s."
+
+        if config.challenge.min_initial is not None or config.challenge.max_initial is not None:
+            message += f" Initial: {config.challenge.min_initial or 0}-{config.challenge.max_initial or 315360000}s."
+
+        return message
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:
