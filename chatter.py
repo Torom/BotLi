@@ -283,9 +283,4 @@ class Chatter:
             if board.turn:
                 initial_message += f" {board.fullmove_number}."
             initial_message += f" {board.san(move)}"
-            if len(initial_message) > 140:
-                break
-            board.push(move)
-            final_message = initial_message
-
-        return final_message
+            if len(initial_message) > 1
