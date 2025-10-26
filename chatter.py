@@ -142,8 +142,14 @@ class Chatter:
                 commands = COMMANDS if chat_message.room == "player" else COMMANDS | SPECTATOR_COMMANDS
                 words = chat_message.text.split()
                 if len(words) == 1:
-                    message = f"Commands: !{', !'.join(commands)}. Type !help <command> for more information."
-                    await self.api.send_chat_message(self.game_info.id_, chat_message.room, message)
+                    await self.api.send_chat_message(
+                        self.game_info.id_, chat_message.room, f"Commands: !{', !'.join(commands)}."
+                    )
+                    await self.api.send_chat_message(
+                        self.game_info.id_,
+                        chat_message.room,
+                        "Type !help <command> to get an explanation of the command.",
+                    )
                     return
 
                 command = words[1].lstrip("!").lower()
