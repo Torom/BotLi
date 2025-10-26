@@ -97,7 +97,7 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
             case "draw":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.draw_message)
-             case "challenge":
+            case "challenge":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.challenge_message)
             case "eval":
                 await self._send_last_message(chat_message.room)
