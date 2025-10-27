@@ -234,20 +234,30 @@ class Chatter:
     def _get_name_message(self, version: str) -> str:
         return f"{self.username} running {self.lichess_game.engine.name} (BotLi {version})"
 
-    def _get_challenge_message(self, config: Config) -> str:
-        bot_tc = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "None"
-        bot_modes = ", ".join(config.challenge.bot_modes) if config.challenge.bot_modes else "None"
-        human_tc = ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "None"
-        human_modes = ", ".join(config.challenge.human_modes) if config.challenge.human_modes else "None"
-
-        message = f"Challenge criteria - Bots: {bot_tc} ({bot_modes}). Humans: {human_tc} ({human_modes})."
-
-        if config.challenge.min_increment is not None or config.challenge.max_increment is not None:
-            message += f" Increment: {config.challenge.min_increment or 0}-{config.challenge.max_increment or 180}s."
-
-        if config.challenge.min_initial is not None or config.challenge.max_initial is not None:
-            message += f" Initial: {config.challenge.min_initial or 0}-{config.challenge.max_initial or 315360000}s."
-
+    def _get_challenge_message(self, config: Config) -> str:  
+        parts = []  
+        
+        if config.challenge.bot_modes:  
+            bot_tc = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "any"  
+            bot_modes = ", ".join(config.challenge.bot_modes)  
+            parts.append(f"Bots: {bot_tc} ({bot_modes})")  
+      
+        if config.challenge.human_modes:  
+            human_tc = ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "any"  
+            human_modes = ", ".join(config.challenge.human_modes)  
+            parts.append(f"Humans: {human_tc} ({human_modes})")  
+      
+        if not parts:  
+            return "Challenge criteria - Not accepting challenges."  
+      
+        message = "Challenge criteria - " + ". ".join(parts) + "."  
+       
+        if config.challenge.min_increment is not None or config.challenge.max_increment is not None:  
+            message += f" Increment: {config.challenge.min_increment or 0}-{config.challenge.max_increment or 180}s."  
+      
+        if config.challenge.min_initial is not None or config.challenge.max_initial is not None:  
+            message += f" Initial: {config.challenge.min_initial or 0}-{config.challenge.max_initial or 315360000}s."  
+      
         return message
 
     def _format_message(self, message: str | None) -> str | None:
