@@ -243,8 +243,10 @@ class Chatter:
             parts.append(f"Bots: {bot_tc} ({bot_modes})")
 
         if config.challenge.human_modes:
-            human_tc = (
-                ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "any"
+            human_tc = (  
+                ", ".join(config.challenge.human_time_controls)   
+                if config.challenge.human_time_controls   
+                else "any"  
             )
             human_modes = ", ".join(config.challenge.human_modes)
             parts.append(f"Humans: {human_tc} ({human_modes})")
