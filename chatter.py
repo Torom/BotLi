@@ -11,7 +11,7 @@ from lichess_game import LichessGame
 from utils import ml_print
 
 COMMANDS = {
-    "challenge": "Shows time controls and game modes the bot accepts in challenges."
+    "challenge": "Shows time controls and game modes the bot accepts in challenges.",
     "cpu": "Shows information about the bot's CPU (processor, cores, threads, frequency).",
     "draw": "Explains the bot's draw offering/accepting policy based on evaluation and game length.",
     "eval": "Shows the latest position evaluation.",
