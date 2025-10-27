@@ -15,7 +15,7 @@ class ChallengeValidator:
         self.min_increment = 0 if config.challenge.min_increment is None else config.challenge.min_increment
         self.max_increment = 180 if config.challenge.max_increment is None else config.challenge.max_increment
         self.min_initial = 0 if config.challenge.min_initial is None else config.challenge.min_initial
-        self.max_initial = 315360000 if config.challenge.max_initial is None else config.challenge.max_initial
+        self.max_initial = 10800 if config.challenge.max_initial is None else config.challenge.max_initial
 
     def get_decline_reason(self, challenge_event: dict[str, Any]) -> DeclineReason | None:
         speed: str = challenge_event["speed"]
