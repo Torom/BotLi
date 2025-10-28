@@ -12,7 +12,6 @@ from utils import ml_print
 
 COMMANDS = {
     "challenge": "Shows time controls and game modes the bot accepts in challenges.",
-    "variants": "Shows the chess variants the bot acceptes in challenges.",
     "cpu": "Shows information about the bot's CPU (processor, cores, threads, frequency).",
     "draw": "Explains the bot's draw offering/accepting policy based on evaluation and game length.",
     "eval": "Shows the latest position evaluation.",
@@ -23,6 +22,7 @@ COMMANDS = {
     "quiet": "Stops automatic evaluation printing (use after !printeval).",
     "ram": "Displays the amount of system memory (RAM).",
     "takeback": "Shows how many takebacks are allowed and how many the opponent has used.",
+    "variants": "Shows the chess variants the bot can play.",
 }
 SPECTATOR_COMMANDS = {"pv": "Shows the principal variation (best line of play) from the latest position."}
 
@@ -97,8 +97,6 @@ class Chatter:
         match chat_message.text[1:].lower():
             case "challenge":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.challenge_message)
-            case "variants":
-                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.variants_message)
             case "cpu":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
             case "draw":
@@ -142,6 +140,8 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.ram_message)
             case "takeback":
                 await self._send_takeback_message(chat_message.room, takeback_count, max_takebacks)
+            case "variants":
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.variants_message)
             case command if command.startswith("help"):
                 commands = COMMANDS if chat_message.room == "player" else COMMANDS | SPECTATOR_COMMANDS
                 words = chat_message.text.split()
