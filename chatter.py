@@ -98,7 +98,7 @@ class Chatter:
             case "challenge":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.challenge_message)
             case "variants":
-                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.variants_message)  
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.variants_message)
             case "cpu":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
             case "draw":
@@ -215,9 +215,9 @@ class Chatter:
 
         return f"{mem_gib:.1f} GiB"
 
-    @staticmethod  
-    def _get_variants_message(config: Config) -> str:  
-        variants = ", ".join(config.challenge.variants)  
+    @staticmethod
+    def _get_variants_message(config: Config) -> str:
+        variants = ", ".join(config.challenge.variants)
         return f"Accepted variants: {variants}"
 
     def _get_draw_message(self, config: Config) -> str:
