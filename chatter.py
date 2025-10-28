@@ -35,9 +35,9 @@ class Chatter:
         self.game_info = game_information
         self.lichess_game = lichess_game
         self.opponent_username = self.game_info.black_name if lichess_game.is_white else self.game_info.white_name
+        self.challenge_message = self._get_challenge_message(config)
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
-        self.challenge_message = self._get_challenge_message(config)
         self.name_message = self._get_name_message(config.version)
         self.ram_message = self._get_ram()
         self.player_greeting = self._format_message(config.messages.greeting)
@@ -93,12 +93,12 @@ class Chatter:
 
     async def _handle_command(self, chat_message: ChatMessage, takeback_count: int, max_takebacks: int) -> None:
         match chat_message.text[1:].lower():
+            case "challenge":
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.challenge_message)
             case "cpu":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
             case "draw":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.draw_message)
-            case "challenge":
-                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.challenge_message)
             case "eval":
                 await self._send_last_message(chat_message.room)
             case "motor":
@@ -237,35 +237,36 @@ class Chatter:
     def _get_challenge_message(self, config: Config) -> str:
         parts = []
 
-        if config.challenge.bot_modes:
-            bot_tc = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "none"
-            bot_modes = ", ".join(config.challenge.bot_modes)
-            parts.append(f"Bots: {bot_tc} ({bot_modes})")
+        if config.challenge.human_modes and config.challenge.human_time_controls:
+            modes = ", ".join(config.challenge.human_modes)
+            tcs = ", ".join(config.challenge.human_time_controls)
+            parts.append(f"Humans: {tcs} ({modes})")
 
-        if config.challenge.human_modes:
-            human_tc = (
-                ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "none"
-            )
-            human_modes = ", ".join(config.challenge.human_modes)
-            parts.append(f"Humans: {human_tc} ({human_modes})")
+        if config.challenge.bot_modes and config.challenge.bot_time_controls:
+            modes = ", ".join(config.challenge.bot_modes)
+            tcs = ", ".join(config.challenge.bot_time_controls)
+            if config.challenge.bullet_with_increment_only:
+                tcs = tcs.replace("bullet", "bullet (with increment)")
+            parts.append(f"Bots: {tcs} ({modes})")
 
         if not parts:
-            return "Challenge criteria - Not accepting challenges."
+            return f"{self.username} does not accept challenges."
 
-        message = "Challenge criteria - " + ". ".join(parts) + "."
+        message = f"{'. '.join(parts)}."
 
-        if config.challenge.min_increment is not None or config.challenge.max_increment is not None:
-            min_inc = config.challenge.min_increment if config.challenge.min_increment is not None else 0
-            max_inc = config.challenge.max_increment if config.challenge.max_increment is not None else 180
-            message += f" Increment: {min_inc}-{max_inc}s."
+        if config.challenge.min_initial not in {None, 0} and config.challenge.max_initial not in {None, 10800}:
+            message += f" Initial: {config.challenge.min_initial}-{config.challenge.max_initial}s."
+        elif config.challenge.min_initial not in {None, 0}:
+            message += f" Min initial: {config.challenge.min_initial}s"
+        elif config.challenge.max_initial not in {None, 10800}:
+            message += f" Max initial: {config.challenge.max_initial}s"
 
-        if config.challenge.min_initial is not None or config.challenge.max_initial is not None:
-            min_init = config.challenge.min_initial if config.challenge.min_initial is not None else 0
-            max_init = config.challenge.max_initial if config.challenge.max_initial is not None else "unlimited"
-            message += f" Initial: {min_init}-{max_init}s."
-
-        if config.challenge.bullet_with_increment_only:
-            message += " Bullet vs bots: increment required."
+        if config.challenge.min_increment not in {None, 0} and config.challenge.max_increment not in {None, 180}:
+            message += f" Increment: {config.challenge.min_increment}-{config.challenge.max_increment}s."
+        elif config.challenge.min_increment not in {None, 0}:
+            message += f" Min increment: {config.challenge.min_increment}s"
+        elif config.challenge.max_increment not in {None, 180}:
+            message += f" Max increment: {config.challenge.max_increment}s"
 
         return message
 
