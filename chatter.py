@@ -240,14 +240,14 @@ class Chatter:
         if config.challenge.human_modes and config.challenge.human_time_controls:
             modes = ", ".join(config.challenge.human_modes)
             tcs = ", ".join(config.challenge.human_time_controls)
-            parts.append(f"Humans: {tcs} ({modes})")
+            parts.append(f"Humans ({modes}): {tcs}")
 
         if config.challenge.bot_modes and config.challenge.bot_time_controls:
             modes = ", ".join(config.challenge.bot_modes)
             tcs = ", ".join(config.challenge.bot_time_controls)
             if config.challenge.bullet_with_increment_only:
                 tcs = tcs.replace("bullet", "bullet (with increment)")
-            parts.append(f"Bots: {tcs} ({modes})")
+            parts.append(f"Bots ({modes}): {tcs}")
 
         if not parts:
             return f"{self.username} does not accept challenges."
