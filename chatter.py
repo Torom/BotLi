@@ -236,31 +236,36 @@ class Chatter:
 
     def _get_challenge_message(self, config: Config) -> str:
         parts = []
-
+        
         if config.challenge.bot_modes:
-            bot_tc = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "any"
+            bot_tc = ", ".join(config.challenge.bot_time_controls) if config.challenge.bot_time_controls else "none"
             bot_modes = ", ".join(config.challenge.bot_modes)
             parts.append(f"Bots: {bot_tc} ({bot_modes})")
 
-        if config.challenge.human_modes:
-            human_tc = (
-                ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "any"
-            )
-            human_modes = ", ".join(config.challenge.human_modes)
-            parts.append(f"Humans: {human_tc} ({human_modes})")
+       if config.challenge.human_modes:
+           human_tc = ", ".join(config.challenge.human_time_controls) if config.challenge.human_time_controls else "none"
+           human_modes = ", ".join(config.challenge.human_modes)
+           parts.append(f"Humans: {human_tc} ({human_modes})")
 
-        if not parts:
-            return "Challenge criteria - Not accepting challenges."
+       if not parts:
+           return "Challenge criteria - Not accepting challenges."
 
-        message = "Challenge criteria - " + ". ".join(parts) + "."
+       message = "Challenge criteria - " + ". ".join(parts) + "."
 
-        if config.challenge.min_increment is not None or config.challenge.max_increment is not None:
-            message += f" Increment: {config.challenge.min_increment or 0}-{config.challenge.max_increment or 180}s."
+       if config.challenge.min_increment is not None or config.challenge.max_increment is not None:
+           min_inc = config.challenge.min_increment if config.challenge.min_increment is not None else 0
+           max_inc = config.challenge.max_increment if config.challenge.max_increment is not None else 180
+           message += f" Increment: {min_inc}-{max_inc}s."
 
-        if config.challenge.min_initial is not None or config.challenge.max_initial is not None:
-            message += f" Initial: {config.challenge.min_initial or 0}-{config.challenge.max_initial or 315360000}s."
+       if config.challenge.min_initial is not None or config.challenge.max_initial is not None:
+           min_init = config.challenge.min_initial if config.challenge.min_initial is not None else 0
+           max_init = config.challenge.max_initial if config.challenge.max_initial is not None else "unlimited"
+           message += f" Initial: {min_init}-{max_init}s."
 
-        return message
+       if config.challenge.bullet_with_increment_only:
+           message += " Bullet vs bots: increment required."
+
+       return message
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:
