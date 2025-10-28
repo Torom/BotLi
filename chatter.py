@@ -12,6 +12,7 @@ from utils import ml_print
 
 COMMANDS = {
     "challenge": "Shows time controls and game modes the bot accepts in challenges.",
+    "variants": "Shows the chess variants the bot acceptes in challenges.",
     "cpu": "Shows information about the bot's CPU (processor, cores, threads, frequency).",
     "draw": "Explains the bot's draw offering/accepting policy based on evaluation and game length.",
     "eval": "Shows the latest position evaluation.",
@@ -36,6 +37,7 @@ class Chatter:
         self.lichess_game = lichess_game
         self.opponent_username = self.game_info.black_name if lichess_game.is_white else self.game_info.white_name
         self.challenge_message = self._get_challenge_message(config)
+        self.variants_message = self._get_variants_message(config)
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
         self.name_message = self._get_name_message(config.version)
@@ -95,6 +97,8 @@ class Chatter:
         match chat_message.text[1:].lower():
             case "challenge":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.challenge_message)
+            case "variants":
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.variants_message)  
             case "cpu":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.cpu_message)
             case "draw":
@@ -210,6 +214,11 @@ class Chatter:
         mem_gib = mem_bytes / (1024.0**3)
 
         return f"{mem_gib:.1f} GiB"
+
+    @staticmethod  
+    def _get_variants_message(config: Config) -> str:  
+        variants = ", ".join(config.challenge.variants)  
+        return f"Accepted variants: {variants}"
 
     def _get_draw_message(self, config: Config) -> str:
         too_low_rating = (
