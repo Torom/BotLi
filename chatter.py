@@ -276,26 +276,26 @@ class Chatter:
             )
             message += f" Increment: {min_inc}-{max_inc}s."
 
-    if (
-        config.challenge.min_initial is not None
-        or config.challenge.max_initial is not None
-    ):
-        min_init = (
-            config.challenge.min_initial
-            if config.challenge.min_initial is not None
-            else 0
-        )
-        max_init = (
-            config.challenge.max_initial
-            if config.challenge.max_initial is not None
-            else "unlimited"
-        )
-        message += f" Initial: {min_init}-{max_init}s."
+        if (
+            config.challenge.min_initial is not None
+            or config.challenge.max_initial is not None
+        ):
+            min_init = (
+                config.challenge.min_initial
+                if config.challenge.min_initial is not None
+                else 0
+            )
+            max_init = (
+                config.challenge.max_initial
+                if config.challenge.max_initial is not None
+                else "unlimited"
+            )
+            message += f" Initial: {min_init}-{max_init}s."
+            
+        if config.challenge.bullet_with_increment_only:
+            message += " Bullet vs bots: increment required."
 
-    if config.challenge.bullet_with_increment_only:
-        message += " Bullet vs bots: increment required."
-
-    return message
+        return message
 
     def _format_message(self, message: str | None) -> str | None:
         if not message:
