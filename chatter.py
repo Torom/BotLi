@@ -22,6 +22,7 @@ COMMANDS = {
     "quiet": "Stops automatic evaluation printing (use after !printeval).",
     "ram": "Displays the amount of system memory (RAM).",
     "takeback": "Shows how many takebacks are allowed and how many the opponent has used.",
+    "variants": "Shows the chess variants the bot can play.",
 }
 SPECTATOR_COMMANDS = {"pv": "Shows the principal variation (best line of play) from the latest position."}
 
@@ -36,6 +37,7 @@ class Chatter:
         self.lichess_game = lichess_game
         self.opponent_username = self.game_info.black_name if lichess_game.is_white else self.game_info.white_name
         self.challenge_message = self._get_challenge_message(config)
+        self.variants_message = self._get_variants_message(config)
         self.cpu_message = self._get_cpu()
         self.draw_message = self._get_draw_message(config)
         self.name_message = self._get_name_message(config.version)
@@ -138,6 +140,8 @@ class Chatter:
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.ram_message)
             case "takeback":
                 await self._send_takeback_message(chat_message.room, takeback_count, max_takebacks)
+            case "variants":
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.variants_message)
             case command if command.startswith("help"):
                 commands = COMMANDS if chat_message.room == "player" else COMMANDS | SPECTATOR_COMMANDS
                 words = chat_message.text.split()
@@ -210,6 +214,11 @@ class Chatter:
         mem_gib = mem_bytes / (1024.0**3)
 
         return f"{mem_gib:.1f} GiB"
+
+    @staticmethod
+    def _get_variants_message(config: Config) -> str:
+        variants = ", ".join(config.challenge.variants)
+        return f"Accepted variants: {variants}"
 
     def _get_draw_message(self, config: Config) -> str:
         too_low_rating = (
