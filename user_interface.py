@@ -79,7 +79,10 @@ class UserInterface:
             if readline and os.name != "nt":
                 completer = Autocompleter(list(COMMANDS.keys()))
                 readline.set_completer(completer.complete)
-                readline.parse_and_bind("tab: complete")
+                if readline.__doc__ and "libedit" in readline.__doc__:
+                    readline.parse_and_bind("bind ^I rl_complete")
+                else:
+                    readline.parse_and_bind("tab: complete")
 
             while True:
                 command = (await asyncio.to_thread(input)).split()
