@@ -18,14 +18,17 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.406",
-    "ruff>=0.14.0",
+    "pyright",
+    "ruff",
 ]
 
 [project.urls]
 Homepage = "https://github.com/Torom/BotLi"
 Issues = "https://github.com/Torom/BotLi/issues"
 Discord = "https://discord.gg/6aS945KMFD"
+
+[tool.uv]
+default-groups = []
 
 [tool.ruff]
 line-length = 120
