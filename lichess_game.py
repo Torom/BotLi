@@ -810,7 +810,7 @@ class LichessGame:
         return tablebase
 
     async def _make_egtb_move(self) -> MoveResponse | None:
-        max_pieces = 7 if self.board.uci_variant == "chess" else 6
+        max_pieces = 8 if self.board.uci_variant == "chess" else 7
         match chess.popcount(self.board.occupied):
             case pieces if pieces > max_pieces + 1:
                 return
@@ -835,12 +835,13 @@ class LichessGame:
             return
 
         uci_move: str = response["moves"][0]["uci"]
-        dtz: int = response["dtz"]
-        dtm: int | None = response["dtm"]
+        dtz: int | None = -response["moves"][0]["dtz"]
+        dtm: int | None = -response["moves"][0]["dtm"]
+        dtc: int | None = -response["moves"][0]["dtc"]
         offer_draw = outcome in {"draw", "blessed loss"}
         resign = outcome == "loss"
         move = chess.Move.from_uci(uci_move)
-        message = f"EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm)}"
+        message = f"EGTB:    {self._format_move(move):14} {self._format_egtb_info(outcome, dtz, dtm, dtc)}"
         return MoveResponse(move, message, is_draw=offer_draw, is_lost=resign)
 
     def _format_move(self, move: chess.Move) -> str:
@@ -907,13 +908,14 @@ class LichessGame:
         return str(score.pov(self.board.turn))
 
     @staticmethod
-    def _format_egtb_info(outcome: str, dtz: int | None = None, dtm: int | None = None) -> str:
+    def _format_egtb_info(outcome: str, dtz: int | None = None, dtm: int | None = None, dtc: int | None = None) -> str:
         outcome_str = f"{outcome:>7}"
         dtz_str = f"DTZ: {dtz}" if dtz else ""
         dtm_str = f"DTM: {dtm}" if dtm else ""
+        dtc_str = f"DTC: {dtc}" if dtc else ""
         delimiter = 5 * " "
 
-        return delimiter.join(filter(None, [outcome_str, dtz_str, dtm_str]))
+        return delimiter.join(filter(None, [outcome_str, dtz_str, dtm_str, dtc_str]))
 
     @staticmethod
     def _format_book_info(weight: float, learn: int) -> str:
