@@ -835,9 +835,9 @@ class LichessGame:
             return
 
         uci_move: str = response["moves"][0]["uci"]
-        dtz: int | None = -response["moves"][0]["dtz"]
-        dtm: int | None = -response["moves"][0]["dtm"]
-        dtc: int | None = -response["moves"][0]["dtc"]
+        dtz: int | None = -response["moves"][0]["dtz"] if response["moves"][0]["dtz"] is not None else None
+        dtm: int | None = -response["moves"][0]["dtm"] if response["moves"][0]["dtm"] is not None else None
+        dtc: int | None = -response["moves"][0]["dtc"] if response["moves"][0]["dtc"] is not None else None
         offer_draw = outcome in {"draw", "blessed loss"}
         resign = outcome == "loss"
         move = chess.Move.from_uci(uci_move)
