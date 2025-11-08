@@ -610,7 +610,8 @@ class LichessGame:
             self.scores.append(score)
 
         message = f"ChessDB: {self._format_move(pv[0]):14} {self._format_score(score)}     Depth: {response['depth']}"
-        return MoveResponse(pv[0], message, pv=pv, trusted_eval=self.config.online_moves.chessdb.trust_eval)
+        move = self._to_chess960(pv[0]) if self.board.chess960 else pv[0]
+        return MoveResponse(move, message, pv=pv, trusted_eval=self.config.online_moves.chessdb.trust_eval)
 
     def _probe_gaviota(self, moves: Iterable[chess.Move]) -> GaviotaResult:
         assert self.gaviota_tablebase
@@ -1041,3 +1042,20 @@ class LichessGame:
 
         mate = self.scores[-1].relative.mate()
         return mate is not None and mate > 0
+
+    def _to_chess960(self, move: chess.Move) -> chess.Move:
+        if move.from_square == chess.E1 and self.board.kings & chess.BB_E1:
+            if move.to_square == chess.G1 and not self.board.rooks & chess.BB_G1:
+                return chess.Move(chess.E1, chess.H1)
+
+            if move.to_square == chess.C1 and not self.board.rooks & chess.BB_C1:
+                return chess.Move(chess.E1, chess.A1)
+
+        elif move.from_square == chess.E8 and self.board.kings & chess.BB_E8:
+            if move.to_square == chess.G8 and not self.board.rooks & chess.BB_G8:
+                return chess.Move(chess.E8, chess.H8)
+
+            if move.to_square == chess.C8 and not self.board.rooks & chess.BB_C8:
+                return chess.Move(chess.E8, chess.A8)
+
+        return move
