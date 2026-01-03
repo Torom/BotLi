@@ -182,7 +182,7 @@ challenge:                                # Incoming challenges.
 
 matchmaking:
   delay: 480                              # Time in seconds the bot must be idle before a new challenge is started.
-  timeout: 30                             # Time until a challenge is canceled.
+  timeout: 5                              # Time until a challenge is canceled.
   selection: weighted_random              # Matchmkaing type selection is one of "weighted_random", "sequential" or "cyclic".
   types:                                  # Matchmaking types of which one is selected before each game.
     blitz:                                # Arbitrary name of the matchmaking type. Names must be unique.
