@@ -28,7 +28,7 @@ COMMANDS = {
     "create": "Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]",
     "help": "Prints this message.",
     "join": "Joins a team. Usage: join TEAM_ID [PASSWORD]",
-    "leave": "Leaves tournament. Usage: leave ID",
+    "leave": "Leaves tournament. Usage: leave [ID]",
     "matchmaking": "Starts matchmaking mode.",
     "quit": "Exits the bot.",
     "rechallenge": "Challenges the opponent to the last received challenge.",
@@ -238,7 +238,26 @@ class UserInterface:
             print(f'Joined team "{command[1]}" successfully.')
 
     def _leave(self, command: list[str]) -> None:
-        if len(command) != 2:
+        if len(command) == 1:
+            tournament_ids = (
+                set(self.game_manager.unstarted_tournaments.keys())
+                | set(self.game_manager.tournaments.keys())
+                | {t.id_ for t in self.game_manager.tournaments_to_join}
+            )
+
+            if not tournament_ids:
+                print("You're not currently in any tournaments.")
+                return
+
+            if len(tournament_ids) > 1:
+                print("You're in multiple tournaments. Please specify the ID.")
+                return
+
+            (tournament_id,) = tournament_ids
+            self.game_manager.request_tournament_leaving(tournament_id)
+            return
+
+        if len(command) > 2:
             print(COMMANDS["leave"])
             return
 
