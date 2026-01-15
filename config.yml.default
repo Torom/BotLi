@@ -76,6 +76,7 @@ opening_books:
     standard:
       selection: weighted_random          # Move selection is one of "weighted_random", "uniform_random" or "best_move".
 #     max_depth: 16                       # Half move max depth. (Comment this line for max depth)
+#     max_moves: 1                        # Max number of moves played from opening books. (Comment this line for max moves)
 #     allow_repetitions: false            # Whether the book can create repetitions on the board. Can lead to unintentional draws.
       names:                              # List of names of books to use if there is no specific book for the time control, white, black or chess960.
         - DefaultBook

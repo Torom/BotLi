@@ -256,7 +256,11 @@ class Config:
                 names[book_name] = config["books"][book_name]
 
             books[section] = BooksConfig(
-                settings["selection"], settings.get("max_depth"), settings.get("allow_repetitions"), names
+                settings["selection"],
+                settings.get("max_depth"),
+                settings.get("max_moves"),
+                settings.get("allow_repetitions"),
+                names,
             )
 
         return OpeningBooksConfig(

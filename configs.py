@@ -38,6 +38,7 @@ class GaviotaConfig:
 class BooksConfig:
     selection: Literal["weighted_random", "uniform_random", "best_move"]
     max_depth: int | None
+    max_moves: int | None
     allow_repetitions: bool | None
     names: dict[str, str]
 

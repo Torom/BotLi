@@ -58,6 +58,7 @@ class LichessGame:
         self.gaviota_tablebase = self._get_gaviota_tablebase()
         self.move_sources = self._get_move_sources()
 
+        self.opening_book_counter = 0
         self.opening_explorer_counter = 0
         self.out_of_opening_explorer_counter = 0
         self.cloud_counter = 0
@@ -329,7 +330,10 @@ class LichessGame:
         return True
 
     async def _make_book_move(self) -> MoveResponse | None:
-        if self.book_settings.max_depth and self.board.ply() >= self.book_settings.max_depth:
+        if self.book_settings.max_depth is not None and self.board.ply() >= self.book_settings.max_depth:
+            return
+
+        if self.book_settings.max_moves is not None and self.opening_book_counter >= self.book_settings.max_moves:
             return
 
         for name, book_reader in self.book_settings.readers.items():
@@ -356,6 +360,7 @@ class LichessGame:
             else:
                 continue
 
+            self.opening_book_counter += 1
             weight = entry.weight / sum(entry.weight for entry in entries) * 100.0
             learn = entry.learn if self.config.opening_books.read_learn else 0
             name_str = name if len(self.book_settings.readers) > 1 else ""
@@ -375,6 +380,7 @@ class LichessGame:
         return BookSettings(
             books_config.selection,
             books_config.max_depth,
+            books_config.max_moves,
             books_config.allow_repetitions,
             {name: chess.polyglot.open_reader(path) for name, path in books_config.names.items()},
         )
