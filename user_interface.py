@@ -1,11 +1,16 @@
 import argparse
 import asyncio
 import logging
-import os
 import signal
 import sys
 from enum import StrEnum
 from typing import TypeVar
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import NestedCompleter
+from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.shortcuts import CompleteStyle
 
 from api import API
 from botli_dataclasses import ChallengeRequest
@@ -15,11 +20,6 @@ from enums import ChallengeColor, PerfType, Variant
 from event_handler import EventHandler
 from game_manager import GameManager
 from logo import LOGO
-
-try:
-    import readline
-except ImportError:
-    readline = None
 
 COMMANDS = {
     "blacklist": "Temporarily blacklists a user. Use config for permanent blacklisting. Usage: blacklist USERNAME",
@@ -70,24 +70,25 @@ class UserInterface:
                 await asyncio.sleep(0.5)
 
                 for command in commands:
-                    await self._handle_command(command.split())
+                    await self._handle_command(command)
 
             if not sys.stdin.isatty():
                 await self.game_manager_task
                 return
 
-            if readline and os.name != "nt":
-                completer = Autocompleter(list(COMMANDS.keys()))
-                readline.set_completer(completer.complete)
-                if readline.__doc__ and "libedit" in readline.__doc__:
-                    readline.parse_and_bind("bind ^I rl_complete")
-                else:
-                    readline.parse_and_bind("tab: complete")
-
+            prompt_session = PromptSession(
+                message="> ",
+                completer=NestedCompleter.from_nested_dict(dict.fromkeys(COMMANDS.keys())),
+                auto_suggest=AutoSuggestFromHistory(),
+                complete_style=CompleteStyle.READLINE_LIKE,
+            )
+            for key in COMMANDS:
+                prompt_session.history.store_string(key)
             while True:
-                command = (await asyncio.to_thread(input)).split()
-                if command:
-                    await self._handle_command(command)
+                with patch_stdout():
+                    command = await prompt_session.prompt_async()
+                    if command:
+                        await self._handle_command(command)
 
     async def _handle_bot_status(self, title: str | None, allow_upgrade: bool) -> None:
         if "bot:play" not in await self.api.get_token_scopes(self.config.token):
@@ -141,20 +142,21 @@ class UserInterface:
             self.config.blacklist.extend(online_blacklist)
             print(f'Blacklisted {len(online_blacklist)} users from "{url}".')
 
-    async def _handle_command(self, command: list[str]) -> None:
-        match command[0]:
+    async def _handle_command(self, command: str) -> None:
+        words = command.split()
+        match words[0]:
             case "blacklist":
-                self._blacklist(command)
+                self._blacklist(words)
             case "challenge":
-                self._challenge(command)
+                self._challenge(words)
             case "clear":
                 self._clear()
             case "create":
-                self._create(command)
+                self._create(words)
             case "join":
-                await self._join(command)
+                await self._join(words)
             case "leave":
-                self._leave(command)
+                self._leave(words)
             case "matchmaking" | "m":
                 self._matchmaking()
             case "quit" | "exit" | "q":
@@ -163,13 +165,13 @@ class UserInterface:
             case "rechallenge":
                 self._rechallenge()
             case "reset":
-                self._reset(command)
+                self._reset(words)
             case "stop" | "s":
                 self._stop()
             case "tournament" | "t":
-                self._tournament(command)
+                self._tournament(words)
             case "whitelist":
-                self._whitelist(command)
+                self._whitelist(words)
             case _:
                 self._help()
 
@@ -356,24 +358,6 @@ class UserInterface:
 
     def signal_handler(self, *_) -> None:
         self._quit_task = asyncio.create_task(self._quit())
-
-
-class Autocompleter:
-    def __init__(self, options: list[str]) -> None:
-        self.options = options
-        self.matches: list[str] = []
-
-    def complete(self, text: str, state: int) -> str | None:
-        if state == 0:
-            if text:
-                self.matches = [s for s in self.options if s and s.startswith(text)]
-            else:
-                self.matches = self.options[:]
-
-        try:
-            return self.matches[state]
-        except IndexError:
-            return None
 
 
 if __name__ == "__main__":
