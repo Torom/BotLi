@@ -281,6 +281,8 @@ class API:
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_tournament_info(self, tournament_id: str) -> dict[str, Any]:
         async with self.lichess_session.get(f"/api/tournament/{tournament_id}") as response:
+            if response.status == 404:
+                return {}
             return await response.json()
 
     @retry(**JSON_RETRY_CONDITIONS)
