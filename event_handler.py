@@ -29,7 +29,7 @@ class EventHandler:
                     self._print_challenge_event(event["challenge"])
 
                     if decline_reason := self.challenge_validator.get_decline_reason(event["challenge"]):
-                        print(128 * "‾")
+                        print(123 * "‾")
                         await self.api.decline_challenge(event["challenge"]["id"], decline_reason)
                         continue
 
@@ -37,7 +37,7 @@ class EventHandler:
                         Challenge(event["challenge"]["id"], event["challenge"]["challenger"]["name"])
                     )
                     print("Challenge added to queue.")
-                    print(128 * "‾")
+                    print(123 * "‾")
                 case "gameStart":
                     self.game_manager.on_game_started(event["game"])
                 case "gameFinish":
@@ -58,7 +58,7 @@ class EventHandler:
                     )
                     self._print_challenge_event(event["challenge"])
                     print("Challenge has been canceled.")
-                    print(128 * "‾")
+                    print(123 * "‾")
                 case _:
                     print(event)
 
@@ -75,5 +75,5 @@ class EventHandler:
         color_str = f"Color: {challenge_event['color'].capitalize()}"
         variant_str = f"Variant: {challenge_event['variant']['name']}"
 
-        print(128 * "_")
+        print(123 * "_")
         print(" • ".join([id_str, challenger_str, tc_str, rated_str, color_str, variant_str]))

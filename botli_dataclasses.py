@@ -364,7 +364,7 @@ class MatchmakingType:
         tc_str = f"TC: {initial_time_str}+{self.increment}"
         rated_str = "Rated" if self.rated else "Casual"
         variant_str = f"Variant: {self.variant}"
-        delimiter = 5 * " "
+        delimiter = 4 * " "
 
         return delimiter.join([self.name, tc_str, rated_str, variant_str])
 

@@ -27,11 +27,11 @@ def get_future_timestamp(seconds: int) -> str:
 
 
 def ml_print(prefix: str, suffix: str) -> None:
-    if len(prefix) + len(suffix) <= 128:
+    if len(prefix) + len(suffix) <= 123:
         print(prefix + suffix)
         return
 
-    width = 128 - len(prefix)
+    width = 123 - len(prefix)
     indentation = " " * len(prefix)
     lines = textwrap.wrap(suffix, width=width, break_long_words=False, break_on_hyphens=False)
     print(prefix + lines[0])

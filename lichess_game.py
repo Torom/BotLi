@@ -365,7 +365,7 @@ class LichessGame:
             learn = entry.learn if self.config.opening_books.read_learn else 0
             name_str = name if len(self.book_settings.readers) > 1 else ""
             public_message = f"Book:    {self._format_move(entry.move):14}"
-            private_message = f"{self._format_book_info(weight, learn)}     {name_str}"
+            private_message = f"{self._format_book_info(weight, learn)}    {name_str}"
             return MoveResponse(entry.move, public_message, private_message=private_message)
 
     def _get_book_settings(self) -> BookSettings:
@@ -579,7 +579,7 @@ class LichessGame:
         if self.config.online_moves.lichess_cloud.trust_eval:
             self.scores.append(score)
 
-        message = f"Cloud:   {self._format_move(pv[0]):14} {self._format_score(score)}     Depth: {response['depth']}"
+        message = f"Cloud:   {self._format_move(pv[0]):14} {self._format_score(score)}    Depth: {response['depth']}"
         return MoveResponse(pv[0], message, pv=pv, trusted_eval=self.config.online_moves.lichess_cloud.trust_eval)
 
     async def _make_chessdb_move(self) -> MoveResponse | None:
@@ -634,7 +634,7 @@ class LichessGame:
         if self.config.online_moves.chessdb.trust_eval:
             self.scores.append(score)
 
-        message = f"ChessDB: {self._format_move(pv[0]):14} {self._format_score(score)}     Depth: {response['depth']}"
+        message = f"ChessDB: {self._format_move(pv[0]):14} {self._format_score(score)}    Depth: {response['depth']}"
         move = self._to_chess960(pv[0]) if self.board.chess960 else pv[0]
         return MoveResponse(move, message, pv=pv, trusted_eval=self.config.online_moves.chessdb.trust_eval)
 
@@ -885,7 +885,7 @@ class LichessGame:
         info_depth = info.get("depth")
         info_seldepth = info.get("seldepth")
         depth_str = f"{info_depth}/{info_seldepth}"
-        depth = f"{depth_str:6}" if info_depth and info_seldepth else 6 * " "
+        depth = f"{depth_str:7}" if info_depth and info_seldepth else 7 * " "
 
         info_nodes = info.get("nodes")
         nodes = f"Nodes: {self._format_number(info_nodes)}" if info_nodes else 14 * " "
@@ -904,7 +904,7 @@ class LichessGame:
 
         info_tbhits = info.get("tbhits")
         tbhits = f"TB: {self._format_number(info_tbhits)}" if info_tbhits else ""
-        delimiter = 5 * " "
+        delimiter = 4 * " "
 
         return delimiter.join((score, depth, nodes, nps, time_str, hashfull, tbhits))
 
@@ -939,21 +939,21 @@ class LichessGame:
         dtz_str = f"DTZ: {dtz}" if dtz else ""
         dtm_str = f"DTM: {dtm}" if dtm else ""
         dtc_str = f"DTC: {dtc}" if dtc else ""
-        delimiter = 5 * " "
+        delimiter = 4 * " "
 
         return delimiter.join(filter(None, [outcome_str, dtz_str, dtm_str, dtc_str]))
 
     @staticmethod
     def _format_book_info(weight: float, learn: int) -> str:
-        output = f"{weight:>5.0f} %"
-        if learn:
-            output += f"     Performance: {learn >> 20}"
-            win = (learn >> 10 & 0b1111111111) / 10.2
-            draw = (learn & 0b1111111111) / 10.2
-            loss = max(100.0 - win - draw, 0.0)
-            output += f"     WDL: {win:5.1f} % {draw:5.1f} % {loss:5.1f} %"
+        base_info = f"{weight:>5.0f} %"
+        if not learn:
+            return base_info
 
-        return output
+        win = ((learn >> 10) & 0x3FF) / 10.2
+        draw = (learn & 0x3FF) / 10.2
+        loss = max(100.0 - win - draw, 0.0)
+
+        return f"{base_info}    Performance: {learn >> 20}    WDL: {win:5.1f} % {draw:5.1f} % {loss:5.1f} %"
 
     def _get_move_sources(self) -> list[Callable[[], Awaitable[MoveResponse | None]]]:
         sources: list[Callable[[], Awaitable[MoveResponse | None]]] = []
