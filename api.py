@@ -249,10 +249,10 @@ class API:
         self, username: str, fen: str, variant: Variant, color: str, modes: str | None, speeds: str | None, timeout: int
     ) -> dict[str, Any] | None:
         if username == "masters":
-            url = "https://explorer.lichess.ovh/masters"
+            url = "https://explorer.lichess.org/masters"
             params = {"fen": fen, "topGames": 0}
         else:
-            url = "https://explorer.lichess.ovh/player"
+            url = "https://explorer.lichess.org/player"
             params = {"player": username, "variant": variant, "fen": fen, "color": color, "recentGames": 0}
             if speeds:
                 params["speeds"] = speeds
@@ -260,7 +260,7 @@ class API:
                 params["modes"] = modes
 
         try:
-            async with self.external_session.get(
+            async with self.lichess_session.get(
                 url, params=params, timeout=aiohttp.ClientTimeout(total=timeout)
             ) as response:
                 response.raise_for_status()
