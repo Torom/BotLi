@@ -214,8 +214,8 @@ class API:
 
     async def get_egtb(self, fen: str, variant: str, timeout: int) -> dict[str, Any] | None:
         try:
-            async with self.external_session.get(
-                f"https://tablebase.lichess.ovh/{variant}",
+            async with self.lichess_session.get(
+                f"https://tablebase.lichess.org/{variant}",
                 params={"fen": fen},
                 timeout=aiohttp.ClientTimeout(total=timeout),
             ) as response:
