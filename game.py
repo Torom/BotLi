@@ -34,6 +34,8 @@ class Game:
         if info.state["status"] != "started":
             self._print_result_message(info.state, lichess_game, info)
             await chatter.send_goodbyes()
+            if uci_result := self._get_uci_result(info.state):
+                await lichess_game.engine.send_gameover(uci_result)
             await lichess_game.close()
             return
 
@@ -85,6 +87,8 @@ class Game:
 
                 self._print_result_message(event, lichess_game, info)
                 await chatter.send_goodbyes()
+                if uci_result := self._get_uci_result(event):
+                    await lichess_game.engine.send_gameover(uci_result)
                 break
 
             if has_updated:
@@ -186,3 +190,18 @@ class Game:
         message = " • ".join([info.id_str, opponents_str, message])
 
         print(f"{message}\n{123 * '‾'}")
+
+    @staticmethod
+    def _get_uci_result(game_state: dict[str, Any]) -> str | None:
+        """Convert a Lichess game_state dict to a UCI result string.
+        Returns None for aborted games (no meaningful result to report).
+        """
+        winner = game_state.get("winner")
+        status = game_state.get("status", "")
+        if status in {"aborted", "noStart", "unknownFinish"}:
+            return None
+        if winner == "white":
+            return "1-0"
+        if winner == "black":
+            return "0-1"
+        return "1/2-1/2"

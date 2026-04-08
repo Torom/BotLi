@@ -121,3 +121,18 @@ class Engine:
             print("Engine could not be terminated cleanly.")
 
         self.transport.close()
+
+    async def send_gameover(self, result: str) -> None:
+        """Send a custom 'gameover <result>' UCI extension command to the engine.
+    
+        result should be one of: '1-0', '0-1', '1/2-1/2'
+        This is a non-standard extension — engines that don't handle it will
+        simply ignore the unknown command.
+        """
+        try:
+            # python-chess exposes the asyncio SubprocessTransport on the protocol.
+            # Pipe 0 is stdin of the engine process.
+            stdin_transport = self.transport.get_pipe_transport(0)
+            stdin_transport.write(f"gameover {result}\n".encode())
+        except Exception:
+            pass  # Never crash BotLi because of a custom engine extension
