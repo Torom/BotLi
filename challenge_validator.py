@@ -51,7 +51,7 @@ class ChallengeValidator:
 
         is_bot: bool = challenge_event["challenger"].get("title") == "BOT"
         modes = self.config.challenge.bot_modes if is_bot else self.config.challenge.human_modes
-        if modes is None:
+        if not modes:
             if is_bot:
                 print("Bots are not allowed according to config.")
                 return DeclineReason.NO_BOT
@@ -59,13 +59,17 @@ class ChallengeValidator:
             print("Only bots are allowed according to config.")
             return DeclineReason.ONLY_BOT
 
-        increment: int = challenge_event["timeControl"]["increment"]
-        initial: int = challenge_event["timeControl"]["limit"]
         speeds = self.config.challenge.bot_time_controls if is_bot else self.config.challenge.human_time_controls
         if not speeds:
-            print("No time control is allowed according to config.")
-            return DeclineReason.GENERIC
+            if is_bot:
+                print("Bots are not allowed according to config.")
+                return DeclineReason.NO_BOT
 
+            print("Only bots are allowed according to config.")
+            return DeclineReason.ONLY_BOT
+
+        initial: int = challenge_event["timeControl"]["limit"]
+        increment: int = challenge_event["timeControl"]["increment"]
         time_controls = self.bot_time_controls if is_bot else self.human_time_controls
         if speed not in speeds and (initial, increment) not in time_controls:
             print(f'Time control "{speed}" is not allowed according to config.')
