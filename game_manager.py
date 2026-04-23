@@ -111,7 +111,7 @@ class GameManager:
 
     def start_matchmaking(self) -> None:
         self.matchmaking_enabled = True
-        self._set_next_matchmaking(1)
+        self._set_next_matchmaking(1, force=True)
         self.changed_event.set()
 
     def stop_matchmaking(self) -> bool:
@@ -205,11 +205,11 @@ class GameManager:
         self._set_next_matchmaking(self.config.matchmaking.delay)
         self.changed_event.set()
 
-    def _set_next_matchmaking(self, delay: int) -> None:
+    def _set_next_matchmaking(self, delay: int, force: bool = False) -> None:
         if not self.matchmaking_enabled:
             return
 
-        if self.is_rate_limited:
+        if self.is_rate_limited and not force:
             return
 
         self.next_matchmaking = asyncio.get_running_loop().time() + delay
