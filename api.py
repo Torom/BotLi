@@ -242,7 +242,7 @@ class API:
 
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_online_bots(self) -> list[dict[str, Any]]:
-        async with self.lichess_session.get("/api/bot/online", timeout=STREAM_TIMEOUT) as response:
+        async with self.lichess_session.get("/api/bot/online", params={"nb": 512}, timeout=STREAM_TIMEOUT) as response:
             return [json.loads(line) async for line in response.content if line.strip()]
 
     async def get_opening_explorer(
