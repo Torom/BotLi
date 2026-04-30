@@ -347,7 +347,7 @@ class MatchmakingType:
     max_rating_diff: int | None
 
     def __post_init__(self) -> None:
-        self.estimated_game_duration = timedelta(seconds=max(self.initial_time, 3) * 1.34 + self.increment * 91.76)
+        self.estimated_game_duration = timedelta(seconds=max(self.initial_time, 3) * 1.33 + self.increment * 104.29)
 
     def __str__(self) -> str:
         initial_time_min = self.initial_time / 60
