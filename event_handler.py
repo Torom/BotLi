@@ -33,9 +33,7 @@ class EventHandler:
                         await self.api.decline_challenge(event["challenge"]["id"], decline_reason)
                         continue
 
-                    self.game_manager.add_challenge(
-                        Challenge(event["challenge"]["id"], event["challenge"]["challenger"]["name"])
-                    )
+                    self.game_manager.add_challenge(Challenge.from_challenge_event(event["challenge"]))
                     print("Challenge added to queue.")
                     print(123 * "‾")
                 case "gameStart":
@@ -53,9 +51,7 @@ class EventHandler:
                     if event["challenge"]["challenger"]["name"] == self.username:
                         continue
 
-                    self.game_manager.remove_challenge(
-                        Challenge(event["challenge"]["id"], event["challenge"]["challenger"]["name"])
-                    )
+                    self.game_manager.remove_challenge(Challenge.from_challenge_event(event["challenge"]))
                     self._print_challenge_event(event["challenge"])
                     print("Challenge has been canceled.")
                     print(123 * "‾")

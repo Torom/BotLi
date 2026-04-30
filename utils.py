@@ -15,6 +15,21 @@ ALIASES = {
     Variant.THREE_CHECK: ["Three-check", "Threecheck", "3-check", "3check"],
 }
 
+PRIORITIES = {
+    "BOT": 1,
+    "LM": -1,
+    "WNM": -2,
+    "WCM": -3,
+    "CM": -4,
+    "NM": -5,
+    "WFM": -6,
+    "FM": -7,
+    "WIM": -8,
+    "IM": -9,
+    "WGM": -10,
+    "GM": -11,
+}
+
 
 def find_variant(name: str) -> Variant | None:
     for variant, aliases in ALIASES.items():

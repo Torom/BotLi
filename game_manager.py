@@ -28,7 +28,7 @@ class GameManager:
         self.is_running = True
         self.matchmaking_enabled = False
         self.next_matchmaking: float | None = None
-        self.open_challenges: deque[Challenge] = deque()
+        self.open_challenges: list[Challenge] = []
         self.reserved_game_spots = 0
         self.started_game_events: deque[dict[str, Any]] = deque()
         self.tasks: dict[Task[None], Game] = {}
@@ -252,7 +252,8 @@ class GameManager:
         if self.is_busy:
             return
 
-        return self.open_challenges.popleft()
+        self.open_challenges.sort(key=lambda challenge: challenge.priority)
+        return self.open_challenges.pop(0)
 
     async def _accept_challenge(self, challenge: Challenge) -> None:
         if await self.api.accept_challenge(challenge.challenge_id):
