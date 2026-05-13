@@ -11,6 +11,7 @@ import yaml
 from configs import (
     BooksConfig,
     ChallengeConfig,
+    ChallengeOpponentConfig,
     ChessDBConfig,
     EngineConfig,
     GaviotaConfig,
@@ -446,29 +447,47 @@ class Config:
         challenge_sections: list[tuple[str, type | UnionType, str]] = [
             ("concurrency", int, '"concurrency" must be an integer.'),
             ("max_takebacks", int, '"max_takebacks" must be an integer.'),
-            ("bullet_with_increment_only", bool, '"bullet_with_increment_only" must be a bool.'),
-            ("variants", list, '"variants" must be a list of variants.'),
-            ("bot_time_controls", list | None, '"bot_time_controls" must be a list of speeds or time controls.'),
-            ("human_time_controls", list | None, '"human_time_controls" must be a list of speeds or time controls.'),
-            ("bot_modes", list | None, '"bot_modes" must be a list of game modes.'),
-            ("human_modes", list | None, '"human_modes" must be a list of game modes.'),
+            ("human", dict, '"human" must be a dictionary with indented keys followed by colons.'),
+            ("bot", dict, '"bot" must be a dictionary with indented keys followed by colons.'),
         ]
 
         Config._validate_config_section(challenge_section, "challenge", challenge_sections)
 
+        opponent_sections: list[tuple[str, type | UnionType, str]] = [
+            ("bullet_with_increment_only", bool, '"bullet_with_increment_only" must be a bool.'),
+            ("variants", list | None, '"variants" must be a list of variants.'),
+            ("time_controls", list | None, '"time_controls" must be a list of speeds or time controls.'),
+            ("modes", list | None, '"modes" must be a list of game modes.'),
+        ]
+
+        Config._validate_config_section(challenge_section["human"], "challenge.human", opponent_sections)
+
+        human_config = ChallengeOpponentConfig(
+            challenge_section["human"]["bullet_with_increment_only"],
+            challenge_section["human"].get("min_increment"),
+            challenge_section["human"].get("max_increment"),
+            challenge_section["human"].get("min_initial"),
+            challenge_section["human"].get("max_initial"),
+            challenge_section["human"]["variants"] or [],
+            challenge_section["human"]["time_controls"] or [],
+            challenge_section["human"]["modes"] or [],
+        )
+
+        Config._validate_config_section(challenge_section["bot"], "challenge.bot", opponent_sections)
+
+        bot_config = ChallengeOpponentConfig(
+            challenge_section["bot"]["bullet_with_increment_only"],
+            challenge_section["bot"].get("min_increment"),
+            challenge_section["bot"].get("max_increment"),
+            challenge_section["bot"].get("min_initial"),
+            challenge_section["bot"].get("max_initial"),
+            challenge_section["bot"]["variants"] or [],
+            challenge_section["bot"]["time_controls"] or [],
+            challenge_section["bot"]["modes"] or [],
+        )
+
         return ChallengeConfig(
-            challenge_section["concurrency"],
-            challenge_section["max_takebacks"],
-            challenge_section["bullet_with_increment_only"],
-            challenge_section.get("min_increment"),
-            challenge_section.get("max_increment"),
-            challenge_section.get("min_initial"),
-            challenge_section.get("max_initial"),
-            challenge_section["variants"],
-            challenge_section["bot_time_controls"] or [],
-            challenge_section["human_time_controls"] or [],
-            challenge_section["bot_modes"] or [],
-            challenge_section["human_modes"] or [],
+            challenge_section["concurrency"], challenge_section["max_takebacks"], human_config, bot_config
         )
 
     @staticmethod

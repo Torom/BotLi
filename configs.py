@@ -133,19 +133,23 @@ class ResignConfig:
 
 
 @dataclass
-class ChallengeConfig:
-    concurrency: int
-    max_takebacks: int
+class ChallengeOpponentConfig:
     bullet_with_increment_only: bool
     min_increment: int | None
     max_increment: int | None
     min_initial: int | None
     max_initial: int | None
     variants: list[str]
-    bot_time_controls: list[str]
-    human_time_controls: list[str]
-    bot_modes: list[str]
-    human_modes: list[str]
+    time_controls: list[str]
+    modes: list[str]
+
+
+@dataclass
+class ChallengeConfig:
+    concurrency: int
+    max_takebacks: int
+    human: ChallengeOpponentConfig
+    bot: ChallengeOpponentConfig
 
 
 @dataclass
