@@ -3,7 +3,7 @@ from typing import Any
 from config import Config
 from enums import DeclineReason
 from game_manager import GameManager
-from utils import parse_time_control
+from utils import get_estimated_game_duration, parse_time_control
 
 
 class ChallengeValidator:
@@ -92,6 +92,14 @@ class ChallengeValidator:
 
         if opponent_config.max_initial and initial > opponent_config.max_initial:
             print(f"Initial time {initial} is too long according to config.")
+            return DeclineReason.TOO_SLOW
+
+        if (
+            opponent_config.max_estimated_game_duration
+            and (estimated_game_duration := get_estimated_game_duration(initial, increment))
+            > opponent_config.max_estimated_game_duration
+        ):
+            print(f"Estimated game duration ({estimated_game_duration:.0f} seconds) is too long according to config.")
             return DeclineReason.TOO_SLOW
 
         if speed == "bullet" and increment == 0 and opponent_config.bullet_with_increment_only:

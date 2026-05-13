@@ -139,6 +139,7 @@ class ChallengeOpponentConfig:
     max_increment: int | None
     min_initial: int | None
     max_initial: int | None
+    max_estimated_game_duration: int | None
     variants: list[str]
     time_controls: list[str]
     modes: list[str]

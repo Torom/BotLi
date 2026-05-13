@@ -37,6 +37,10 @@ def find_variant(name: str) -> Variant | None:
             return variant
 
 
+def get_estimated_game_duration(initial: int, increment: int) -> float:
+    return max(initial, 3) * 1.33 + increment * 104.77
+
+
 def get_future_timestamp(seconds: int) -> str:
     return (datetime.now() + timedelta(seconds=seconds)).isoformat(sep=" ", timespec="seconds")
 

@@ -9,7 +9,7 @@ import chess.engine
 from chess.polyglot import MemoryMappedReader
 
 from enums import ChallengeColor, PerfType, Variant
-from utils import PRIORITIES, find_variant, parse_time_control
+from utils import PRIORITIES, find_variant, get_estimated_game_duration, parse_time_control
 
 
 @dataclass(kw_only=True)
@@ -355,7 +355,7 @@ class MatchmakingType:
     max_rating_diff: int | None
 
     def __post_init__(self) -> None:
-        self.estimated_game_duration = timedelta(seconds=max(self.initial_time, 3) * 1.33 + self.increment * 104.29)
+        self.estimated_game_duration = timedelta(seconds=get_estimated_game_duration(self.initial_time, self.increment))
 
     def __str__(self) -> str:
         initial_time_min = self.initial_time / 60
