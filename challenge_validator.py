@@ -96,10 +96,10 @@ class ChallengeValidator:
 
         if (
             opponent_config.max_estimated_game_duration
-            and (estimated_game_duration := get_estimated_game_duration(initial, increment))
+            and (estimated_game_duration := round(get_estimated_game_duration(initial, increment) / 60))
             > opponent_config.max_estimated_game_duration
         ):
-            print(f"Estimated game duration ({estimated_game_duration:.0f} seconds) is too long according to config.")
+            print(f"Estimated game duration ({estimated_game_duration} minutes) is too long according to config.")
             return DeclineReason.TOO_SLOW
 
         if speed == "bullet" and increment == 0 and opponent_config.bullet_with_increment_only:
