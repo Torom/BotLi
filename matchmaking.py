@@ -24,6 +24,7 @@ class Matchmaking:
 
         self.game_start_time: datetime = datetime.now()
         self.online_bots: list[Bot] = []
+        self.ratings: dict[PerfType, int] = {}
         self.current_type: MatchmakingType | None = None
 
     async def create_challenge(self) -> ChallengeResponse | None:
@@ -39,7 +40,7 @@ class Matchmaking:
             print(f"Matchmaking type: {self.current_type}")
 
         try:
-            next_opponent = self.opponents.get_opponent(self.online_bots, self.current_type)
+            next_opponent = self.opponents.get_opponent(self.online_bots, self.current_type, self.ratings)
         except NoOpponentError:
             print(f"Suspending matchmaking type {self.current_type.name} because no suitable opponent is available.")
             self.suspended_types.append(self.current_type)
@@ -63,10 +64,10 @@ class Matchmaking:
             return
 
         opponent, color = next_opponent
+        rating_diff = opponent.ratings[self.current_type.perf_type] - self.ratings[self.current_type.perf_type]
 
         match await self._get_busy_reason(opponent):
             case BusyReason.PLAYING:
-                rating_diff = opponent.rating_diffs[self.current_type.perf_type]
                 print(f"Skipping {opponent.username} ({rating_diff:+}) as {color} ...")
                 self.opponents.busy_bots.append(opponent)
                 return
@@ -76,7 +77,6 @@ class Matchmaking:
                 self.online_bots.remove(opponent)
                 return
 
-        rating_diff = opponent.rating_diffs[self.current_type.perf_type]
         print(f"Challenging {opponent.username} ({rating_diff:+}) as {color} to {self.current_type.name} ...")
         challenge_request = ChallengeRequest(
             opponent.username,
@@ -140,6 +140,7 @@ class Matchmaking:
                     weight,
                     type_config.min_rating_diff,
                     type_config.max_rating_diff,
+                    type_config.target_rating_diff or 0,
                 )
             )
 
@@ -160,13 +161,12 @@ class Matchmaking:
         print("Updating online bots and rankings ...")
         self.types.extend(self.suspended_types)
         self.suspended_types.clear()
+        self.ratings = await self._get_user_ratings()
         self.online_bots = await self._get_online_bots()
         self._set_multiplier()
         return True
 
     async def _get_online_bots(self) -> list[Bot]:
-        user_ratings = await self._get_user_ratings()
-
         online_bots: list[Bot] = []
         blacklisted_bot_count = 0
         for bot in await self.api.get_online_bots():
@@ -177,14 +177,11 @@ class Matchmaking:
                 blacklisted_bot_count += 1
                 continue
 
-            rating_diffs: dict[PerfType, int] = {}
-            for perf_type in PerfType:
-                if perf_type not in bot["perfs"]:
-                    continue
+            ratings = {
+                perf_type: bot["perfs"][perf_type]["rating"] for perf_type in PerfType if perf_type in bot["perfs"]
+            }
 
-                rating_diffs[perf_type] = bot["perfs"][perf_type]["rating"] - user_ratings[perf_type]
-
-            online_bots.append(Bot(bot["username"], rating_diffs))
+            online_bots.append(Bot(bot["username"], ratings))
 
         print(f"{len(online_bots) + blacklisted_bot_count + 1:3} bots online")
         print(f"{blacklisted_bot_count:3} bots blacklisted")
@@ -218,13 +215,14 @@ class Matchmaking:
 
     def _get_bot_count(self, perf_type: PerfType, min_rating_diff: int, max_rating_diff: int) -> int:
         def bot_filter(bot: Bot) -> bool:
-            if perf_type not in bot.rating_diffs:
+            if perf_type not in bot.ratings:
                 return False
 
-            if abs(bot.rating_diffs[perf_type]) > max_rating_diff:
+            rating_diff = abs(bot.ratings[perf_type] - self.ratings[perf_type])
+            if rating_diff > max_rating_diff:
                 return False
 
-            if abs(bot.rating_diffs[perf_type]) < min_rating_diff:
+            if rating_diff < min_rating_diff:
                 return False
 
             if (

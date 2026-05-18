@@ -219,7 +219,8 @@ matchmaking:
 #     weight: 100                         # Weight with which this type is selected. Default: Types are played according to their time control.
 #     multiplier: 15                      # Multiplier for calculating timeouts in matchmaking. Default: smart multiplier calculation.
 #     min_rating_diff: 0                  # Minimum rating distance to opponent. Default: 0
-#     max_rating_diff: 300                # Maximum rating distance to opponent. Default: 10000
+#     max_rating_diff: 300                # Maximum rating distance to opponent.
+#     target_rating_diff: -50             # Rating distance to opponent that is challenged first. Default: 0
 
 messages:
   # Optional substitution keywords (include curly braces):

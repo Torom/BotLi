@@ -18,9 +18,9 @@ class Opponents:
         self.last_opponent: tuple[str, ChallengeColor, MatchmakingType]
 
     def get_opponent(
-        self, online_bots: list[Bot], matchmaking_type: MatchmakingType
+        self, online_bots: list[Bot], matchmaking_type: MatchmakingType, user_ratings: dict[PerfType, int]
     ) -> tuple[Bot, ChallengeColor] | None:
-        for bot in self._filter_bots(online_bots, matchmaking_type):
+        for bot in self._filter_bots(online_bots, matchmaking_type, user_ratings):
             if bot in self.busy_bots:
                 continue
 
@@ -78,26 +78,28 @@ class Opponents:
         self.busy_bots.clear()
 
     @staticmethod
-    def _filter_bots(bots: list[Bot], matchmaking_type: MatchmakingType) -> list[Bot]:
+    def _filter_bots(
+        bots: list[Bot], matchmaking_type: MatchmakingType, user_ratings: dict[PerfType, int]
+    ) -> list[Bot]:
+        perf_type = matchmaking_type.perf_type
+
         def bot_filter(bot: Bot) -> bool:
-            if matchmaking_type.perf_type not in bot.rating_diffs:
+            if perf_type not in bot.ratings:
                 return False
 
-            if (
-                matchmaking_type.max_rating_diff
-                and abs(bot.rating_diffs[matchmaking_type.perf_type]) > matchmaking_type.max_rating_diff
-            ):
+            rating_diff = abs(bot.ratings[perf_type] - user_ratings[perf_type])
+            if matchmaking_type.max_rating_diff and rating_diff > matchmaking_type.max_rating_diff:
                 return False
 
-            if (
-                matchmaking_type.min_rating_diff
-                and abs(bot.rating_diffs[matchmaking_type.perf_type]) < matchmaking_type.min_rating_diff
-            ):
+            if matchmaking_type.min_rating_diff and rating_diff < matchmaking_type.min_rating_diff:
                 return False
 
             return True
 
-        bots = sorted(filter(bot_filter, bots), key=lambda bot: abs(bot.rating_diffs[matchmaking_type.perf_type]))
+        def sort_key(bot: Bot) -> int:
+            return abs(bot.ratings[perf_type] - (user_ratings[perf_type] + matchmaking_type.target_rating_diff))
+
+        bots = sorted(filter(bot_filter, bots), key=sort_key)
         if not bots:
             raise NoOpponentError
 

@@ -528,6 +528,7 @@ class Config:
                 matchmaking_options.get("multiplier"),
                 matchmaking_options.get("min_rating_diff"),
                 matchmaking_options.get("max_rating_diff"),
+                matchmaking_options.get("target_rating_diff"),
             )
 
         return MatchmakingConfig(

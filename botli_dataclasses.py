@@ -37,7 +37,7 @@ class BookSettings:
 @dataclass
 class Bot:
     username: str
-    rating_diffs: dict[PerfType, int]
+    ratings: dict[PerfType, int]
 
     def __eq__(self, value: object) -> bool:
         if isinstance(value, Bot):
@@ -353,6 +353,7 @@ class MatchmakingType:
     weight: float
     min_rating_diff: int | None
     max_rating_diff: int | None
+    target_rating_diff: int
 
     def __post_init__(self) -> None:
         self.estimated_game_duration = timedelta(seconds=get_estimated_game_duration(self.initial_time, self.increment))
