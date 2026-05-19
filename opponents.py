@@ -97,7 +97,7 @@ class Opponents:
             return True
 
         def sort_key(bot: Bot) -> int:
-            return abs(bot.ratings[perf_type] - (user_ratings[perf_type] + matchmaking_type.target_rating_diff))
+            return abs(abs(bot.ratings[perf_type] - user_ratings[perf_type]) - matchmaking_type.target_rating_diff)
 
         bots = sorted(filter(bot_filter, bots), key=sort_key)
         if not bots:
