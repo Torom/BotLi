@@ -1,5 +1,7 @@
 from typing import Any
 
+import chess
+
 from config import Config
 from enums import DeclineReason
 from game_manager import GameManager
@@ -36,6 +38,13 @@ class ChallengeValidator:
 
         if challenge_event["variant"]["key"] not in opponent_config.variants:
             print(f'Variant "{challenge_event["variant"]["key"]}" is not allowed according to config.')
+            return DeclineReason.VARIANT
+
+        if (
+            challenge_event["variant"]["key"] == "fromPosition"
+            and not chess.Board(challenge_event["initialFen"]).is_valid()
+        ):
+            print("Invalid start position.")
             return DeclineReason.VARIANT
 
         if (
