@@ -42,7 +42,7 @@ class ChallengeValidator:
 
         if (
             challenge_event["variant"]["key"] == "fromPosition"
-            and not chess.Board(challenge_event["initialFen"]).is_valid()
+            and not chess.Board(challenge_event["initialFen"], chess960=True).is_valid()
         ):
             print("Invalid start position.")
             return DeclineReason.VARIANT
