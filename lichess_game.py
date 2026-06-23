@@ -275,7 +275,7 @@ class LichessGame:
         ):
             return False
 
-        if not self.increment and self.opponent_time < 10.0:
+        if not self.increment and self.opponent_time < 20.0:
             return False
 
         if is_draw is not None:
@@ -311,7 +311,7 @@ class LichessGame:
         ):
             return False
 
-        if not self.increment and self.opponent_time < 10.0:
+        if not self.increment and self.opponent_time < 20.0:
             return False
 
         if is_lost is not None:
