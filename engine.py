@@ -101,7 +101,7 @@ class Engine:
         result = await self.engine.play(board, limit, info=chess.engine.INFO_ALL, ponder=ponder)
 
         if not result.move:
-            raise RuntimeError("Engine could not make a move!")
+            raise chess.engine.EngineTerminatedError("Engine could not make a move!")
 
         return result.move, result.info
 

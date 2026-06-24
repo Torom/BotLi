@@ -7,6 +7,7 @@ import psutil
 from api import API
 from botli_dataclasses import ChatMessage, GameInformation
 from config import Config
+from enums import Variant
 from lichess_game import LichessGame
 from utils import ml_print
 
@@ -88,10 +89,15 @@ class Chatter:
 
     async def send_abortion_message(self) -> None:
         await self.api.send_chat_message(
-            self.game_info.id_,
-            "player",
-            ("Too bad you weren't there. Feel free to challenge me again, I will accept the challenge if possible."),
+            self.game_info.id_, "player", "Too bad you weren't there. Feel free to challenge me again."
         )
+
+    async def send_crash_message(self) -> None:
+        if self.game_info.variant == Variant.FROM_POSITION:
+            text = "It seems my engine can't play this position, feel free to try another one."
+        else:
+            text = "Oops, looks like my engine crashed. Sorry!"
+        await self.api.send_chat_message(self.game_info.id_, "player", text)
 
     async def _handle_command(self, chat_message: ChatMessage, takeback_count: int, max_takebacks: int) -> None:
         match chat_message.text[1:].lower():
