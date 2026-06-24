@@ -34,12 +34,18 @@ default-groups = []
 [tool.ruff]
 line-length = 120
 
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+
 [tool.ruff.lint]
 select = ["ARG", "ASYNC", "B", "C4", "E", "F", "FIX", "FURB", "I", "N", "PERF", "PIE", "PL", "RET", "RUF", "SIM", "SLF", "UP", "W"]
 ignore = ["ASYNC109", "PLR2004", "RET502", "RET503", "SIM103"]
 
 fixable = ["ALL"]
 unfixable = []
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
 
 [tool.ruff.lint.pylint]
 max-args = 10

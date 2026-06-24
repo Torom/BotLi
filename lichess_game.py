@@ -1006,9 +1006,7 @@ class LichessGame:
                 MoveSource(
                     method=self._make_cloud_move,
                     priority=cloud_config.priority,
-                    conditions=[
-                        self._check_variant_condition(cloud_config.use_for_variants),
-                    ],
+                    conditions=[self._check_variant_condition(cloud_config.use_for_variants)],
                 )
             )
 
@@ -1018,9 +1016,7 @@ class LichessGame:
                 MoveSource(
                     method=self._make_chessdb_move,
                     priority=chessdb_config.priority,
-                    conditions=[
-                        self.board.uci_variant == "chess",
-                    ],
+                    conditions=[self.board.uci_variant == "chess"],
                 )
             )
 
