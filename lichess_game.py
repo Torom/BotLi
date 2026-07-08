@@ -15,19 +15,11 @@ import chess.syzygy
 from chess.variant import find_variant
 
 from api import API
-from botli_dataclasses import (
-    BookSettings,
-    GameInformation,
-    GaviotaResult,
-    LichessMove,
-    MoveResponse,
-    MoveSource,
-    SyzygyResult,
-)
+from botli_dataclasses import BookSettings, GameInformation, LichessMove, MoveResponse, MoveSource, TablebaseResult
 from config import Config
 from configs import EngineConfig, SyzygyConfig
 from engine import Engine
-from enums import Variant
+from enums import TablebaseType, Variant
 
 
 class LichessGame:
@@ -638,38 +630,57 @@ class LichessGame:
         move = self._to_chess960(pv[0]) if self.board.chess960 else pv[0]
         return MoveResponse(move, message, pv=pv, trusted_eval=self.config.online_moves.chessdb.trust_eval)
 
-    def _probe_gaviota(self, moves: Iterable[chess.Move]) -> GaviotaResult:
-        assert self.gaviota_tablebase
-
+    def _probe_tablebase(self, moves: Iterable[chess.Move], tb_type: TablebaseType) -> TablebaseResult:
         best_move = chess.Move.null()
         best_wdl = -2
-        best_dtm = 1_000_000
+        best_metric = 1_000_000
+        best_real_distance = 0
         board_copy = self.board.copy(stack=False)
+
+        if tb_type == TablebaseType.GAVIOTA:
+            assert self.gaviota_tablebase
+            probe_distance = self.gaviota_tablebase.probe_dtm
+        else:
+            assert self.syzygy_tablebase
+            probe_distance = self.syzygy_tablebase.probe_dtz
+
         for move in moves:
             board_copy.push(move)
 
             if board_copy.is_checkmate():
-                return GaviotaResult(move, 2, 0)
+                return TablebaseResult(move, 2, 0)
 
-            dtm = -self.gaviota_tablebase.probe_dtm(board_copy)
-            wdl = self._value_to_wdl(dtm, board_copy.halfmove_clock)
+            distance = -probe_distance(board_copy)
+            wdl = self._value_to_wdl(distance, board_copy.halfmove_clock)
+
+            metric = distance
+            real_distance = distance
+
+            if tb_type == TablebaseType.SYZYGY and board_copy.halfmove_clock == 0:
+                if wdl < 0:
+                    metric += 10_000
+                elif wdl > 0:
+                    metric -= 10_000
 
             if best_move:
                 if wdl > best_wdl:
                     best_move = move
                     best_wdl = wdl
-                    best_dtm = dtm
-                elif wdl == best_wdl and dtm < best_dtm:
+                    best_metric = metric
+                    best_real_distance = real_distance
+                elif wdl == best_wdl and metric < best_metric:
                     best_move = move
-                    best_dtm = dtm
+                    best_metric = metric
+                    best_real_distance = real_distance
             else:
                 best_move = move
                 best_wdl = wdl
-                best_dtm = dtm
+                best_metric = metric
+                best_real_distance = real_distance
 
             board_copy.pop()
 
-        return GaviotaResult(best_move, best_wdl, best_dtm)
+        return TablebaseResult(best_move, best_wdl, best_real_distance)
 
     async def _make_gaviota_move(self) -> MoveResponse | None:
         match chess.popcount(self.board.occupied):
@@ -680,7 +691,7 @@ class LichessGame:
                     return
 
                 try:
-                    result = self._probe_gaviota(self.board.generate_legal_captures())
+                    result = self._probe_tablebase(self.board.generate_legal_captures(), TablebaseType.GAVIOTA)
                 except KeyError:
                     return
 
@@ -688,13 +699,13 @@ class LichessGame:
                     return
             case _:
                 try:
-                    result = self._probe_gaviota(self.board.generate_legal_moves())
+                    result = self._probe_tablebase(self.board.generate_legal_moves(), TablebaseType.GAVIOTA)
                 except KeyError:
                     return
 
         match result.wdl:
             case 2:
-                egtb_info = self._format_egtb_info("win", dtm=result.dtm)
+                egtb_info = self._format_egtb_info("win", dtm=result.distance)
                 offer_draw = False
                 resign = False
             case 0:
@@ -702,7 +713,7 @@ class LichessGame:
                 offer_draw = True
                 resign = False
             case -2:
-                egtb_info = self._format_egtb_info("loss", dtm=result.dtm)
+                egtb_info = self._format_egtb_info("loss", dtm=result.distance)
                 offer_draw = False
                 resign = True
             case _:
@@ -712,54 +723,13 @@ class LichessGame:
         message = f"Gaviota: {self._format_move(result.move):14} {egtb_info}"
         return MoveResponse(result.move, message, is_draw=offer_draw, is_lost=resign)
 
-    def _probe_syzygy(self, moves: Iterable[chess.Move]) -> SyzygyResult:
-        assert self.syzygy_tablebase
-
-        best_move = chess.Move.null()
-        best_wdl = -2
-        best_dtz = 1_000_000
-        best_real_dtz = 0
-        board_copy = self.board.copy(stack=False)
-        for move in moves:
-            board_copy.push(move)
-
-            dtz = -self.syzygy_tablebase.probe_dtz(board_copy)
-            wdl = self._value_to_wdl(dtz, board_copy.halfmove_clock)
-
-            real_dtz = dtz
-            if board_copy.halfmove_clock == 0:
-                if wdl < 0:
-                    dtz += 10_000
-                elif wdl > 0:
-                    dtz -= 10_000
-
-            if best_move:
-                if wdl > best_wdl:
-                    best_move = move
-                    best_wdl = wdl
-                    best_dtz = dtz
-                    best_real_dtz = real_dtz
-                elif wdl == best_wdl and dtz < best_dtz:
-                    best_move = move
-                    best_dtz = dtz
-                    best_real_dtz = real_dtz
-            else:
-                best_move = move
-                best_wdl = wdl
-                best_dtz = dtz
-                best_real_dtz = real_dtz
-
-            board_copy.pop()
-
-        return SyzygyResult(best_move, best_wdl, best_real_dtz)
-
     async def _make_syzygy_move(self) -> MoveResponse | None:
         match chess.popcount(self.board.occupied):
             case pieces if pieces > self.syzygy_config.max_pieces + 1 or self._has_mate_score():
                 return
             case pieces if pieces == self.syzygy_config.max_pieces + 1:
                 try:
-                    result = self._probe_syzygy(self.board.generate_legal_captures())
+                    result = self._probe_tablebase(self.board.generate_legal_captures(), TablebaseType.SYZYGY)
                 except KeyError:
                     return
 
@@ -767,17 +737,17 @@ class LichessGame:
                     return
             case _:
                 try:
-                    result = self._probe_syzygy(self.board.generate_legal_moves())
+                    result = self._probe_tablebase(self.board.generate_legal_moves(), TablebaseType.SYZYGY)
                 except KeyError:
                     return
 
         match result.wdl:
             case 2:
-                egtb_info = self._format_egtb_info("win", dtz=result.dtz)
+                egtb_info = self._format_egtb_info("win", dtz=result.distance)
                 offer_draw = False
                 resign = False
             case 1:
-                egtb_info = self._format_egtb_info("cursed win", dtz=result.dtz)
+                egtb_info = self._format_egtb_info("cursed win", dtz=result.distance)
                 offer_draw = False
                 resign = False
             case 0:
@@ -785,11 +755,11 @@ class LichessGame:
                 offer_draw = True
                 resign = False
             case -1:
-                egtb_info = self._format_egtb_info("blessed loss", dtz=result.dtz)
+                egtb_info = self._format_egtb_info("blessed loss", dtz=result.distance)
                 offer_draw = True
                 resign = False
             case -2:
-                egtb_info = self._format_egtb_info("loss", dtz=result.dtz)
+                egtb_info = self._format_egtb_info("loss", dtz=result.distance)
                 offer_draw = False
                 resign = True
 

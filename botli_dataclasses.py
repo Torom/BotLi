@@ -296,13 +296,6 @@ class GameInformation:
 
 
 @dataclass
-class GaviotaResult:
-    move: chess.Move
-    wdl: Literal[-2, -1, 0, 1, 2]
-    dtm: int
-
-
-@dataclass
 class LichessMove:
     uci_move: str
     offer_draw: bool
@@ -410,10 +403,10 @@ class MoveSource:
 
 
 @dataclass
-class SyzygyResult:
+class TablebaseResult:
     move: chess.Move
     wdl: Literal[-2, -1, 0, 1, 2]
-    dtz: int
+    distance: int
 
 
 @dataclass

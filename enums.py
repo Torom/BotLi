@@ -1,6 +1,11 @@
 from enum import StrEnum
 
 
+class BusyReason(StrEnum):
+    OFFLINE = "offline"
+    PLAYING = "playing"
+
+
 class ChallengeColor(StrEnum):
     WHITE = "white"
     BLACK = "black"
@@ -49,6 +54,6 @@ class PerfType(StrEnum):
     THREE_CHECK = "threeCheck"
 
 
-class BusyReason(StrEnum):
-    OFFLINE = "offline"
-    PLAYING = "playing"
+class TablebaseType(StrEnum):
+    GAVIOTA = "gaviota"
+    SYZYGY = "syzygy"
