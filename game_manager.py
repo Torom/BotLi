@@ -226,6 +226,9 @@ class GameManager:
             del self.tournaments[game.ejected_tournament]
             print(f'Ignoring tournament "{game.ejected_tournament}" after failure to start the game.')
 
+        if game.info.opponent_is_bot:
+            self.is_rate_limited = False
+
         self._set_next_matchmaking(self.config.matchmaking.delay)
         self.changed_event.set()
 
