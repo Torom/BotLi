@@ -11,11 +11,26 @@ from lichess_game import LichessGame
 
 
 class Game:
-    def __init__(self, api: API, config: Config, username: str, game_id: str) -> None:
+    def __init__(
+        self,
+        api: API,
+        config: Config,
+        username: str,
+        game_stream_queue: asyncio.Queue[dict[str, Any]],
+        game_stream_task: asyncio.Task,
+        info: GameInformation,
+        lichess_game: LichessGame,
+        chatter: Chatter,
+    ) -> None:
         self.api = api
         self.config = config
         self.username = username
-        self.game_id = game_id
+
+        self.game_stream_queue = game_stream_queue
+        self.game_stream_task = game_stream_task
+        self.info = info
+        self.lichess_game = lichess_game
+        self.chatter = chatter
 
         self.takeback_count = 0
         self.was_aborted = False
@@ -24,127 +39,132 @@ class Game:
         self.move_task: asyncio.Task[None] | None = None
         self.abortion_task: asyncio.Task[None] | None = None
 
-    async def run(self) -> None:
+    @classmethod
+    async def acreate(cls, api: API, config: Config, username: str, game_id: str) -> "Game":
         game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
-        self._task = asyncio.create_task(self.api.get_game_stream(self.game_id, game_stream_queue))
+        game_stream_task = asyncio.create_task(api.get_game_stream(game_id, game_stream_queue))
         info = GameInformation.from_game_full_event(await game_stream_queue.get())
-        lichess_game = await LichessGame.acreate(self.api, self.config, self.username, info)
-        chatter = Chatter(self.api, self.config, self.username, info, lichess_game)
+        lichess_game = await LichessGame.acreate(api, config, username, info)
+        chatter = Chatter(api, config, username, info, lichess_game)
 
-        self._print_game_information(info)
+        return cls(api, config, username, game_stream_queue, game_stream_task, info, lichess_game, chatter)
 
-        if info.state["status"] != "started":
-            self._print_result_message(info.state, lichess_game, info)
-            await chatter.send_goodbyes()
-            await lichess_game.close()
+    async def run(self) -> None:
+        self._print_game_information()
+
+        if self.info.state["status"] != "started":
+            self._print_result_message(self.info.state)
+            await self.chatter.send_goodbyes()
+            await self.lichess_game.close()
             return
 
-        await chatter.send_greetings()
+        await self.chatter.send_greetings()
 
-        if lichess_game.is_our_turn:
-            await self._make_move(lichess_game, chatter)
+        if self.lichess_game.is_our_turn:
+            await self._make_move()
         else:
-            await lichess_game.start_pondering()
+            await self.lichess_game.start_pondering()
 
-        max_takebacks = 0 if info.opponent_is_bot else self.config.challenge.max_takebacks
-        if info.tournament_id is None:
-            abortion_seconds = 30 if info.opponent_is_bot else 60
-            self.abortion_task = asyncio.create_task(self._abortion_task(lichess_game, chatter, abortion_seconds))
+        max_takebacks = 0 if self.info.opponent_is_bot else self.config.challenge.max_takebacks
+        if self.info.tournament_id is None:
+            abortion_seconds = 30 if self.info.opponent_is_bot else 60
+            self.abortion_task = asyncio.create_task(self._abortion_task(abortion_seconds))
 
-        while event := await game_stream_queue.get():
+        while event := await self.game_stream_queue.get():
             match event["type"]:
                 case "chatLine":
-                    await chatter.handle_chat_message(event, self.takeback_count, max_takebacks)
+                    await self.chatter.handle_chat_message(event, self.takeback_count, max_takebacks)
                     continue
                 case "opponentGone":
                     if not self.move_task and event.get("claimWinInSeconds") == 0:
-                        if lichess_game.has_insufficient_material:
-                            await self.api.claim_draw(self.game_id)
+                        if self.lichess_game.has_insufficient_material:
+                            await self.api.claim_draw(self.info.id_)
                         else:
-                            await self.api.claim_victory(self.game_id)
+                            await self.api.claim_victory(self.info.id_)
                     continue
                 case "gameFull":
                     event = event["state"]
 
             if event.get("wtakeback") or event.get("btakeback"):
                 if self.takeback_count >= max_takebacks:
-                    await self.api.handle_takeback(self.game_id, False)
+                    await self.api.handle_takeback(self.info.id_, False)
                     continue
 
-                if await self.api.handle_takeback(self.game_id, True):
+                if await self.api.handle_takeback(self.info.id_, True):
                     if self.move_task:
                         self.move_task.cancel()
                         self.move_task = None
-                    await lichess_game.takeback()
+                    await self.lichess_game.takeback()
                     self.takeback_count += 1
                 continue
 
-            has_updated = lichess_game.update(event)
+            has_updated = self.lichess_game.update(event)
 
             if event["status"] != "started":
                 if self.move_task:
                     self.move_task.cancel()
 
-                self._print_result_message(event, lichess_game, info)
-                await chatter.send_goodbyes()
+                self._print_result_message(event)
+                await self.chatter.send_goodbyes()
                 break
 
             if has_updated:
-                self.move_task = asyncio.create_task(self._make_move(lichess_game, chatter))
+                self.move_task = asyncio.create_task(self._make_move())
 
         if self.abortion_task:
             self.abortion_task.cancel()
-        await lichess_game.close()
 
-    async def _make_move(self, lichess_game: LichessGame, chatter: Chatter) -> None:
+        self.game_stream_task.cancel()
+        await self.lichess_game.close()
+
+    async def _make_move(self) -> None:
         try:
-            lichess_move = await lichess_game.make_move()
+            lichess_move = await self.lichess_game.make_move()
         except EngineTerminatedError:
-            if not lichess_game.is_abortable:
+            if not self.lichess_game.is_abortable:
                 raise
 
             print("Engine crashed. Aborting game ...")
-            await self.api.abort_game(self.game_id)
-            await chatter.send_crash_message()
+            await self.api.abort_game(self.info.id_)
+            await self.chatter.send_crash_message()
             self.move_task = None
             return
 
         if lichess_move.resign:
-            await self.api.resign_game(self.game_id)
+            await self.api.resign_game(self.info.id_)
         else:
-            await self.api.send_move(self.game_id, lichess_move.uci_move, lichess_move.offer_draw)
-            await chatter.print_eval()
+            await self.api.send_move(self.info.id_, lichess_move.uci_move, lichess_move.offer_draw)
+            await self.chatter.print_eval()
         self.move_task = None
 
-    async def _abortion_task(self, lichess_game: LichessGame, chatter: Chatter, abortion_seconds: int) -> None:
+    async def _abortion_task(self, abortion_seconds: int) -> None:
         await asyncio.sleep(abortion_seconds)
 
-        if not lichess_game.is_our_turn and lichess_game.is_abortable:
+        if not self.lichess_game.is_our_turn and self.lichess_game.is_abortable:
             print("Aborting game ...")
-            await self.api.abort_game(self.game_id)
-            await chatter.send_abortion_message()
+            await self.api.abort_game(self.info.id_)
+            await self.chatter.send_abortion_message()
 
         self.abortion_task = None
 
-    @staticmethod
-    def _print_game_information(info: GameInformation) -> None:
-        opponents_str = f"{info.white_str}   -   {info.black_str}"
-        message = " • ".join([info.id_str, opponents_str, info.tc_format, info.rated_str, info.variant_str])
+    def _print_game_information(self) -> None:
+        opponents_str = f"{self.info.white_str}   -   {self.info.black_str}"
+        message = " • ".join(
+            [self.info.id_str, opponents_str, self.info.tc_format, self.info.rated_str, self.info.variant_str]
+        )
 
         print(f"\n{message}\n{123 * '‾'}")
 
-    def _print_result_message(
-        self, game_state: dict[str, Any], lichess_game: LichessGame, info: GameInformation
-    ) -> None:
+    def _print_result_message(self, game_state: dict[str, Any]) -> None:
         if winner := game_state.get("winner"):
             if winner == "white":
-                message = f"{info.white_name} won"
-                loser = info.black_name
+                message = f"{self.info.white_name} won"
+                loser = self.info.black_name
                 white_result = "1"
                 black_result = "0"
             else:
-                message = f"{info.black_name} won"
-                loser = info.white_name
+                message = f"{self.info.black_name} won"
+                loser = self.info.white_name
                 white_result = "0"
                 black_result = "1"
 
@@ -161,7 +181,7 @@ class Game:
                     message += f"! {loser} timed out."
                 case "noStart":
                     if loser == self.username:
-                        self.ejected_tournament = info.tournament_id
+                        self.ejected_tournament = self.info.tournament_id
                     message += f"! {loser} has not started the game."
         else:
             white_result = "½"
@@ -169,20 +189,20 @@ class Game:
 
             match game_state["status"]:
                 case "draw":
-                    if lichess_game.board.is_fifty_moves():
+                    if self.lichess_game.board.is_fifty_moves():
                         message = "Game drawn by 50-move rule."
-                    elif lichess_game.board.is_repetition():
+                    elif self.lichess_game.board.is_repetition():
                         message = "Game drawn by threefold repetition."
-                    elif lichess_game.board.is_insufficient_material():
+                    elif self.lichess_game.board.is_insufficient_material():
                         message = "Game drawn due to insufficient material."
-                    elif lichess_game.board.is_variant_draw():
+                    elif self.lichess_game.board.is_variant_draw():
                         message = "Game drawn by variant rules."
                     else:
                         message = "Game drawn by agreement."
                 case "stalemate":
                     message = "Game drawn by stalemate."
                 case "outoftime":
-                    out_of_time_player = info.black_name if game_state["wtime"] else info.white_name
+                    out_of_time_player = self.info.black_name if game_state["wtime"] else self.info.white_name
                     message = f"Game drawn. {out_of_time_player} ran out of time."
                 case "insufficientMaterialClaim":
                     message = "Game drawn due to insufficient material claim."
@@ -195,7 +215,7 @@ class Game:
                     white_result = "X"
                     black_result = "X"
 
-        opponents_str = f"{info.white_str} {white_result} - {black_result} {info.black_str}"
-        message = " • ".join([info.id_str, opponents_str, message])
+        opponents_str = f"{self.info.white_str} {white_result} - {black_result} {self.info.black_str}"
+        message = " • ".join([self.info.id_str, opponents_str, message])
 
         print(f"{message}\n{123 * '‾'}")

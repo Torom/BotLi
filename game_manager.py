@@ -103,7 +103,7 @@ class GameManager:
         if game_event["id"] in {started_game_event["id"] for started_game_event in self.started_game_events}:
             return
 
-        if game_event["id"] in {game.game_id for game in self.tasks.values()}:
+        if game_event["id"] in {game.info.id_ for game in self.tasks.values()}:
             return
 
         self.started_game_events.append(game_event)
@@ -217,7 +217,7 @@ class GameManager:
     def _task_callback(self, task: Task[None]) -> None:
         game = self.tasks.pop(task)
 
-        if game.game_id == self.current_matchmaking_game_id:
+        if game.info.id_ == self.current_matchmaking_game_id:
             self.matchmaking.on_game_finished(game.was_aborted)
             self.current_matchmaking_game_id = None
 
@@ -240,7 +240,7 @@ class GameManager:
             self.tournaments[tournament.id_] = tournament
             print(f'External joined tournament "{tournament.name}" detected.')
 
-        game = Game(self.api, self.config, self.username, game_event["id"])
+        game = await Game.acreate(self.api, self.config, self.username, game_event["id"])
         task = asyncio.create_task(game.run())
         task.add_done_callback(self._task_callback)
         self.tasks[task] = game
