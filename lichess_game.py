@@ -635,7 +635,7 @@ class LichessGame:
         best_wdl = -2
         best_metric = 1_000_000
         best_real_distance = 0
-        best_opponent_draw_ratio = 1.0
+        best_opponent_draw_moves = 0
 
         board_copy = self.board.copy(stack=False)
 
@@ -664,23 +664,18 @@ class LichessGame:
                 elif wdl > 0:
                     metric -= 10_000
 
-            opponent_draw_ratio = 1.0
+            opponent_draw_moves = 0
             if best_wdl <= 0 and wdl == 0:
-                opponent_moves = list(board_copy.legal_moves)
-                if len(opponent_moves) > 0:
-                    opponent_draw_moves = 0
-                    for opponent_move in opponent_moves:
-                        board_copy.push(opponent_move)
+                for opponent_move in board_copy.legal_moves:
+                    board_copy.push(opponent_move)
 
-                        opponent_distance = -probe_distance(board_copy)
-                        opponent_wdl = self._value_to_wdl(opponent_distance, board_copy.halfmove_clock)
+                    opponent_distance = -probe_distance(board_copy)
+                    opponent_wdl = self._value_to_wdl(opponent_distance, board_copy.halfmove_clock)
 
-                        if opponent_wdl == 0:
-                            opponent_draw_moves += 1
+                    if opponent_wdl == 0:
+                        opponent_draw_moves += 1
 
-                        board_copy.pop()
-
-                    opponent_draw_ratio = opponent_draw_moves / len(opponent_moves)
+                    board_copy.pop()
 
             if best_move:
                 if wdl > best_wdl:
@@ -688,12 +683,12 @@ class LichessGame:
                     best_wdl = wdl
                     best_metric = metric
                     best_real_distance = real_distance
-                    best_opponent_draw_ratio = opponent_draw_ratio
+                    best_opponent_draw_moves = opponent_draw_moves
                 elif wdl == best_wdl:
                     if wdl == 0:
-                        if opponent_draw_ratio < best_opponent_draw_ratio:
+                        if opponent_draw_moves < best_opponent_draw_moves:
                             best_move = move
-                            best_opponent_draw_ratio = opponent_draw_ratio
+                            best_opponent_draw_moves = opponent_draw_moves
                     elif metric < best_metric:
                         best_move = move
                         best_metric = metric
@@ -703,7 +698,7 @@ class LichessGame:
                 best_wdl = wdl
                 best_metric = metric
                 best_real_distance = real_distance
-                best_opponent_draw_ratio = opponent_draw_ratio
+                best_opponent_draw_moves = opponent_draw_moves
 
             board_copy.pop()
 
