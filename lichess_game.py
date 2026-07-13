@@ -150,7 +150,6 @@ class LichessGame:
         for move_source in self.move_sources:
             if move_response := await move_source():
                 self.board.push(move_response.move)
-                await self.engine.start_pondering(self.board)
 
                 print(f"{move_response.public_message} {move_response.private_message}".strip())
                 self.last_message = move_response.public_message
@@ -172,8 +171,6 @@ class LichessGame:
         self.last_pv = info.get("pv", [])
 
         self.board.push(move)
-        if len(self.board.move_stack) <= 2:
-            await self.engine.start_pondering(self.board)
 
         return LichessMove(move.uci(), self._offer_draw(), self._resign())
 
@@ -195,7 +192,6 @@ class LichessGame:
         if self.is_our_turn:
             self.board.pop()
         self.last_pv.clear()
-        await self.start_pondering()
 
     @property
     def is_our_turn(self) -> bool:
@@ -237,9 +233,6 @@ class LichessGame:
             black_time = self.black_time / 2.0
 
         return self.white_time, black_time, self.increment
-
-    async def start_pondering(self) -> None:
-        await self.engine.start_pondering(self.board)
 
     async def close(self) -> None:
         await self.engine.close()

@@ -105,14 +105,10 @@ class Engine:
 
         return result.move, result.info
 
-    async def start_pondering(self, board: chess.Board) -> None:
-        if self.ponder:
-            await self.engine.analysis(board)
-
     async def stop_pondering(self, board: chess.Board) -> None:
         if self.ponder:
             self.ponder = False
-            await self.engine.analysis(board, chess.engine.Limit(time=0.001))
+            await self.engine.play(board, chess.engine.Limit(depth=1), ponder=False)
 
     async def close(self) -> None:
         try:

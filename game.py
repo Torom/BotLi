@@ -62,8 +62,6 @@ class Game:
 
         if self.lichess_game.is_our_turn:
             await self._make_move()
-        else:
-            await self.lichess_game.start_pondering()
 
         max_takebacks = 0 if self.info.opponent_is_bot else self.config.challenge.max_takebacks
         if self.info.tournament_id is None:
