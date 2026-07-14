@@ -3,7 +3,6 @@ import random
 import struct
 import time
 from collections.abc import Awaitable, Callable, Iterable
-from itertools import islice
 from operator import itemgetter
 from typing import Any, Literal
 
@@ -273,10 +272,11 @@ class LichessGame:
         if self.board.fullmove_number - subtrahend <= self.config.offer_draw.min_game_length:
             return False
 
-        if len(self.scores) < self.config.offer_draw.consecutive_moves:
+        consecutive_moves = self.config.offer_draw.consecutive_moves
+        if len(self.scores) < consecutive_moves or consecutive_moves <= 0:
             return False
 
-        for score in islice(self.scores, len(self.scores) - self.config.offer_draw.consecutive_moves, None):
+        for score in self.scores[-consecutive_moves:]:
             if abs(score.relative.score(mate_score=40_000)) > self.config.offer_draw.score:
                 return False
 
@@ -305,10 +305,11 @@ class LichessGame:
         if not is_trusted:
             return False
 
-        if len(self.scores) < self.config.resign.consecutive_moves:
+        consecutive_moves = self.config.resign.consecutive_moves
+        if len(self.scores) < consecutive_moves or consecutive_moves <= 0:
             return False
 
-        for score in islice(self.scores, len(self.scores) - self.config.resign.consecutive_moves, None):
+        for score in self.scores[-consecutive_moves:]:
             if score.relative.score(mate_score=40_000) > self.config.resign.score:
                 return False
 
