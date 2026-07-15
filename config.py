@@ -520,7 +520,7 @@ class Config:
                     "initial_minutes+increment_seconds format."
                 )
 
-            types[matchmaking_type] = MatchmakingTypeConfig(
+            types[str(matchmaking_type)] = MatchmakingTypeConfig(
                 matchmaking_options["tc"],
                 matchmaking_options.get("rated"),
                 matchmaking_options.get("variant"),
