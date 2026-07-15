@@ -365,10 +365,11 @@ if __name__ == "__main__":
     parser.add_argument("commands", nargs="*", help="Commands that BotLi executes.")
     parser.add_argument("--config", "-c", default="config.yml", help="Path to config.yml.")
     parser.add_argument("--upgrade", "-u", action="store_true", help="Upgrade account to BOT account.")
-    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug logging.")
+    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug logging (excluding engine).")
+    parser.add_argument("--debug-engine", action="store_true", help="Enable engine debug logging.")
     args = parser.parse_args()
 
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.WARNING)
+    logging.getLogger("chess.engine").setLevel(logging.DEBUG if args.debug_engine else logging.WARNING)
 
     asyncio.run(UserInterface().main(args.commands, args.config, args.upgrade), debug=args.debug)
