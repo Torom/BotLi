@@ -11,9 +11,11 @@ class LimitConfig:
 
 @dataclass
 class EngineConfig:
+    key: str
     path: str
     ponder: bool
     silence_stderr: bool
+    skip_test: bool
     move_overhead_multiplier: float
     uci_options: dict[str, Any]
     limits: LimitConfig

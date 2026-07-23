@@ -128,10 +128,8 @@ class UserInterface:
             sys.exit(1)
 
     async def _test_engines(self) -> None:
-        for engine_name, engine_config in self.config.engines.items():
-            print(f'Testing engine "{engine_name}" ... ', end="", flush=True)
+        for engine_config in self.config.engines.values():
             await Engine.test(engine_config)
-            print("OK")
 
     async def _download_online_blacklists(self) -> None:
         for url in self.config.online_blacklists:
