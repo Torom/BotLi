@@ -5,6 +5,7 @@ import time
 from typing import Any
 
 import aiohttp
+from multidict import MultiDict
 from tenacity import before_sleep_log, retry, retry_if_exception_type, wait_fixed
 
 from botli_dataclasses import ApiChallengeResponse, ChallengeRequest
@@ -243,6 +244,29 @@ class API:
     @retry(**JSON_RETRY_CONDITIONS)
     async def get_online_bots(self) -> list[dict[str, Any]]:
         async with self.lichess_session.get("/api/bot/online", params={"nb": 512}, timeout=STREAM_TIMEOUT) as response:
+            return [json.loads(line) async for line in response.content if line.strip()]
+
+    @retry(**JSON_RETRY_CONDITIONS)
+    async def get_team_tournaments_created(self, team_id: str) -> list[dict[str, Any]]:
+        async with self.lichess_session.get(
+            f"/api/team/{team_id}/arena", params={"status": "created"}, timeout=STREAM_TIMEOUT
+        ) as response:
+            return [json.loads(line) async for line in response.content if line.strip()]
+
+    @retry(**JSON_RETRY_CONDITIONS)
+    async def get_team_tournaments_started(self, team_id: str) -> list[dict[str, Any]]:
+        async with self.lichess_session.get(
+            f"/api/team/{team_id}/arena", params={"status": "started"}, timeout=STREAM_TIMEOUT
+        ) as response:
+            return [json.loads(line) async for line in response.content if line.strip()]
+
+    @retry(**JSON_RETRY_CONDITIONS)
+    async def get_user_tournaments(self, username: str) -> list[dict[str, Any]]:
+        async with self.lichess_session.get(
+            f"/api/user/{username}/tournament/created",
+            params=MultiDict([("status", "10"), ("status", "20")]),
+            timeout=STREAM_TIMEOUT,
+        ) as response:
             return [json.loads(line) async for line in response.content if line.strip()]
 
     async def get_opening_explorer(

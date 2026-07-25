@@ -189,6 +189,15 @@ class MatchmakingConfig:
 
 
 @dataclass
+class TournamentConfig:
+    waiting_period: int
+    tracked_users: list[str]
+    tracked_teams: list[str]
+    own_team: str | None
+    variants: list[str]
+
+
+@dataclass
 class MessagesConfig:
     greeting: str | None
     goodbye: str | None

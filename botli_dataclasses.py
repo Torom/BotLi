@@ -422,25 +422,31 @@ class Tournament:
     start_time: datetime
     end_time: datetime
     name: str
-    bots_allowed: bool
+    allowed_to_play: bool
+    is_team_battle: bool
+    player_count: int
+    waiting_period: int
     team: str | None = None
     password: str | None = None
     start_task: Task[None] | None = None
     end_task: Task[None] | None = None
 
     @classmethod
-    def from_tournament_info(cls, tournament_info: dict[str, Any]) -> "Tournament":
+    def from_tournament_info(cls, tournament_info: dict[str, Any], waiting_period: int) -> "Tournament":
         return cls(
             tournament_info["id"],
             start_time := datetime.fromisoformat(tournament_info["startsAt"]),
             start_time + timedelta(minutes=tournament_info["minutes"]),
             tournament_info.get("fullName", ""),
-            tournament_info.get("botsAllowed", False),
+            tournament_info["verdicts"]["accepted"],
+            "teamBattle" in tournament_info,
+            tournament_info["nbPlayers"],
+            waiting_period,
         )
 
     @property
     def seconds_to_start(self) -> float:
-        return (self.start_time - datetime.now(UTC)).total_seconds() - 60.0
+        return (self.start_time - datetime.now(UTC)).total_seconds() - self.waiting_period * 60
 
     @property
     def seconds_to_finish(self) -> float:

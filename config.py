@@ -27,6 +27,7 @@ from configs import (
     OpeningExplorerConfig,
     ResignConfig,
     SyzygyConfig,
+    TournamentConfig,
 )
 
 
@@ -43,6 +44,7 @@ class Config:
     resign: ResignConfig
     challenge: ChallengeConfig
     matchmaking: MatchmakingConfig
+    tournament: TournamentConfig
     messages: MessagesConfig
     whitelist: list[str]
     blacklist: list[str]
@@ -72,6 +74,7 @@ class Config:
         resign_config = cls._get_resign_config(yaml_config["resign"])
         challenge_config = cls._get_challenge_config(yaml_config["challenge"])
         matchmaking_config = cls._get_matchmaking_config(yaml_config["matchmaking"])
+        tournament_config = cls._get_tournament_config(yaml_config["tournament"])
         messages_config = cls._get_messages_config(yaml_config["messages"] or {})
         whitelist = [username.lower() for username in yaml_config.get("whitelist") or []]
         blacklist = [username.lower() for username in yaml_config.get("blacklist") or []]
@@ -89,6 +92,7 @@ class Config:
             resign_config,
             challenge_config,
             matchmaking_config,
+            tournament_config,
             messages_config,
             whitelist,
             blacklist,
@@ -128,6 +132,7 @@ class Config:
             ("resign", dict, "Section `resign` must be a dictionary with indented keys followed by colons."),
             ("challenge", dict, "Section `challenge` must be a dictionary with indented keys followed by colons."),
             ("matchmaking", dict, "Section `matchmaking` must be a dictionary with indented keys followed by colons."),
+            ("tournament", dict, "Section `tournament` must be a dictionary with indented keys followed by colons."),
             ("messages", dict | None, "Section `messages` must be a dictionary with indented keys followed by colons."),
             ("whitelist", list | None, "Section `whitelist` must be a list."),
             ("blacklist", list | None, "Section `blacklist` must be a list."),
@@ -535,6 +540,25 @@ class Config:
 
         return MatchmakingConfig(
             matchmaking_section["delay"], matchmaking_section["timeout"], matchmaking_section["selection"], types
+        )
+
+    @staticmethod
+    def _get_tournament_config(tournament_section: dict[str, Any]) -> TournamentConfig:
+        tournament_sections: list[tuple[str, type | UnionType, str]] = [
+            ("waiting_period", int, '"waiting_period" must be an integer.'),
+            ("tracked_users", list | None, '"tracked_users" must be a list of game modes.'),
+            ("tracked_teams", list | None, '"tracked_teams" must be a list of game modes.'),
+            ("variants", list | None, '"modes" must be a list of game modes.'),
+        ]
+
+        Config._validate_config_section(tournament_section, "tournament", tournament_sections)
+
+        return TournamentConfig(
+            tournament_section["waiting_period"],
+            tournament_section["tracked_users"] or [],
+            tournament_section["tracked_teams"] or [],
+            tournament_section.get("own_team"),
+            tournament_section["variants"] or [],
         )
 
     @staticmethod

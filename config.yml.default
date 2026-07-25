@@ -222,6 +222,27 @@ matchmaking:
 #     max_rating_diff: 300                # Maximum rating distance to opponent.
 #     target_rating_diff: 50              # Rating distance to opponent that is challenged first. Default: 0
 
+tournament:
+  waiting_period: 1                       # Time in minutes the bot doesn't start any other game before a tournament begins.
+  tracked_users:                          # Users whose tournaments are automatically joined.
+#   - Username1
+#   - Username2
+  tracked_teams:                          # Team IDs whose tournaments are automatically joined. (The ID can be found in the URL of a team page.)
+#   - TeamID1
+#   - TeamID2
+# own_team: TeamID                        # Own team that is used to join team battles.
+  variants:                               # Chess variants to join automatically (https://lichess.org/variant).
+    - standard
+    - chess960
+    - fromPosition
+#   - antichess
+#   - atomic
+#   - crazyhouse
+#   - horde
+#   - kingOfTheHill
+#   - racingKings
+#   - threeCheck
+
 messages:
   # Optional substitution keywords (include curly braces):
   #   {opponent} to insert the opponent's name

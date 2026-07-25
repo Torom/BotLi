@@ -37,12 +37,16 @@ class GameManager:
         self.unstarted_tournaments: dict[str, Tournament] = {}
         self.tournaments_to_join: deque[Tournament] = deque()
         self.tournaments: dict[str, Tournament] = {}
+        self.track_tournaments_task: Task[None] | None = None
 
     def stop(self):
         self.is_running = False
         self.changed_event.set()
 
     async def run(self) -> None:
+        if self.config.tournament.tracked_users or self.config.tournament.tracked_teams:
+            self.track_tournaments_task = asyncio.create_task(self._track_tournaments())
+
         while self.is_running:
             try:
                 async with asyncio.timeout_at(self.next_matchmaking):
@@ -70,6 +74,9 @@ class GameManager:
 
             while challenge_request := self._get_next_challenge_request():
                 await self._create_challenge(challenge_request)
+
+        if self.track_tournaments_task:
+            self.track_tournaments_task.cancel()
 
         for tournament in self.unstarted_tournaments.values():
             tournament.cancel()
@@ -131,6 +138,62 @@ class GameManager:
         self.tournament_ids_to_leave.append(tournament_id)
         self.changed_event.set()
 
+    async def _track_tournaments(self) -> None:
+        while self.is_running:
+            tournament_infos: list[dict[str, Any]] = []
+            for user in self.config.tournament.tracked_users:
+                tournament_infos.extend(info for info in await self.api.get_user_tournaments(user))
+
+            for team_id in self.config.tournament.tracked_teams:
+                tournament_infos.extend(info for info in await self.api.get_team_tournaments_created(team_id))
+                tournament_infos.extend(info for info in await self.api.get_team_tournaments_started(team_id))
+
+            tournaments: list[Tournament] = []
+            for tournament_info in tournament_infos:
+                if tournament_info["id"] in self.unstarted_tournaments:
+                    continue
+
+                if tournament_info["id"] in self.tournaments:
+                    continue
+
+                if tournament_info["id"] in {tournament.id_ for tournament in self.tournaments_to_join}:
+                    continue
+
+                if tournament_info["variant"]["key"] not in self.config.tournament.variants:
+                    continue
+
+                if "teamBattle" in tournament_info and (
+                    self.config.tournament.own_team is None
+                    or self.config.tournament.own_team not in tournament_info["teamBattle"]["teams"]
+                ):
+                    continue
+
+                tournaments.append(
+                    Tournament.from_tournament_info(
+                        await self.api.get_tournament_info(tournament_info["id"]), self.config.tournament.waiting_period
+                    )
+                )
+
+            tournaments.sort(key=lambda tournament: tournament.seconds_to_finish, reverse=True)
+            tournaments.sort(key=lambda tournament: tournament.player_count, reverse=True)
+
+            for tournament in tournaments:
+                if not tournament.allowed_to_play:
+                    continue
+
+                if tournament.is_team_battle:
+                    tournament.team = self.config.tournament.own_team
+
+                if tournament.seconds_to_start <= 0.0:
+                    self.tournaments_to_join.append(tournament)
+                    continue
+
+                tournament.start_task = asyncio.create_task(self._tournament_start_task(tournament))
+                self.unstarted_tournaments[tournament.id_] = tournament
+                print(f'Added tournament "{tournament.name}". Waiting for its start time to join.')
+
+            await asyncio.sleep(900)
+
     async def _process_tournament_request(self, tournament_request: TournamentRequest) -> None:
         if tournament_request.id_ in self.unstarted_tournaments:
             return
@@ -146,12 +209,12 @@ class GameManager:
             print(f'Tournament "{tournament_request.id_}" not found.')
             return
 
-        tournament = Tournament.from_tournament_info(tournament_info)
+        tournament = Tournament.from_tournament_info(tournament_info, self.config.tournament.waiting_period)
         tournament.team = tournament_request.team
         tournament.password = tournament_request.password
 
-        if not tournament.bots_allowed:
-            print(f'BOTs are not allowed in tournament "{tournament.name}".')
+        if not tournament.allowed_to_play:
+            print(f'We don\'t fulfill the requirements for "{tournament.name}".')
             return
 
         if tournament.seconds_to_start <= 0.0:
@@ -226,7 +289,7 @@ class GameManager:
             del self.tournaments[game.ejected_tournament]
             print(f'Ignoring tournament "{game.ejected_tournament}" after failure to start the game.')
 
-        if game.info.opponent_is_bot:
+        if game.info.opponent_is_bot and not game.info.tournament_id:
             self.is_rate_limited = False
 
         self._set_next_matchmaking(self.config.matchmaking.delay)
@@ -238,7 +301,7 @@ class GameManager:
 
         if "tournamentId" in game_event and game_event["tournamentId"] not in self.tournaments:
             tournament_info = await self.api.get_tournament_info(game_event["tournamentId"])
-            tournament = Tournament.from_tournament_info(tournament_info)
+            tournament = Tournament.from_tournament_info(tournament_info, self.config.tournament.waiting_period)
             tournament.end_task = asyncio.create_task(self._tournament_end_task(tournament))
             self.tournaments[tournament.id_] = tournament
             print(f'External joined tournament "{tournament.name}" detected.')
