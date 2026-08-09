@@ -177,7 +177,6 @@ class MatchmakingTypeConfig:
     multiplier: int | None
     min_rating_diff: int | None
     max_rating_diff: int | None
-    target_rating_diff: int | None
 
 
 @dataclass

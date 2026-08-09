@@ -96,8 +96,9 @@ class Opponents:
 
             return True
 
-        def sort_key(bot: Bot) -> int:
-            return abs(abs(bot.ratings[perf_type] - user_ratings[perf_type]) - matchmaking_type.target_rating_diff)
+        def sort_key(bot: Bot) -> float:
+            expected_score = 1 / (1 + 10 ** ((bot.ratings[perf_type] - user_ratings[perf_type]) / 400))
+            return abs(abs(expected_score - 0.5) - 0.25)
 
         bots = sorted(filter(bot_filter, bots), key=sort_key)
         if not bots:

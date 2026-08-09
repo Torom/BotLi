@@ -140,7 +140,6 @@ class Matchmaking:
                     weight,
                     type_config.min_rating_diff,
                     type_config.max_rating_diff,
-                    type_config.target_rating_diff or 0,
                 )
             )
 
