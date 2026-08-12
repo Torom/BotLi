@@ -7,6 +7,7 @@ import chess.engine
 import chess.variant
 
 from configs import EngineConfig, LimitConfig, SyzygyConfig
+from utils import UCI_VARIANTS
 
 
 class Engine:
@@ -48,13 +49,25 @@ class Engine:
         transport, engine = await chess.engine.popen_uci(engine_config.path, stderr=stderr)
         await cls._configure_engine(engine, engine_config, SyzygyConfig(False, [], 0, False))
 
-        if "UCI_Variant" in engine.options and engine.options["UCI_Variant"].var:
-            for uci_variant in engine.options["UCI_Variant"].var:
-                try:
-                    variant = chess.variant.find_variant(uci_variant)
-                except ValueError:
-                    continue
+        variants: list[type[chess.Board]] = []
 
+        for key_part in engine_config.key.split("_"):
+            if key_part in {"standard", "variants"}:
+                break
+            try:
+                variants = [chess.variant.find_variant(key_part)]
+                break
+            except ValueError:
+                pass
+
+        if not variants:
+            if "UCI_Variant" in engine.options and engine.options["UCI_Variant"].var:
+                variants = [v for u in engine.options["UCI_Variant"].var if (v := UCI_VARIANTS.get(u))]
+            else:
+                variants = [chess.Board]
+
+        try:
+            for variant in variants:
                 print(f'Testing engine "{engine_config.key}" in {variant.aliases[0]} ... ', end="", flush=True)
                 result = await engine.play(variant(), chess.engine.Limit(depth=1), info=chess.engine.INFO_ALL)
 
@@ -62,17 +75,9 @@ class Engine:
                     raise RuntimeError("Engine could not make a move!")
 
                 print("OK")
-        else:
-            print(f'Testing engine "{engine_config.key}" in Standard ... ', end="", flush=True)
-            result = await engine.play(chess.Board(), chess.engine.Limit(depth=1), info=chess.engine.INFO_ALL)
-
-            if not result.move:
-                raise RuntimeError("Engine could not make a move!")
-
-            print("OK")
-
-        await engine.quit()
-        transport.close()
+        finally:
+            await engine.quit()
+            transport.close()
 
     @staticmethod
     async def _configure_engine(

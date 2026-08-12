@@ -1,6 +1,9 @@
 import textwrap
 from datetime import datetime, timedelta
 
+import chess
+import chess.variant
+
 from enums import Variant
 
 ALIASES = {
@@ -28,6 +31,17 @@ PRIORITIES = {
     "IM": -9,
     "WGM": -10,
     "GM": -11,
+}
+
+UCI_VARIANTS: dict[str, type[chess.Board]] = {
+    "chess": chess.Board,
+    "antichess": chess.variant.AntichessBoard,
+    "atomic": chess.variant.AtomicBoard,
+    "crazyhouse": chess.variant.CrazyhouseBoard,
+    "horde": chess.variant.HordeBoard,
+    "kingofthehill": chess.variant.KingOfTheHillBoard,
+    "racingkings": chess.variant.RacingKingsBoard,
+    "3check": chess.variant.ThreeCheckBoard,
 }
 
 
