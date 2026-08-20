@@ -205,8 +205,8 @@ class Matchmaking:
             if matchmaking_type.config_multiplier:
                 matchmaking_type.multiplier = matchmaking_type.config_multiplier
             else:
-                min_rating_diff = matchmaking_type.min_rating_diff or 0
-                max_rating_diff = matchmaking_type.max_rating_diff or 600
+                min_rating_diff = matchmaking_type.min_rating_diff or 21
+                max_rating_diff = matchmaking_type.max_rating_diff or 603
 
                 bot_count = self._get_bot_count(matchmaking_type.perf_type, min_rating_diff, max_rating_diff)
                 perf_type_count = len({matchmaking_type.perf_type for matchmaking_type in self.types})
@@ -217,11 +217,7 @@ class Matchmaking:
             if perf_type not in bot.ratings:
                 return False
 
-            rating_diff = abs(bot.ratings[perf_type] - self.ratings[perf_type])
-            if rating_diff > max_rating_diff:
-                return False
-
-            if rating_diff < min_rating_diff:
+            if not (min_rating_diff <= abs(bot.ratings[perf_type] - self.ratings[perf_type]) <= max_rating_diff):
                 return False
 
             if (
