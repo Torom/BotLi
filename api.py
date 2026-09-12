@@ -185,6 +185,23 @@ class API:
                 raise RuntimeError(f"Account error: {json_response['error']}")
             return json_response
 
+    @retry(**JSON_RETRY_CONDITIONS)
+    async def get_atomicdb_eval(self, fen: str, timeout: int) -> dict[str, Any] | None:
+        try:
+            async with self.external_session.get(
+                "https://belzedar.duckdns.org/atomicdb/api/query",
+                params={"fen": fen},
+                timeout=aiohttp.ClientTimeout(total=timeout),
+            ) as response:
+                if response.status == 404:
+                    return
+                response.raise_for_status()
+                return await response.json()
+        except (aiohttp.ClientError, json.JSONDecodeError) as e:
+            print(f"AtomicD: {e}")
+        except TimeoutError:
+            print(f"AtomicD: Timed out after {timeout} second(s).")
+
     async def get_chessdb_eval(self, fen: str, best_move: bool, timeout: int) -> dict[str, Any] | None:
         try:
             async with self.external_session.get(

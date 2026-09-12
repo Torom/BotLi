@@ -124,6 +124,16 @@ online_moves:
     best_move: false                      # Whether only the single best move should be played.
 #   max_depth: 16                         # Half move max depth. (Comment this line for max depth)
 #   max_moves: 1                          # Max number of moves played from chessdb. (Comment this line for max moves)
+  atomicdb:
+    enabled: false                        # Activate online moves from https://belzedar.duckdns.org/atomicdb/
+    priority: 100                         # Priority with which this move source is used. Higher priority is used first.
+    only_without_book: false              # Whether the atomicdb should only be used if there was no move from a book.
+    allow_repetitions: false              # Whether the atomicdb can create repetitions on the board. Can lead to unintentional draws.
+    trust_eval: false                     # Whether the atomicdb eval should be trusted for draw offers and resignations.
+    min_time: 10                          # Time the bot must have at least to use the online move. +10 seconds in games without increment.
+    timeout: 5                            # Time the server has to respond.
+#   max_depth: 16                         # Half move max depth. (Comment this line for max depth)
+#   max_moves: 1                          # Max number of moves played from Lichess cloud eval. (Comment this line for max moves)
   online_egtb:
     enabled: false                        # Activate online endgame tablebases from Lichess.
     min_time: 5                           # Time the bot must have at least to use the online move. +10 seconds in games without increment.

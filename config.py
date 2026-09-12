@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from configs import (
+    AtomicDBConfig,
     BooksConfig,
     ChallengeConfig,
     ChallengeOpponentConfig,
@@ -374,6 +375,32 @@ class Config:
         )
 
     @staticmethod
+    def _get_atomicdb_config(atomicdb_section: dict[str, Any]) -> AtomicDBConfig:
+        atomicdb_sections: list[tuple[str, type | UnionType, str]] = [
+            ("enabled", bool, '"enabled" must be a bool.'),
+            ("priority", int, '"priority" must be an integer.'),
+            ("only_without_book", bool, '"only_without_book" must be a bool.'),
+            ("allow_repetitions", bool, '"allow_repetitions" must be a bool.'),
+            ("trust_eval", bool, '"trust_eval" must be a bool.'),
+            ("min_time", int, '"min_time" must be an integer.'),
+            ("timeout", int, '"timeout" must be an integer.'),
+        ]
+
+        Config._validate_config_section(atomicdb_section, "online_moves.chessdb", atomicdb_sections)
+
+        return AtomicDBConfig(
+            atomicdb_section["enabled"],
+            atomicdb_section["priority"],
+            atomicdb_section["only_without_book"],
+            atomicdb_section["allow_repetitions"],
+            atomicdb_section["trust_eval"],
+            atomicdb_section["min_time"],
+            atomicdb_section["timeout"],
+            atomicdb_section.get("max_depth"),
+            atomicdb_section.get("max_moves"),
+        )
+
+    @staticmethod
     def _get_online_egtb_config(online_egtb_section: dict[str, Any]) -> OnlineEGTBConfig:
         online_egtb_sections: list[tuple[str, type | UnionType, str]] = [
             ("enabled", bool, '"enabled" must be a bool.'),
@@ -396,6 +423,7 @@ class Config:
                 ('"opening_explorer" must be a dictionary with indented keys followed by colons.'),
             ),
             ("chessdb", dict, '"chessdb" must be a dictionary with indented keys followed by colons.'),
+            ("atomicdb", dict, '"atomicdb" must be a dictionary with indented keys followed by colons.'),
             ("lichess_cloud", dict, '"lichess_cloud" must be a dictionary with indented keys followed by colons.'),
             ("online_egtb", dict, '"online_egtb" must be a dictionary with indented keys followed by colons.'),
         ]
@@ -406,6 +434,7 @@ class Config:
             Config._get_opening_explorer_config(online_moves_section["opening_explorer"]),
             Config._get_lichess_cloud_config(online_moves_section["lichess_cloud"]),
             Config._get_chessdb_config(online_moves_section["chessdb"]),
+            Config._get_atomicdb_config(online_moves_section["atomicdb"]),
             Config._get_online_egtb_config(online_moves_section["online_egtb"]),
         )
 

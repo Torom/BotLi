@@ -56,6 +56,8 @@ class LichessGame:
         self.out_of_cloud_counter = 0
         self.chessdb_counter = 0
         self.out_of_chessdb_counter = 0
+        self.atomicdb_counter = 0
+        self.out_of_atomicdb_counter = 0
         self.move_overhead = self._get_move_overhead(config.engines[engine_key])
         self.engine = engine
         self.scores: list[chess.engine.PovScore] = []
@@ -624,6 +626,58 @@ class LichessGame:
         move = self._to_chess960(pv[0]) if self.board.chess960 else pv[0]
         return MoveResponse(move, message, pv=pv, trusted_eval=self.config.online_moves.chessdb.trust_eval)
 
+    async def _make_atomicdb_move(self) -> MoveResponse | None:
+        if self.out_of_atomicdb_counter >= 5:
+            return
+
+        if self.config.online_moves.atomicdb.only_without_book and self.opening_book_counter > 0:
+            return
+
+        if (
+            self.config.online_moves.atomicdb.max_moves is not None
+            and self.atomicdb_counter >= self.config.online_moves.atomicdb.max_moves
+        ):
+            return
+
+        if (
+            self.config.online_moves.atomicdb.max_depth is not None
+            and self.board.ply() >= self.config.online_moves.atomicdb.max_depth
+        ):
+            return
+
+        if not self._has_time(self.config.online_moves.atomicdb.min_time):
+            return
+
+        start_time = time.perf_counter()
+        response = await self.api.get_atomicdb_eval(self.board.fen(), self.config.online_moves.atomicdb.timeout)
+        if response is None:
+            self.out_of_atomicdb_counter += 1
+            self._reduce_own_time(time.perf_counter() - start_time)
+            return
+
+        if response["best_move"] is None:
+            self.out_of_atomicdb_counter += 1
+            return
+
+        self.out_of_atomicdb_counter = 0
+        move = chess.Move.from_uci(response["best_move"])
+        if not self.config.online_moves.atomicdb.allow_repetitions and self._is_repetition(move):
+            return
+
+        self.atomicdb_counter += 1
+        if mate := response["moves"][0].get("mate", None):
+            score = chess.engine.PovScore(chess.engine.Mate(mate), self.board.turn)
+        else:
+            score = chess.engine.PovScore(chess.engine.Cp(response["score"]), self.board.turn)
+
+        if self.config.online_moves.atomicdb.trust_eval:
+            self.scores.append(score)
+
+        message = (
+            f"AtomicD: {self._format_move(move):14} {self._format_score(score)}    Depth: {response['backed_plies']}"
+        )
+        return MoveResponse(move, message, trusted_eval=self.config.online_moves.atomicdb.trust_eval)
+
     def _probe_tablebase(self, moves: Iterable[chess.Move], tb_type: TablebaseType) -> TablebaseResult:
         best_move = chess.Move.null()
         best_wdl = -2
@@ -1003,6 +1057,16 @@ class LichessGame:
                     method=self._make_chessdb_move,
                     priority=chessdb_config.priority,
                     conditions=[self.board.uci_variant == "chess"],
+                )
+            )
+
+        atomicdb_config = self.config.online_moves.atomicdb
+        if atomicdb_config.enabled:
+            sources.append(
+                MoveSource(
+                    method=self._make_atomicdb_move,
+                    priority=atomicdb_config.priority,
+                    conditions=[self.board.uci_variant == "atomic"],
                 )
             )
 

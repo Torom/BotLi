@@ -101,6 +101,19 @@ class ChessDBConfig:
 
 
 @dataclass
+class AtomicDBConfig:
+    enabled: bool
+    priority: int
+    only_without_book: bool
+    allow_repetitions: bool
+    trust_eval: bool
+    min_time: int
+    timeout: int
+    max_depth: int | None
+    max_moves: int | None
+
+
+@dataclass
 class OnlineEGTBConfig:
     enabled: bool
     min_time: int
@@ -112,6 +125,7 @@ class OnlineMovesConfig:
     opening_explorer: OpeningExplorerConfig
     lichess_cloud: LichessCloudConfig
     chessdb: ChessDBConfig
+    atomicdb: AtomicDBConfig
     online_egtb: OnlineEGTBConfig
 
 
