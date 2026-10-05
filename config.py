@@ -51,6 +51,7 @@ class Config:
     blacklist: list[str]
     online_blacklists: list[str]
     version: str
+    display_board: bool = False
 
     @classmethod
     def from_yaml(cls, yaml_path: str) -> "Config":
