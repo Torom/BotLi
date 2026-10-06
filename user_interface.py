@@ -26,6 +26,7 @@ COMMANDS = {
     "challenge": "Challenges a player. Usage: challenge USERNAME [TIMECONTROL] [COLOR] [RATED] [VARIANT]",
     "clear": "Clears the challenge queue.",
     "create": "Challenges a player to COUNT game pairs. Usage: create COUNT USERNAME [TIMECONTROL] [RATED] [VARIANT]",
+    "display": "Toggles printing an ASCII board after each move.",
     "help": "Prints this message.",
     "join": "Joins a team. Usage: join TEAM_ID [PASSWORD]",
     "leave": "Leaves tournament. Usage: leave [ID]",
@@ -151,6 +152,8 @@ class UserInterface:
                 self._clear()
             case "create":
                 self._create(words)
+            case "display" | "d":
+                self._display()
             case "join":
                 await self._join(words)
             case "leave":
@@ -227,6 +230,10 @@ class UserInterface:
 
         self.game_manager.request_challenge(*challenges)
         print(f"Challenges for {count} game pairs against {challenge_request.opponent_username} added to the queue.")
+
+    def _display(self) -> None:
+        display_board = self.game_manager.toggle_display_board()
+        print(f"Board display {'enabled' if display_board else 'disabled'}.")
 
     async def _join(self, command: list[str]) -> None:
         if len(command) < 2 or len(command) > 3:
