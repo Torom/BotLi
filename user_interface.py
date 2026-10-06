@@ -232,8 +232,8 @@ class UserInterface:
         print(f"Challenges for {count} game pairs against {challenge_request.opponent_username} added to the queue.")
 
     def _display(self) -> None:
-        self.config.display_board = not self.config.display_board
-        print(f"Board display {'enabled' if self.config.display_board else 'disabled'}.")
+        display_board = self.game_manager.toggle_display_board()
+        print(f"Board display {'enabled' if display_board else 'disabled'}.")
 
     async def _join(self, command: list[str]) -> None:
         if len(command) < 2 or len(command) > 3:
