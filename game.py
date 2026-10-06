@@ -170,12 +170,27 @@ class Game:
             f"White Strength : {self._material_strength(board, chess.WHITE)}",
         ]
 
-        lines = board.unicode(borders=True, orientation=self.lichess_game.is_white).splitlines()
-        for row, text in enumerate(info):
-            if text:
-                lines[2 * row + 1] += f"     {text}"
-
-        print("\n".join([self.info.id_str, *lines]))
+        squares = range(8) if self.lichess_game.is_white else range(7, -1, -1)
+        border = f"       {33 * '-'}"
+        separator = f"       |{'---+' * 7}---|"
+        lines = [f"Game {self.info.id_} ({self.info.white_name} vs. {self.info.black_name})", "", border]
+        for row, rank in enumerate(reversed(squares)):
+            cells = []
+            for file in squares:
+                piece = board.piece_at(chess.square(file, rank))
+                if piece is None:
+                    cells.append("   ")
+                elif piece.color == chess.WHITE:
+                    cells.append(f" {piece.symbol()} ")
+                else:
+                    cells.append(f" *{piece.symbol().upper()}")
+            line = f"    {rank + 1}  |{'|'.join(cells)}|"
+            if row < len(info) and info[row]:
+                line += f"     {info[row]}"
+            lines.append(line)
+            lines.append(separator if row < 7 else border)
+        lines.append(f"         {'   '.join(chess.FILE_NAMES[file] for file in squares)}")
+        print("\n".join(lines))
 
     @staticmethod
     def _format_clock(seconds: float) -> str:
