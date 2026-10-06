@@ -1,6 +1,7 @@
 import asyncio
 from typing import Any
 
+import chess
 from chess.engine import EngineTerminatedError
 
 from api import API
@@ -152,8 +153,39 @@ class Game:
         if not self.display_board:
             return
 
-        board = self.lichess_game.board.unicode(borders=True, orientation=self.lichess_game.is_white)
-        print(f"{self.info.id_str}\n{board}")
+        board = self.lichess_game.board
+        last_move = ""
+        if board.move_stack:
+            previous_board = board.copy()
+            move = previous_board.pop()
+            last_move = f"{'White' if previous_board.turn else 'Black'} Moves : {previous_board.san(move)}"
+
+        info = [
+            f"Move # : {board.fullmove_number} ({'White' if board.turn else 'Black'})",
+            last_move,
+            "",
+            f"Black Clock : {self._format_clock(self.lichess_game.black_time)}",
+            f"White Clock : {self._format_clock(self.lichess_game.white_time)}",
+            f"Black Strength : {self._material_strength(board, chess.BLACK)}",
+            f"White Strength : {self._material_strength(board, chess.WHITE)}",
+        ]
+
+        lines = board.unicode(borders=True, orientation=self.lichess_game.is_white).splitlines()
+        for row, text in enumerate(info):
+            if text:
+                lines[2 * row + 1] += f"     {text}"
+
+        print("\n".join([self.info.id_str, *lines]))
+
+    @staticmethod
+    def _format_clock(seconds: float) -> str:
+        minutes, seconds = divmod(int(seconds), 60)
+        return f"{minutes}:{seconds:02d}"
+
+    @staticmethod
+    def _material_strength(board: chess.Board, color: chess.Color) -> int:
+        values = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9}
+        return sum(value * len(board.pieces(piece_type, color)) for piece_type, value in values.items())
 
     def _print_game_information(self) -> None:
         opponents_str = f"{self.info.white_str}   -   {self.info.black_str}"
