@@ -1,6 +1,7 @@
 import asyncio
 from typing import Any
 
+import chess
 from chess.engine import EngineTerminatedError
 
 from api import API
@@ -32,6 +33,7 @@ class Game:
         self.lichess_game = lichess_game
         self.chatter = chatter
 
+        self.display_board = False
         self.takeback_count = 0
         self.was_aborted = False
         self.ejected_tournament: str | None = None
@@ -107,6 +109,7 @@ class Game:
                 break
 
             if has_updated:
+                self._print_board()
                 self.move_task = asyncio.create_task(self._make_move())
 
         if self.abortion_task:
@@ -133,6 +136,7 @@ class Game:
         else:
             await self.api.send_move(self.info.id_, lichess_move.uci_move, lichess_move.offer_draw)
             await self.chatter.print_eval()
+            self._print_board()
         self.move_task = None
 
     async def _abortion_task(self, abortion_seconds: int) -> None:
@@ -144,6 +148,59 @@ class Game:
             await self.chatter.send_abortion_message()
 
         self.abortion_task = None
+
+    def _print_board(self) -> None:
+        if not self.display_board:
+            return
+
+        board = self.lichess_game.board
+        last_move = ""
+        if board.move_stack:
+            previous_board = board.copy()
+            move = previous_board.pop()
+            last_move = f"{'White' if previous_board.turn else 'Black'} Moves : {previous_board.san(move)}"
+
+        info = [
+            f"Move # : {board.fullmove_number} ({'White' if board.turn else 'Black'})",
+            last_move,
+            "",
+            f"Black Clock : {self._format_clock(self.lichess_game.black_time)}",
+            f"White Clock : {self._format_clock(self.lichess_game.white_time)}",
+            f"Black Strength : {self._material_strength(board, chess.BLACK)}",
+            f"White Strength : {self._material_strength(board, chess.WHITE)}",
+        ]
+
+        squares = range(8) if self.lichess_game.is_white else range(7, -1, -1)
+        border = f"       {33 * '-'}"
+        separator = f"       |{'---+' * 7}---|"
+        lines = [f"Game {self.info.id_} ({self.info.white_name} vs. {self.info.black_name})", "", border]
+        for row, rank in enumerate(reversed(squares)):
+            cells = []
+            for file in squares:
+                piece = board.piece_at(chess.square(file, rank))
+                if piece is None:
+                    cells.append("   ")
+                elif piece.color == chess.WHITE:
+                    cells.append(f" {piece.symbol()} ")
+                else:
+                    cells.append(f" *{piece.symbol().upper()}")
+            line = f"    {rank + 1}  |{'|'.join(cells)}|"
+            if row < len(info) and info[row]:
+                line += f"     {info[row]}"
+            lines.append(line)
+            lines.append(separator if row < 7 else border)
+        lines.append(f"         {'   '.join(chess.FILE_NAMES[file] for file in squares)}")
+        print("\n".join(lines))
+
+    @staticmethod
+    def _format_clock(seconds: float) -> str:
+        minutes, seconds = divmod(int(seconds), 60)
+        return f"{minutes}:{seconds:02d}"
+
+    @staticmethod
+    def _material_strength(board: chess.Board, color: chess.Color) -> int:
+        values = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9}
+        return sum(value * len(board.pieces(piece_type, color)) for piece_type, value in values.items())
 
     def _print_game_information(self) -> None:
         opponents_str = f"{self.info.white_str}   -   {self.info.black_str}"
