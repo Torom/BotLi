@@ -24,6 +24,7 @@ class GameManager:
 
         self.challenge_requests: deque[ChallengeRequest] = deque()
         self.current_matchmaking_game_id: str | None = None
+        self.display_board = False
         self.is_rate_limited = False
         self.is_running = True
         self.matchmaking_enabled = False
@@ -120,6 +121,12 @@ class GameManager:
         self.matchmaking_enabled = True
         self._set_next_matchmaking(1, force=True)
         self.changed_event.set()
+
+    def toggle_display_board(self) -> bool:
+        self.display_board = not self.display_board
+        for game in self.tasks.values():
+            game.display_board = self.display_board
+        return self.display_board
 
     def stop_matchmaking(self) -> bool:
         if not self.matchmaking_enabled:
@@ -307,6 +314,7 @@ class GameManager:
             print(f'External joined tournament "{tournament.name}" detected.')
 
         game = await Game.acreate(self.api, self.config, self.username, game_event["id"])
+        game.display_board = self.display_board
         task = asyncio.create_task(game.run())
         task.add_done_callback(self._task_callback)
         self.tasks[task] = game
