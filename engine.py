@@ -31,7 +31,7 @@ class Engine:
     ) -> "Engine":
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
-        transport, engine = await chess.engine.popen_uci(engine_config.path, stderr=stderr)
+        transport, engine = await chess.engine.popen_uci(engine_config.path, cwd=engine_config.dir, stderr=stderr)
 
         await cls._configure_engine(engine, engine_config, syzygy_config)
         await engine.send_opponent_information(opponent=opponent)
@@ -46,7 +46,7 @@ class Engine:
 
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
-        transport, engine = await chess.engine.popen_uci(engine_config.path, stderr=stderr)
+        transport, engine = await chess.engine.popen_uci(engine_config.path, cwd=engine_config.dir, stderr=stderr)
         await cls._configure_engine(engine, engine_config, SyzygyConfig(False, [], 0, False))
 
         variants: list[type[chess.Board]] = []

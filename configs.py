@@ -12,6 +12,7 @@ class LimitConfig:
 @dataclass
 class EngineConfig:
     key: str
+    dir: str
     path: str
     ponder: bool
     silence_stderr: bool

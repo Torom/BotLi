@@ -162,7 +162,7 @@ class Config:
             if not os.path.isdir(settings["dir"]):
                 raise RuntimeError(f'Your engine dir "{settings["dir"]}" is not a directory.')
 
-            settings["path"] = os.path.join(settings["dir"], settings["name"])
+            settings["path"] = os.path.abspath(os.path.join(settings["dir"], settings["name"]))
 
             if not os.path.isfile(settings["path"]):
                 raise RuntimeError(f'The engine "{settings["path"]}" file does not exist.')
@@ -177,6 +177,7 @@ class Config:
 
             engine_configs[key] = EngineConfig(
                 key,
+                settings["dir"],
                 settings["path"],
                 settings["ponder"],
                 settings["silence_stderr"],
@@ -205,12 +206,15 @@ class Config:
                 syzygy_configs[key] = SyzygyConfig(False, [], 0, False)
                 continue
 
+            abs_paths: list[str] = []
             for path in settings["paths"]:
                 if not os.path.isdir(path):
                     raise RuntimeError(f'Your {key} syzygy path "{path}" is not a directory.')
 
+                abs_paths.append(os.path.abspath(path))
+
             syzygy_configs[key] = SyzygyConfig(
-                settings["enabled"], settings["paths"], settings["max_pieces"], settings["instant_play"]
+                settings["enabled"], abs_paths, settings["max_pieces"], settings["instant_play"]
             )
 
         return syzygy_configs
