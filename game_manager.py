@@ -1,6 +1,6 @@
 import asyncio
 from asyncio import Event, Task
-from collections import deque
+from collections import Counter, deque
 from typing import Any
 
 from api import API
@@ -9,7 +9,7 @@ from challenger import Challenger
 from config import Config
 from game import Game
 from matchmaking import Matchmaking
-from utils import get_future_timestamp
+from utils import GAME_COLORS, game_color, get_future_timestamp
 
 
 class GameManager:
@@ -306,10 +306,20 @@ class GameManager:
             self.tournaments[tournament.id_] = tournament
             print(f'External joined tournament "{tournament.name}" detected.')
 
-        game = await Game.acreate(self.api, self.config, self.username, game_event["id"])
+        color = self._get_next_game_color()
+        token = game_color.set(color)
+        try:
+            game = await Game.acreate(self.api, self.config, self.username, game_event["id"], color)
+        finally:
+            game_color.reset(token)
+
         task = asyncio.create_task(game.run())
         task.add_done_callback(self._task_callback)
         self.tasks[task] = game
+
+    def _get_next_game_color(self) -> str | None:
+        counts = Counter(game.color for game in self.tasks.values())
+        return min(GAME_COLORS, key=counts.__getitem__)
 
     def _get_next_challenge(self) -> Challenge | None:
         if not self.open_challenges:

@@ -1,10 +1,40 @@
+import builtins
+import sys
 import textwrap
+from contextvars import ContextVar
 from datetime import datetime, timedelta
+from typing import Any
 
 import chess
 import chess.variant
+from rich.console import Console
 
 from enums import Variant
+
+GAME_COLORS = (None, "cyan", "green", "yellow", "magenta", "blue", "bright_red")
+
+game_color: ContextVar[str | None] = ContextVar("game_color", default=None)
+_original_print = builtins.print
+
+
+def install_colored_print() -> None:
+    console = Console(markup=False, highlight=False, emoji=False, soft_wrap=True)
+
+    def colored_print(
+        *values: object, sep: str | None = " ", end: str | None = "\n", file: Any = None, flush: bool = False
+    ) -> None:
+        if (color := game_color.get()) and file is None and console.is_terminal:
+            separator = " " if sep is None else sep
+            ending = "\n" if end is None else end
+            console.print(separator.join(map(str, values)), end=ending, style=color)
+            if flush:
+                sys.stdout.flush()
+            return
+
+        _original_print(*values, sep=sep, end=end, file=file, flush=flush)
+
+    builtins.print = colored_print
+
 
 ALIASES = {
     Variant.STANDARD: ["Standard", "Chess", "Classical", "Normal", "Std"],

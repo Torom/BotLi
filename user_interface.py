@@ -20,6 +20,7 @@ from enums import ChallengeColor, PerfType, Variant
 from event_handler import EventHandler
 from game_manager import GameManager
 from logo import LOGO
+from utils import install_colored_print
 
 COMMANDS = {
     "blacklist": "Temporarily blacklists a user. Use config for permanent blacklisting. Usage: blacklist USERNAME",
@@ -43,6 +44,7 @@ EnumT = TypeVar("EnumT", bound=StrEnum)
 
 class UserInterface:
     async def main(self, commands: list[str], config_path: str, allow_upgrade: bool) -> None:
+        install_colored_print()
         self.config = Config.from_yaml(config_path)
         print(f"{LOGO} • {self.config.version}", end="", flush=True)
 
@@ -85,7 +87,7 @@ class UserInterface:
             for key in COMMANDS:
                 prompt_session.history.store_string(key)
             while True:
-                with patch_stdout():
+                with patch_stdout(raw=True):
                     command = await prompt_session.prompt_async()
                     if command:
                         await self._handle_command(command)

@@ -8,6 +8,7 @@ from botli_dataclasses import GameInformation
 from chatter import Chatter
 from config import Config
 from lichess_game import LichessGame
+from utils import game_color
 
 
 class Game:
@@ -21,6 +22,7 @@ class Game:
         info: GameInformation,
         lichess_game: LichessGame,
         chatter: Chatter,
+        color: str | None = None,
     ) -> None:
         self.api = api
         self.config = config
@@ -31,6 +33,7 @@ class Game:
         self.info = info
         self.lichess_game = lichess_game
         self.chatter = chatter
+        self.color = color
 
         self.takeback_count = 0
         self.was_aborted = False
@@ -40,16 +43,23 @@ class Game:
         self.abortion_task: asyncio.Task[None] | None = None
 
     @classmethod
-    async def acreate(cls, api: API, config: Config, username: str, game_id: str) -> "Game":
+    async def acreate(cls, api: API, config: Config, username: str, game_id: str, color: str | None = None) -> "Game":
         game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         game_stream_task = asyncio.create_task(api.get_game_stream(game_id, game_stream_queue))
         info = GameInformation.from_game_full_event(await game_stream_queue.get())
         lichess_game = await LichessGame.acreate(api, config, username, info)
         chatter = Chatter(api, config, username, info, lichess_game)
 
-        return cls(api, config, username, game_stream_queue, game_stream_task, info, lichess_game, chatter)
+        return cls(api, config, username, game_stream_queue, game_stream_task, info, lichess_game, chatter, color)
 
     async def run(self) -> None:
+        token = game_color.set(self.color)
+        try:
+            await self._run_game()
+        finally:
+            game_color.reset(token)
+
+    async def _run_game(self) -> None:
         self._print_game_information()
 
         if self.info.state["status"] != "started":
