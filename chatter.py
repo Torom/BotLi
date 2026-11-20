@@ -64,7 +64,11 @@ class Chatter:
             await self._handle_command(chat_message, takeback_count, max_takebacks)
 
     async def print_eval(self) -> None:
-        if not self.game_info.increment_ms and self.lichess_game.own_time < 30.0:
+        if (
+            not self.game_info.is_correspondence
+            and not self.game_info.increment_ms
+            and self.lichess_game.own_time < 30.0
+        ):
             return
 
         for room in self.print_eval_rooms:
@@ -110,17 +114,25 @@ class Chatter:
             case "eval":
                 await self._send_last_message(chat_message.room)
             case "motor":
-                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.lichess_game.engine.name)
+                await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.lichess_game.engine_name)
             case "name":
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, self.name_message)
             case "ping":
-                if not self.game_info.increment_ms and self.lichess_game.own_time < 10.0:
+                if (
+                    not self.game_info.is_correspondence
+                    and not self.game_info.increment_ms
+                    and self.lichess_game.own_time < 10.0
+                ):
                     return
 
                 ping = await self.api.ping() * 1000.0
                 await self.api.send_chat_message(self.game_info.id_, chat_message.room, f"Ping: {ping:.1f} ms")
             case "printeval":
-                if not self.game_info.increment_ms and self.game_info.initial_time_ms < 180_000:
+                if (
+                    self.game_info.initial_time_ms is not None
+                    and not self.game_info.increment_ms
+                    and self.game_info.initial_time_ms < 180_000
+                ):
                     await self._send_last_message(chat_message.room)
                     return
 
@@ -240,12 +252,10 @@ class Chatter:
     def _get_draw_message(self, config: Config) -> str:
         too_low_rating = (
             config.offer_draw.min_rating is not None
-            and self.lichess_game.engine.opponent.rating is not None
-            and self.lichess_game.engine.opponent.rating < config.offer_draw.min_rating
+            and self.lichess_game.opponent.rating is not None
+            and self.lichess_game.opponent.rating < config.offer_draw.min_rating
         )
-        no_draw_against_humans = (
-            not self.lichess_game.engine.opponent.is_engine and not config.offer_draw.against_humans
-        )
+        no_draw_against_humans = not self.lichess_game.opponent.is_engine and not config.offer_draw.against_humans
         if not config.offer_draw.enabled or too_low_rating or no_draw_against_humans:
             return f"{self.username} will neither accept nor offer draws."
 
@@ -258,7 +268,7 @@ class Chatter:
         )
 
     def _get_name_message(self, version: str) -> str:
-        return f"{self.username} running {self.lichess_game.engine.name} (BotLi {version})"
+        return f"{self.username} running {self.lichess_game.engine_name} (BotLi {version})"
 
     def _get_challenge_message(self, config: Config) -> str:
         parts = []
@@ -291,7 +301,7 @@ class Chatter:
             {
                 "opponent": self.opponent_username,
                 "me": self.username,
-                "engine": self.lichess_game.engine.name,
+                "engine": self.lichess_game.engine_name,
                 "cpu": self.cpu_message,
                 "ram": self.ram_message,
             },

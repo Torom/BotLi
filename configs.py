@@ -8,6 +8,10 @@ class LimitConfig:
     depth: int | None
     nodes: int | None
 
+    @property
+    def is_configured(self) -> bool:
+        return any((self.time, self.depth, self.nodes))
+
 
 @dataclass
 class EngineConfig:
@@ -20,6 +24,7 @@ class EngineConfig:
     move_overhead_multiplier: float
     uci_options: dict[str, Any]
     limits: LimitConfig
+    name: str | None = None
 
 
 @dataclass
@@ -157,6 +162,8 @@ class ChallengeOpponentConfig:
     min_initial: int | None
     max_initial: int | None
     max_estimated_game_duration: int | None
+    min_days: int | None
+    allow_unlimited: bool
     variants: list[str]
     time_controls: list[str]
     modes: list[str]
@@ -168,6 +175,11 @@ class ChallengeConfig:
     max_takebacks: int
     human: ChallengeOpponentConfig
     bot: ChallengeOpponentConfig
+
+
+@dataclass
+class CorrespondenceConfig:
+    limits: LimitConfig
 
 
 @dataclass

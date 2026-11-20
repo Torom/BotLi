@@ -49,7 +49,7 @@ unfixable = []
 split-on-trailing-comma = false
 
 [tool.ruff.lint.pylint]
-max-args = 10
+max-args = 12
 max-statements = 100
 max-returns = 24
 max-branches = 24

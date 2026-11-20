@@ -14,6 +14,7 @@ from configs import (
     ChallengeConfig,
     ChallengeOpponentConfig,
     ChessDBConfig,
+    CorrespondenceConfig,
     EngineConfig,
     GaviotaConfig,
     LichessCloudConfig,
@@ -44,6 +45,7 @@ class Config:
     offer_draw: OfferDrawConfig
     resign: ResignConfig
     challenge: ChallengeConfig
+    correspondence: CorrespondenceConfig
     matchmaking: MatchmakingConfig
     tournament: TournamentConfig
     messages: MessagesConfig
@@ -74,6 +76,7 @@ class Config:
         offer_draw_config = cls._get_offer_draw_config(yaml_config["offer_draw"])
         resign_config = cls._get_resign_config(yaml_config["resign"])
         challenge_config = cls._get_challenge_config(yaml_config["challenge"])
+        correspondence_config = cls._get_correspondence_config(yaml_config["correspondence"])
         matchmaking_config = cls._get_matchmaking_config(yaml_config["matchmaking"])
         tournament_config = cls._get_tournament_config(yaml_config["tournament"])
         messages_config = cls._get_messages_config(yaml_config["messages"] or {})
@@ -92,6 +95,7 @@ class Config:
             offer_draw_config,
             resign_config,
             challenge_config,
+            correspondence_config,
             matchmaking_config,
             tournament_config,
             messages_config,
@@ -132,6 +136,11 @@ class Config:
             ("offer_draw", dict, "Section `offer_draw` must be a dictionary with indented keys followed by colons."),
             ("resign", dict, "Section `resign` must be a dictionary with indented keys followed by colons."),
             ("challenge", dict, "Section `challenge` must be a dictionary with indented keys followed by colons."),
+            (
+                "correspondence",
+                dict,
+                "Section `correspondence` must be a dictionary with indented keys followed by colons.",
+            ),
             ("matchmaking", dict, "Section `matchmaking` must be a dictionary with indented keys followed by colons."),
             ("tournament", dict, "Section `tournament` must be a dictionary with indented keys followed by colons."),
             ("messages", dict | None, "Section `messages` must be a dictionary with indented keys followed by colons."),
@@ -173,8 +182,6 @@ class Config:
                     f"Try: chmod +x {settings['path']}"
                 )
 
-            limits_settings = settings["limits"] or {}
-
             engine_configs[key] = EngineConfig(
                 key,
                 settings["dir"],
@@ -184,10 +191,15 @@ class Config:
                 settings.get("skip_test", False),
                 settings["move_overhead_multiplier"],
                 settings["uci_options"] or {},
-                LimitConfig(limits_settings.get("time"), limits_settings.get("depth"), limits_settings.get("nodes")),
+                Config._get_limit_config(settings["limits"]),
             )
 
         return engine_configs
+
+    @staticmethod
+    def _get_limit_config(limits_settings: dict[str, Any] | None) -> LimitConfig:
+        limits = limits_settings or {}
+        return LimitConfig(limits.get("time"), limits.get("depth"), limits.get("nodes"))
 
     @staticmethod
     def _get_syzygy_configs(syzygy_section: dict[str, dict[str, Any]]) -> dict[str, SyzygyConfig]:
@@ -500,37 +512,37 @@ class Config:
             ("modes", list | None, '"modes" must be a list of game modes.'),
         ]
 
-        Config._validate_config_section(challenge_section["human"], "challenge.human", opponent_sections)
-
-        human_config = ChallengeOpponentConfig(
-            challenge_section["human"]["bullet_with_increment_only"],
-            challenge_section["human"].get("min_increment"),
-            challenge_section["human"].get("max_increment"),
-            challenge_section["human"].get("min_initial"),
-            challenge_section["human"].get("max_initial"),
-            challenge_section["human"].get("max_estimated_game_duration"),
-            challenge_section["human"]["variants"] or [],
-            challenge_section["human"]["time_controls"] or [],
-            challenge_section["human"]["modes"] or [],
-        )
-
-        Config._validate_config_section(challenge_section["bot"], "challenge.bot", opponent_sections)
-
-        bot_config = ChallengeOpponentConfig(
-            challenge_section["bot"]["bullet_with_increment_only"],
-            challenge_section["bot"].get("min_increment"),
-            challenge_section["bot"].get("max_increment"),
-            challenge_section["bot"].get("min_initial"),
-            challenge_section["bot"].get("max_initial"),
-            challenge_section["bot"].get("max_estimated_game_duration"),
-            challenge_section["bot"]["variants"] or [],
-            challenge_section["bot"]["time_controls"] or [],
-            challenge_section["bot"]["modes"] or [],
-        )
+        def get_opponent_config(key: str) -> ChallengeOpponentConfig:
+            section: dict[str, Any] = challenge_section[key]
+            Config._validate_config_section(section, f"challenge.{key}", opponent_sections)
+            return ChallengeOpponentConfig(
+                section["bullet_with_increment_only"],
+                section.get("min_increment"),
+                section.get("max_increment"),
+                section.get("min_initial"),
+                section.get("max_initial"),
+                section.get("max_estimated_game_duration"),
+                section.get("min_days"),
+                bool(section.get("allow_unlimited")),
+                section["variants"] or [],
+                section["time_controls"] or [],
+                section["modes"] or [],
+            )
 
         return ChallengeConfig(
-            challenge_section["concurrency"], challenge_section["max_takebacks"], human_config, bot_config
+            challenge_section["concurrency"],
+            challenge_section["max_takebacks"],
+            get_opponent_config("human"),
+            get_opponent_config("bot"),
         )
+
+    @staticmethod
+    def _get_correspondence_config(correspondence_section: dict[str, Any]) -> CorrespondenceConfig:
+        correspondence_sections: list[tuple[str, type | UnionType, str]] = [
+            ("limits", dict | None, '"limits" must be a dictionary with indented keys followed by colons.')
+        ]
+        Config._validate_config_section(correspondence_section, "correspondence", correspondence_sections)
+        return CorrespondenceConfig(Config._get_limit_config(correspondence_section["limits"]))
 
     @staticmethod
     def _get_matchmaking_config(matchmaking_section: dict[str, Any]) -> MatchmakingConfig:
@@ -554,8 +566,8 @@ class Config:
             if "tc" not in matchmaking_options:
                 raise RuntimeError(f'Your matchmaking type "{matchmaking_type}" does not have required `tc` field.')
 
-            if not isinstance(matchmaking_options["tc"], str):
-                raise TypeError(
+            if not isinstance(matchmaking_options["tc"], str) or "+" not in matchmaking_options["tc"]:
+                raise ValueError(
                     f"`matchmaking` `types` `{matchmaking_type}` field `tc` must be a string in "
                     "initial_minutes+increment_seconds format."
                 )

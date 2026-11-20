@@ -16,7 +16,7 @@ from api import API
 from botli_dataclasses import ChallengeRequest
 from config import Config
 from engine import Engine
-from enums import ChallengeColor, PerfType, Variant
+from enums import ChallengeColor, PerfType
 from event_handler import EventHandler
 from game_manager import GameManager
 from logo import LOGO
@@ -281,25 +281,12 @@ class UserInterface:
             print("No last challenge available.")
             return
 
-        if last_challenge_event["speed"] == "correspondence":
-            print("Correspondence is not supported by BotLi.")
+        try:
+            challenge_request = ChallengeRequest.from_challenge_event(last_challenge_event, 300)
+        except ValueError as e:
+            print(e)
             return
 
-        opponent_username: str = last_challenge_event["challenger"]["name"]
-        initial_time: int = last_challenge_event["timeControl"]["limit"]
-        increment: int = last_challenge_event["timeControl"]["increment"]
-        rated: bool = last_challenge_event["rated"]
-        event_color: str = last_challenge_event["color"]
-        variant = Variant(last_challenge_event["variant"]["key"])
-
-        if event_color == "white":
-            color = ChallengeColor.BLACK
-        elif event_color == "black":
-            color = ChallengeColor.WHITE
-        else:
-            color = ChallengeColor.RANDOM
-
-        challenge_request = ChallengeRequest(opponent_username, initial_time, increment, rated, color, variant, 300)
         self.game_manager.request_challenge(challenge_request)
         print(f"Challenge against {challenge_request.opponent_username} added to the queue.")
 

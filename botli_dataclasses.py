@@ -16,6 +16,7 @@ from utils import PRIORITIES, find_variant, get_estimated_game_duration, parse_t
 class ApiChallengeResponse:
     challenge_id: str | None = None
     was_accepted: bool = False
+    was_created: bool = False
     error: str | None = None
     was_declined: bool = False
     invalid_initial: bool = False
@@ -53,14 +54,16 @@ class Bot:
 class Challenge:
     challenge_id: str
     priority: int
+    is_correspondence: bool = False
 
     @classmethod
     def from_challenge_event(cls, challenge_event: dict[str, Any]) -> "Challenge":
         challenge_id = challenge_event["id"]
         title = challenge_event["challenger"].get("title")
         priority = PRIORITIES.get(title, 0)
+        is_correspondence = challenge_event["speed"] == "correspondence"
 
-        return Challenge(challenge_id, priority)
+        return Challenge(challenge_id, priority, is_correspondence)
 
     def __eq__(self, value: object) -> bool:
         if isinstance(value, Challenge):
@@ -75,18 +78,57 @@ class Challenge:
 @dataclass
 class ChallengeRequest:
     opponent_username: str
-    initial_time: int
-    increment: int
+    initial_time: int | None
+    increment: int | None
     rated: bool
     color: ChallengeColor
     variant: Variant
     timeout: int
+    days: int | None = None
+
+    @property
+    def is_correspondence(self) -> bool:
+        return self.initial_time is None
+
+    @classmethod
+    def from_challenge_event(cls, challenge_event: dict[str, Any], timeout: int) -> "ChallengeRequest":
+        opponent_username: str = challenge_event["challenger"]["name"]
+        rated: bool = challenge_event["rated"]
+        event_color: str = challenge_event["color"]
+        variant = Variant(challenge_event["variant"]["key"])
+
+        if event_color == "white":
+            color = ChallengeColor.BLACK
+        elif event_color == "black":
+            color = ChallengeColor.WHITE
+        else:
+            color = ChallengeColor.RANDOM
+
+        time_control = challenge_event["timeControl"]
+        match time_control["type"]:
+            case "clock":
+                initial_time: int | None = time_control["limit"]
+                increment: int | None = time_control["increment"]
+                days: int | None = None
+            case "correspondence":
+                initial_time = None
+                increment = None
+                days = time_control["daysPerTurn"]
+            case "unlimited":
+                initial_time = None
+                increment = None
+                days = None
+            case _:
+                raise ValueError(f'Time control "{time_control["type"]}" is not supported by BotLi.')
+
+        return cls(opponent_username, initial_time, increment, rated, color, variant, timeout, days)
 
     @classmethod
     def parse_from_command(cls, args: list[str], timeout: int) -> "ChallengeRequest":
         opponent_username = None
-        initial_time = 60
-        increment = 1
+        initial_time: int | None = 60
+        increment: int | None = 1
+        days: int | None = None
         color = ChallengeColor.RANDOM
         rated = True
         variant = Variant.STANDARD
@@ -94,6 +136,17 @@ class ChallengeRequest:
         for arg in args:
             if "+" in arg:
                 initial_time, increment = parse_time_control(arg)
+                days = None
+            elif arg.lower() == "unlimited":
+                initial_time = None
+                increment = None
+                days = None
+            elif arg.lower().endswith("d") and arg[:-1].isdigit():
+                days = int(arg[:-1])
+                if days not in {1, 2, 3, 5, 7, 10, 14}:
+                    raise ValueError("Days must be 1, 2, 3, 5, 7, 10, or 14.")
+                initial_time = None
+                increment = None
             elif arg.lower() in {"true", "yes", "rated"}:
                 rated = True
             elif arg.lower() in {"false", "no", "unrated", "casual"}:
@@ -110,7 +163,7 @@ class ChallengeRequest:
         if opponent_username is None:
             raise ValueError("Username is required.")
 
-        return ChallengeRequest(opponent_username, initial_time, increment, rated, color, variant, timeout)
+        return ChallengeRequest(opponent_username, initial_time, increment, rated, color, variant, timeout, days)
 
     def replaced(self, **changes: Any) -> "ChallengeRequest":
         return replace(self, **changes)
@@ -129,6 +182,7 @@ class ChallengeRequest:
 class ChallengeResponse:
     challenge_id: str | None = None
     success: bool = False
+    was_created: bool = False
     no_opponent: bool = False
     has_reached_rate_limit: bool = False
     wait_seconds: int | None = None
@@ -163,8 +217,9 @@ class GameInformation:
     black_rating: int | None
     black_ai_level: int | None
     black_provisional: bool
-    initial_time_ms: int
-    increment_ms: int
+    initial_time_ms: int | None
+    increment_ms: int | None
+    days_per_turn: int | None
     speed: str
     rated: bool
     variant: Variant
@@ -188,8 +243,10 @@ class GameInformation:
         black_rating = game_full_event["black"].get("rating")
         black_ai_level = game_full_event["black"].get("aiLevel")
         black_provisional = game_full_event["black"].get("provisional", False)
-        initial_time_ms = game_full_event["clock"]["initial"]
-        increment_ms = game_full_event["clock"]["increment"]
+        clock: dict[str, int] | None = game_full_event.get("clock")
+        initial_time_ms = clock["initial"] if clock else None
+        increment_ms = clock["increment"] if clock else None
+        days_per_turn = game_full_event.get("daysPerTurn")
         speed = game_full_event["speed"]
         rated = game_full_event["rated"]
         variant = Variant(game_full_event["variant"]["key"])
@@ -212,6 +269,7 @@ class GameInformation:
             black_provisional,
             initial_time_ms,
             increment_ms,
+            days_per_turn,
             speed,
             rated,
             variant,
@@ -248,7 +306,14 @@ class GameInformation:
         return f"{self.black_name_str} ({rating_str})"
 
     @property
+    def is_correspondence(self) -> bool:
+        return self.speed == "correspondence"
+
+    @property
     def tc_str(self) -> str:
+        if self.initial_time_ms is None or self.increment_ms is None:
+            return f"{self.days_per_turn}d" if self.days_per_turn else "unlimited"
+
         initial_time_min = self.initial_time_ms / 60_000
         if initial_time_min.is_integer():
             initial_time_min = int(initial_time_min)
@@ -256,6 +321,9 @@ class GameInformation:
 
     @property
     def tc_format(self) -> str:
+        if self.initial_time_ms is None or self.increment_ms is None:
+            return f"TC: {'Unlimited' if self.days_per_turn is None else self.tc_str}"
+
         initial_time_min = self.initial_time_ms / 60_000
         if initial_time_min.is_integer():
             initial_time_str = str(int(initial_time_min))
@@ -300,6 +368,7 @@ class LichessMove:
     uci_move: str
     offer_draw: bool
     resign: bool
+    message: str = ""
 
 
 @dataclass

@@ -1,12 +1,15 @@
 import asyncio
-from asyncio import Event, Task
+from asyncio import Event, Future, Task
 from collections import Counter, deque
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 from api import API
 from botli_dataclasses import Challenge, ChallengeRequest, Tournament, TournamentRequest
 from challenger import Challenger
 from config import Config
+from correspondence_game import CorrespondenceGame
 from game import Game
 from matchmaking import Matchmaking
 from utils import GAME_COLORS, game_color, get_future_timestamp
@@ -28,9 +31,12 @@ class GameManager:
         self.is_running = True
         self.matchmaking_enabled = False
         self.next_matchmaking: float | None = None
+        self._matchmaking_deferred = False
         self.open_challenges: list[Challenge] = []
         self.reserved_game_spots = 0
-        self.started_game_events: deque[dict[str, Any]] = deque()
+        self.started_game_events: list[dict[str, Any]] = []
+        self.correspondence_slot_requests: deque[Future[None]] = deque()
+        self.active_correspondence_moves = 0
         self.tasks: dict[Task[None], Game] = {}
         self.tournament_requests: deque[TournamentRequest] = deque()
         self.tournament_ids_to_leave: deque[str] = deque()
@@ -48,12 +54,15 @@ class GameManager:
             self.track_tournaments_task = asyncio.create_task(self._track_tournaments())
 
         while self.is_running:
+            timed_out = False
             try:
                 async with asyncio.timeout_at(self.next_matchmaking):
                     await self.changed_event.wait()
             except TimeoutError:
-                await self._check_matchmaking()
-                continue
+                timed_out = True
+
+            if not self.is_running:
+                break
 
             self.changed_event.clear()
 
@@ -75,6 +84,11 @@ class GameManager:
             while challenge_request := self._get_next_challenge_request():
                 await self._create_challenge(challenge_request)
 
+            if self._is_matchmaking_due(timed_out):
+                await self._check_matchmaking()
+
+            self._grant_correspondence_slots()
+
         if self.track_tournaments_task:
             self.track_tournaments_task.cancel()
 
@@ -85,12 +99,50 @@ class GameManager:
             tournament.cancel()
             await self.api.withdraw_tournament(tournament.id_)
 
+        for game in list(self.tasks.values()):
+            if isinstance(game, CorrespondenceGame):
+                game.stop()
+
         for task in list(self.tasks):
             await task
 
     @property
+    def live_task_count(self) -> int:
+        return sum(1 for game in self.tasks.values() if not isinstance(game, CorrespondenceGame))
+
+    @property
+    def live_used_slots(self) -> int:
+        return self.live_task_count + len(self.tournaments) + self.reserved_game_spots
+
+    @property
+    def used_slots(self) -> int:
+        return self.live_used_slots + self.active_correspondence_moves
+
+    @property
     def is_busy(self) -> bool:
-        return len(self.tasks) + len(self.tournaments) + self.reserved_game_spots >= self.config.challenge.concurrency
+        return self.used_slots >= self.config.challenge.concurrency
+
+    @asynccontextmanager
+    async def correspondence_slot(self) -> AsyncGenerator[None]:
+        request: Future[None] = asyncio.get_running_loop().create_future()
+        self.correspondence_slot_requests.append(request)
+        self.changed_event.set()
+        try:
+            await request
+            yield
+        finally:
+            with suppress(ValueError):
+                self.correspondence_slot_requests.remove(request)
+            if request.done() and not request.cancelled():
+                self.active_correspondence_moves -= 1
+            self.changed_event.set()
+
+    def _grant_correspondence_slots(self) -> None:
+        while not self.is_busy and self.correspondence_slot_requests:
+            request = self.correspondence_slot_requests.popleft()
+            if not request.done():
+                request.set_result(None)
+                self.active_correspondence_moves += 1
 
     def add_challenge(self, challenge: Challenge) -> None:
         if challenge not in self.open_challenges:
@@ -107,10 +159,11 @@ class GameManager:
             self.changed_event.set()
 
     def on_game_started(self, game_event: dict[str, Any]) -> None:
-        if game_event["id"] in {started_game_event["id"] for started_game_event in self.started_game_events}:
+        game_id: str = game_event["id"]
+        if any(event["id"] == game_id for event in self.started_game_events):
             return
 
-        if game_event["id"] in {game.info.id_ for game in self.tasks.values()}:
+        if any(game.info.id_ == game_id for game in self.tasks.values()):
             return
 
         self.started_game_events.append(game_event)
@@ -127,6 +180,7 @@ class GameManager:
 
         self.matchmaking_enabled = False
         self.next_matchmaking = None
+        self._matchmaking_deferred = False
         self.changed_event.set()
         return True
 
@@ -269,6 +323,7 @@ class GameManager:
         self.changed_event.set()
 
     def _set_next_matchmaking(self, delay: int, force: bool = False) -> None:
+        self._matchmaking_deferred = False
         if not self.matchmaking_enabled:
             return
 
@@ -277,26 +332,34 @@ class GameManager:
 
         self.next_matchmaking = asyncio.get_running_loop().time() + delay
 
-    def _task_callback(self, task: Task[None]) -> None:
-        game = self.tasks.pop(task)
+    async def _run_game_task(self, game: Game) -> None:
+        try:
+            await game.run()
+        finally:
+            task = asyncio.current_task()
+            if task is not None:
+                self.tasks.pop(task, None)
 
-        if game.info.id_ == self.current_matchmaking_game_id:
-            self.matchmaking.on_game_finished(game.was_aborted)
-            self.current_matchmaking_game_id = None
+            if game.info.id_ == self.current_matchmaking_game_id:
+                self.matchmaking.on_game_finished(game.was_aborted)
+                self.current_matchmaking_game_id = None
 
-        if game.ejected_tournament in self.tournaments:
-            self.tournaments[game.ejected_tournament].cancel()
-            del self.tournaments[game.ejected_tournament]
-            print(f'Ignoring tournament "{game.ejected_tournament}" after failure to start the game.')
+            if game.ejected_tournament in self.tournaments:
+                self.tournaments[game.ejected_tournament].cancel()
+                del self.tournaments[game.ejected_tournament]
+                print(f'Ignoring tournament "{game.ejected_tournament}" after failure to start the game.')
 
-        if game.info.opponent_is_bot and not game.info.tournament_id:
-            self.is_rate_limited = False
+            if game.info.opponent_is_bot and not game.info.tournament_id:
+                self.is_rate_limited = False
 
-        self._set_next_matchmaking(self.config.matchmaking.delay)
-        self.changed_event.set()
+            if not isinstance(game, CorrespondenceGame):
+                self._set_next_matchmaking(self.config.matchmaking.delay)
+
+            self.changed_event.set()
 
     async def _start_game(self, game_event: dict[str, Any]) -> None:
-        if self.reserved_game_spots > 0:
+        is_correspondence = game_event["speed"] == "correspondence"
+        if not is_correspondence and self.reserved_game_spots > 0:
             self.reserved_game_spots -= 1
 
         if "tournamentId" in game_event and game_event["tournamentId"] not in self.tournaments:
@@ -309,12 +372,16 @@ class GameManager:
         color = self._get_next_game_color()
         token = game_color.set(color)
         try:
-            game = await Game.acreate(self.api, self.config, self.username, game_event["id"], color)
+            if is_correspondence:
+                game = await CorrespondenceGame.create(
+                    self.api, self.config, self.username, game_event["id"], self.correspondence_slot, color
+                )
+            else:
+                game = await Game.acreate(self.api, self.config, self.username, game_event["id"], color)
         finally:
             game_color.reset(token)
 
-        task = asyncio.create_task(game.run())
-        task.add_done_callback(self._task_callback)
+        task = asyncio.create_task(self._run_game_task(game))
         self.tasks[task] = game
 
     def _get_next_game_color(self) -> str | None:
@@ -322,27 +389,39 @@ class GameManager:
         return min(GAME_COLORS, key=counts.__getitem__)
 
     def _get_next_challenge(self) -> Challenge | None:
-        if not self.open_challenges:
+        eligible = [c for c in self.open_challenges if c.is_correspondence or not self.is_busy]
+        if not eligible:
             return
 
-        if self.is_busy:
-            return
-
-        self.open_challenges.sort(key=lambda challenge: challenge.priority)
-        return self.open_challenges.pop(0)
+        challenge = min(eligible, key=lambda c: c.priority)
+        self.open_challenges.remove(challenge)
+        return challenge
 
     async def _accept_challenge(self, challenge: Challenge) -> None:
-        if await self.api.accept_challenge(challenge.challenge_id):
+        if await self.api.accept_challenge(challenge.challenge_id) and not challenge.is_correspondence:
             self.reserved_game_spots += 1
+
+    def _is_matchmaking_due(self, timed_out: bool) -> bool:
+        if timed_out or self._matchmaking_deferred:
+            return True
+
+        return self.next_matchmaking is not None and asyncio.get_running_loop().time() >= self.next_matchmaking
 
     async def _check_matchmaking(self) -> None:
         self.next_matchmaking = None
+        self._matchmaking_deferred = False
         self.is_rate_limited = False
 
         if self.current_matchmaking_game_id:
             return
 
         if self.is_busy:
+            if (
+                self.matchmaking_enabled
+                and self.active_correspondence_moves
+                and self.live_used_slots < self.config.challenge.concurrency
+            ):
+                self._matchmaking_deferred = True
             return
 
         challenge_response = await self.matchmaking.create_challenge()
@@ -369,23 +448,22 @@ class GameManager:
             self._set_next_matchmaking(1)
 
     def _get_next_challenge_request(self) -> ChallengeRequest | None:
-        if not self.challenge_requests:
-            return
-
-        if self.is_busy:
-            return
-
-        return self.challenge_requests.popleft()
+        for request in self.challenge_requests:
+            if request.is_correspondence or not self.is_busy:
+                self.challenge_requests.remove(request)
+                return request
 
     def _get_next_started_game_event(self) -> dict[str, Any] | None:
         if not self.started_game_events:
             return
 
-        if len(self.tasks) >= self.config.challenge.concurrency:
-            print("Max number of concurrent games exceeded. Ignoring already started game for now.")
-            return
+        can_start_live = self.live_task_count + self.active_correspondence_moves < self.config.challenge.concurrency
+        for event in self.started_game_events:
+            if event["speed"] == "correspondence" or can_start_live:
+                self.started_game_events.remove(event)
+                return event
 
-        return self.started_game_events.popleft()
+        print("Max number of concurrent games exceeded. Ignoring already started game for now.")
 
     def _get_next_tournament_to_join(self) -> Tournament | None:
         if not self.tournaments_to_join:
@@ -402,6 +480,8 @@ class GameManager:
 
         if response.success:
             self.reserved_game_spots += 1
+        elif response.was_created:
+            return
         elif response.has_reached_rate_limit:
             if response.wait_seconds is not None:
                 print(f"Don't create new challenges before {get_future_timestamp(response.wait_seconds)}!")

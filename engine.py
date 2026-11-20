@@ -18,16 +18,23 @@ class Engine:
         ponder: bool,
         opponent: chess.engine.Opponent,
         limit_config: LimitConfig,
+        is_correspondence: bool = False,
     ) -> None:
         self.transport = transport
         self.engine = engine
         self.ponder = ponder
         self.opponent = opponent
         self.limit_config = limit_config
+        self.is_correspondence = is_correspondence
 
     @classmethod
     async def from_config(
-        cls, engine_config: EngineConfig, syzygy_config: SyzygyConfig, opponent: chess.engine.Opponent
+        cls,
+        engine_config: EngineConfig,
+        syzygy_config: SyzygyConfig,
+        opponent: chess.engine.Opponent,
+        is_correspondence: bool = False,
+        correspondence_limits: LimitConfig | None = None,
     ) -> "Engine":
         stderr = subprocess.DEVNULL if engine_config.silence_stderr else None
 
@@ -35,8 +42,21 @@ class Engine:
 
         await cls._configure_engine(engine, engine_config, syzygy_config)
         await engine.send_opponent_information(opponent=opponent)
+        engine_config.name = engine.id.get("name")
 
-        return cls(transport, engine, engine_config.ponder, opponent, engine_config.limits)
+        if is_correspondence:
+            ponder = False
+            if engine_config.limits.is_configured:
+                limit_config = engine_config.limits
+            elif correspondence_limits and correspondence_limits.is_configured:
+                limit_config = correspondence_limits
+            else:
+                limit_config = LimitConfig(10.0, None, None)
+        else:
+            ponder = engine_config.ponder
+            limit_config = engine_config.limits
+
+        return cls(transport, engine, ponder, opponent, limit_config, is_correspondence)
 
     @classmethod
     async def test(cls, engine_config: EngineConfig) -> None:
@@ -48,6 +68,7 @@ class Engine:
 
         transport, engine = await chess.engine.popen_uci(engine_config.path, cwd=engine_config.dir, stderr=stderr)
         await cls._configure_engine(engine, engine_config, SyzygyConfig(False, [], 0, False))
+        engine_config.name = engine.id.get("name")
 
         variants: list[type[chess.Board]] = []
 
@@ -101,14 +122,15 @@ class Engine:
         if "SyzygyProbeLimit" in engine.options and "SyzygyProbeLimit" not in engine_config.uci_options:
             await engine.configure({"SyzygyProbeLimit": syzygy_config.max_pieces})
 
-    @property
-    def name(self) -> str:
-        return self.engine.id["name"]
-
     async def make_move(
         self, board: chess.Board, white_time: float, black_time: float, increment: float
     ) -> tuple[chess.Move, chess.engine.InfoDict]:
-        if len(board.move_stack) < 2:
+        if self.is_correspondence:
+            limit = chess.engine.Limit(
+                time=self.limit_config.time, depth=self.limit_config.depth, nodes=self.limit_config.nodes
+            )
+            ponder = self.ponder
+        elif len(board.move_stack) < 2:
             time_limit = 10.0 if self.opponent.is_engine else 5.0
             if self.limit_config.time:
                 time_limit = min(time_limit, self.limit_config.time)
@@ -144,5 +166,7 @@ class Engine:
             await asyncio.wait_for(self.engine.quit(), 5.0)
         except TimeoutError:
             print("Engine could not be terminated cleanly.")
+        except chess.engine.EngineTerminatedError:
+            pass
 
         self.transport.close()

@@ -111,30 +111,47 @@ class API:
     async def create_challenge(
         self, challenge_request: ChallengeRequest, queue: asyncio.Queue[ApiChallengeResponse]
     ) -> None:
+        data: dict[str, Any] = {
+            "rated": "true" if challenge_request.rated else "false",
+            "color": challenge_request.color,
+            "variant": challenge_request.variant,
+        }
+        if challenge_request.days is not None:
+            data["days"] = challenge_request.days
+        elif not challenge_request.is_correspondence:
+            data["clock.limit"] = challenge_request.initial_time
+            data["clock.increment"] = challenge_request.increment
+            data["keepAliveStream"] = "true"
         try:
             async with self.lichess_session.post(
                 f"/api/challenge/{challenge_request.opponent_username}",
-                data={
-                    "rated": "true" if challenge_request.rated else "false",
-                    "clock.limit": challenge_request.initial_time,
-                    "clock.increment": challenge_request.increment,
-                    "color": challenge_request.color,
-                    "variant": challenge_request.variant,
-                    "keepAliveStream": "true",
-                },
+                data=data,
                 timeout=aiohttp.ClientTimeout(total=challenge_request.timeout),
             ) as response:
                 if response.status != 200:
                     json_response: dict[str, Any] = await response.json()
+                    error = json_response.get("error")
+                    if (
+                        error is None
+                        and response.status != 429
+                        and "clock.limit" not in json_response
+                        and "clock.increment" not in json_response
+                    ):
+                        error = ", ".join(f"{k}: {v}" for k, v in json_response.items()) or f"HTTP {response.status}"
                     queue.put_nowait(
                         ApiChallengeResponse(
-                            error=json_response.get("error"),
+                            error=error,
                             invalid_initial="clock.limit" in json_response,
                             invalid_increment="clock.increment" in json_response,
                             has_reached_rate_limit=response.status == 429,
                             wait_seconds=json_response.get("ratelimit", {}).get("seconds"),
                         )
                     )
+                    return
+
+                if challenge_request.is_correspondence:
+                    challenge_data: dict[str, Any] = await response.json()
+                    queue.put_nowait(ApiChallengeResponse(challenge_id=challenge_data.get("id"), was_created=True))
                     return
 
                 async for line in response.content:

@@ -31,19 +31,21 @@ class LichessGame:
         board: chess.Board,
         syzygy_config: SyzygyConfig,
         engine_key: str,
-        engine: Engine,
+        engine: Engine | None,
     ) -> None:
         self.api = api
         self.config = config
         self.game_info = game_info
         self.board = board
         self.syzygy_config = syzygy_config
-        self.white_time: float = self.game_info.state["wtime"] / 1000
-        self.black_time: float = self.game_info.state["btime"] / 1000
-        self.white_offered_draw: bool = False
-        self.black_offered_draw: bool = False
-        self.increment = self.game_info.increment_ms / 1000
+        self.engine_key = engine_key
+        self.white_time: float = self.game_info.state.get("wtime", 0) / 1000
+        self.black_time: float = self.game_info.state.get("btime", 0) / 1000
+        self.white_offered_draw: bool = self.game_info.state.get("wdraw", False)
+        self.black_offered_draw: bool = self.game_info.state.get("bdraw", False)
+        self.increment = (self.game_info.increment_ms or 0) / 1000
         self.is_white = self.game_info.white_name == username
+        self.opponent = game_info.black_opponent if self.is_white else game_info.white_opponent
         self.book_settings = self._get_book_settings()
         self.syzygy_tablebase = self._get_syzygy_tablebase()
         self.gaviota_tablebase = self._get_gaviota_tablebase()
@@ -70,12 +72,37 @@ class LichessGame:
         is_white = game_info.white_name == username
         engine_key = cls._get_engine_key(config, board, is_white, game_info)
         syzygy_config = cls._get_syzygy_config(config, board)
-        engine = await Engine.from_config(
-            config.engines[engine_key],
-            syzygy_config,
-            game_info.black_opponent if is_white else game_info.white_opponent,
+        engine = (
+            None
+            if game_info.is_correspondence
+            else await Engine.from_config(
+                config.engines[engine_key],
+                syzygy_config,
+                game_info.black_opponent if is_white else game_info.white_opponent,
+            )
         )
         return cls(api, config, username, game_info, board, syzygy_config, engine_key, engine)
+
+    @property
+    def engine_name(self) -> str:
+        return self.config.engines[self.engine_key].name or self.engine_key
+
+    async def _get_engine(self) -> Engine:
+        if self.engine is None:
+            self.engine = await Engine.from_config(
+                self.config.engines[self.engine_key],
+                self.syzygy_config,
+                self.opponent,
+                self.game_info.is_correspondence,
+                self.config.correspondence.limits,
+            )
+        return self.engine
+
+    async def close_engine(self) -> None:
+        if self.engine is not None:
+            engine = self.engine
+            self.engine = None
+            await engine.close()
 
     @staticmethod
     def _get_board(game_info: GameInformation) -> chess.Board:
@@ -148,42 +175,51 @@ class LichessGame:
                 return SyzygyConfig(False, [], 0, False)
 
     async def make_move(self) -> LichessMove:
+        if source_move := await self.make_source_move():
+            return source_move
+
+        return await self.make_engine_move()
+
+    async def make_source_move(self) -> LichessMove | None:
         for move_source in self.move_sources:
             if move_response := await move_source():
                 self.board.push(move_response.move)
 
-                print(f"{move_response.public_message} {move_response.private_message}".strip())
+                message = f"{move_response.public_message} {move_response.private_message}".strip()
                 self.last_message = move_response.public_message
                 self.last_pv = move_response.pv
                 return LichessMove(
                     move_response.move.uci(),
                     self._offer_draw(move_response.trusted_eval, move_response.is_draw),
                     self._resign(move_response.trusted_eval, move_response.is_lost),
+                    message,
                 )
 
-        move, info = await self.engine.make_move(self.board, *self.engine_times)
+    async def make_engine_move(self) -> LichessMove:
+        engine = await self._get_engine()
+        move, info = await engine.make_move(self.board, *self.engine_times)
 
         if "score" in info:
             self.scores.append(info["score"])
 
         message = f"Engine:  {self._format_move(move):14} {self._format_engine_info(info)}"
-        print(message)
         self.last_message = message
         self.last_pv = info.get("pv", [])
 
         self.board.push(move)
 
-        return LichessMove(move.uci(), self._offer_draw(), self._resign())
+        return LichessMove(move.uci(), self._offer_draw(), self._resign(), message)
 
     def update(self, game_state_event: dict[str, Any]) -> bool:
-        self.white_time = game_state_event["wtime"] / 1000
-        self.black_time = game_state_event["btime"] / 1000
+        self.white_time = game_state_event.get("wtime", 0) / 1000
+        self.black_time = game_state_event.get("btime", 0) / 1000
         self.white_offered_draw = game_state_event.get("wdraw", False)
         self.black_offered_draw = game_state_event.get("bdraw", False)
 
         moves = game_state_event["moves"].split()
         if len(moves) > len(self.board.move_stack):
-            self.board.push(chess.Move.from_uci(moves[-1]))
+            for uci_move in moves[len(self.board.move_stack) :]:
+                self.board.push(chess.Move.from_uci(uci_move))
             return True
 
         return False
@@ -236,7 +272,7 @@ class LichessGame:
         return self.white_time, black_time, self.increment
 
     async def close(self) -> None:
-        await self.engine.close()
+        await self.close_engine()
 
         for book_reader in self.book_settings.readers.values():
             book_reader.close()
@@ -251,17 +287,22 @@ class LichessGame:
         if not self.config.offer_draw.enabled:
             return False
 
-        if not self.engine.opponent.is_engine and not self.config.offer_draw.against_humans:
+        if not self.opponent.is_engine and not self.config.offer_draw.against_humans:
             return False
 
         if (
             self.config.offer_draw.min_rating is not None
-            and self.engine.opponent.rating is not None
-            and self.engine.opponent.rating < self.config.offer_draw.min_rating
+            and self.opponent.rating is not None
+            and self.opponent.rating < self.config.offer_draw.min_rating
         ):
             return False
 
-        if not self.increment and self.opponent_time < 30.0 and self.opponent_time < self.own_time:
+        if (
+            not self.game_info.is_correspondence
+            and not self.increment
+            and self.opponent_time < 30.0
+            and self.opponent_time < self.own_time
+        ):
             return False
 
         if is_draw is not None:
@@ -288,17 +329,22 @@ class LichessGame:
         if not self.config.resign.enabled:
             return False
 
-        if not self.engine.opponent.is_engine and not self.config.resign.against_humans:
+        if not self.opponent.is_engine and not self.config.resign.against_humans:
             return False
 
         if (
             self.config.resign.min_rating is not None
-            and self.engine.opponent.rating is not None
-            and self.engine.opponent.rating < self.config.resign.min_rating
+            and self.opponent.rating is not None
+            and self.opponent.rating < self.config.resign.min_rating
         ):
             return False
 
-        if not self.increment and self.opponent_time < 30.0 and self.opponent_time < self.own_time:
+        if (
+            not self.game_info.is_correspondence
+            and not self.increment
+            and self.opponent_time < 30.0
+            and self.opponent_time < self.own_time
+        ):
             return False
 
         if is_lost is not None:
@@ -789,7 +835,8 @@ class LichessGame:
             case _:
                 return
 
-        await self.engine.stop_pondering(self.board)
+        if self.engine:
+            await self.engine.stop_pondering(self.board)
         message = f"Gaviota: {self._format_move(result.move):14} {egtb_info}"
         return MoveResponse(result.move, message, is_draw=offer_draw, is_lost=resign)
 
@@ -833,7 +880,8 @@ class LichessGame:
                 offer_draw = False
                 resign = True
 
-        await self.engine.stop_pondering(self.board)
+        if self.engine:
+            await self.engine.stop_pondering(self.board)
         message = f"Syzygy:  {self._format_move(result.move):14} {egtb_info}"
         return MoveResponse(result.move, message, is_draw=offer_draw, is_lost=resign)
 
@@ -1076,10 +1124,13 @@ class LichessGame:
         return self.board.uci_variant == "chess" or variant_condition
 
     def _get_move_overhead(self, engine_config: EngineConfig) -> float:
+        if self.game_info.initial_time_ms is None:
+            return 0.0
+
         return max(self.game_info.initial_time_ms / 60_000 * engine_config.move_overhead_multiplier, 1.0)
 
     def _has_time(self, min_time: float) -> bool:
-        if len(self.board.move_stack) < 2:
+        if self.game_info.is_correspondence or len(self.board.move_stack) < 2:
             return True
 
         if not self.increment:

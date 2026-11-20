@@ -24,6 +24,10 @@ class Challenger:
             if response.was_accepted:
                 return ChallengeResponse(challenge_id=challenge_id, success=True)
 
+            if response.was_created:
+                print(f"Correspondence challenge against {challenge_request.opponent_username} created.")
+                return ChallengeResponse(challenge_id=challenge_id, was_created=True)
+
             if response.was_declined:
                 return ChallengeResponse()
 

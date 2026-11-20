@@ -29,7 +29,7 @@ engines:
 #     time: 5.0                           # Max time per move in seconds.
 #     depth: 26                           # Max depth per move.
 #     nodes: 4000000                      # Max nodes per move.
-# Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical', time controls in initial_minutes+increment_seconds format,
+# Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical', 'correspondence', time controls in initial_minutes+increment_seconds format,
 # 'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
 # Append '_white', '_black', '_human', '_bot', '_rated', '_casual' and/or '_tournament'
 # to use the engine only as the specific color, against humans / bots, in rated / casual games or in tournaments.
@@ -80,7 +80,7 @@ opening_books:
 #     allow_repetitions: false            # Whether the book can create repetitions on the board. Can lead to unintentional draws.
       names:                              # List of names of books to use if there is no specific book for the time control, white, black or chess960.
         - DefaultBook
-#   Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical', time controls in initial_minutes+increment_seconds format,
+#   Use the same pattern for 'bullet', 'blitz', 'rapid', 'classical', 'correspondence', time controls in initial_minutes+increment_seconds format,
 #   'antichess', 'atomic', 'chess960', 'crazyhouse', 'horde', 'kingofthehill', 'racingkings' and '3check' as well.
 #   Append '_white', '_black', '_human', '_bot', '_rated', '_casual' and/or '_tournament'
 #   to use the book only as the specific color, against humans / bots, in rated / casual games or in tournaments.
@@ -164,6 +164,8 @@ challenge:                                # Incoming challenges.
 #   min_initial: 0                        # Minimum amount of initial time to accept a challenge.
 #   max_initial: 10800                    # Maximum amount of initial time to accept a challenge.
 #   max_estimated_game_duration: 15       # Maximum expected duration of a game in minutes.
+#   min_days: 1                           # Minimum number of days per turn to accept a correspondence challenge.
+#   allow_unlimited: false                # Whether unlimited correspondence games should be accepted.
     variants:                             # Chess variants to accept (https://lichess.org/variant).
       - standard
       - chess960
@@ -180,6 +182,7 @@ challenge:                                # Incoming challenges.
       - blitz
       - rapid
 #     - classical
+#     - correspondence
 #     - 25+0
     modes:                                # Game modes to accept.
 #     - casual                            # Unrated games.
@@ -191,6 +194,8 @@ challenge:                                # Incoming challenges.
 #   min_initial: 0                        # Minimum amount of initial time to accept a challenge.
 #   max_initial: 10800                    # Maximum amount of initial time to accept a challenge.
 #   max_estimated_game_duration: 15       # Maximum expected duration of a game in minutes.
+#   min_days: 1                           # Minimum number of days per turn to accept a correspondence challenge.
+#   allow_unlimited: false                # Whether unlimited correspondence games should be accepted.
     variants:                             # Chess variants to accept (https://lichess.org/variant).
       - standard
       - chess960
@@ -207,10 +212,17 @@ challenge:                                # Incoming challenges.
       - blitz
       - rapid
 #     - classical
+#     - correspondence
 #     - 25+0
     modes:                                # Game modes to accept.
 #     - casual                            # Unrated games.
       - rated                             # Rated games
+
+correspondence:                           # Settings for correspondence games.
+  limits:                                 # Limits used when the selected engine has no limits configured.
+    time: 10.0                            # Max time per move in seconds.
+#   depth: 26                             # Max depth per move.
+#   nodes: 4000000                        # Max nodes per move.
 
 matchmaking:
   delay: 480                              # Time in seconds the bot must be idle before a new challenge is started.

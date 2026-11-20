@@ -1,10 +1,12 @@
 import asyncio
+from collections.abc import Awaitable, Callable
+from contextlib import suppress
 from typing import Any
 
 from chess.engine import EngineTerminatedError
 
 from api import API
-from botli_dataclasses import GameInformation
+from botli_dataclasses import GameInformation, LichessMove
 from chatter import Chatter
 from config import Config
 from lichess_game import LichessGame
@@ -18,7 +20,7 @@ class Game:
         config: Config,
         username: str,
         game_stream_queue: asyncio.Queue[dict[str, Any]],
-        game_stream_task: asyncio.Task,
+        game_stream_task: asyncio.Task[None],
         info: GameInformation,
         lichess_game: LichessGame,
         chatter: Chatter,
@@ -44,13 +46,21 @@ class Game:
 
     @classmethod
     async def acreate(cls, api: API, config: Config, username: str, game_id: str, color: str | None = None) -> "Game":
+        game_stream_queue, game_stream_task, info, lichess_game, chatter = await cls._setup(
+            api, config, username, game_id
+        )
+        return cls(api, config, username, game_stream_queue, game_stream_task, info, lichess_game, chatter, color)
+
+    @staticmethod
+    async def _setup(
+        api: API, config: Config, username: str, game_id: str
+    ) -> tuple[asyncio.Queue[dict[str, Any]], asyncio.Task[None], GameInformation, LichessGame, Chatter]:
         game_stream_queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         game_stream_task = asyncio.create_task(api.get_game_stream(game_id, game_stream_queue))
         info = GameInformation.from_game_full_event(await game_stream_queue.get())
         lichess_game = await LichessGame.acreate(api, config, username, info)
         chatter = Chatter(api, config, username, info, lichess_game)
-
-        return cls(api, config, username, game_stream_queue, game_stream_task, info, lichess_game, chatter, color)
+        return game_stream_queue, game_stream_task, info, lichess_game, chatter
 
     async def run(self) -> None:
         token = game_color.set(self.color)
@@ -60,74 +70,118 @@ class Game:
             game_color.reset(token)
 
     async def _run_game(self) -> None:
+        try:
+            self._on_game_start()
+
+            if self.info.state["status"] != "started":
+                self._print_result_message(self.info.state)
+                await self.chatter.send_goodbyes()
+                return
+
+            if len(self.lichess_game.board.move_stack) < 2:
+                await self.chatter.send_greetings()
+
+            max_takebacks = 0 if self.info.opponent_is_bot else self.config.challenge.max_takebacks
+            await self._handle_takeback(self.info.state, max_takebacks)
+
+            if self.lichess_game.is_our_turn:
+                await self._play_initial_move()
+
+            self._start_abortion_task()
+
+            while event := await self.game_stream_queue.get():
+                match event["type"]:
+                    case "chatLine":
+                        await self.chatter.handle_chat_message(event, self.takeback_count, max_takebacks)
+                        continue
+                    case "opponentGone":
+                        if not self.move_task and event.get("claimWinInSeconds") == 0:
+                            if self.lichess_game.has_insufficient_material:
+                                await self.api.claim_draw(self.info.id_)
+                            else:
+                                await self.api.claim_victory(self.info.id_)
+                        continue
+                    case "gameFull":
+                        event = event["state"]
+
+                if await self._handle_takeback(event, max_takebacks):
+                    continue
+
+                has_updated = self.lichess_game.update(event)
+
+                if event["status"] != "started":
+                    await self._cancel_move_task()
+                    self._print_result_message(event)
+                    await self.chatter.send_goodbyes()
+                    break
+
+                if has_updated and self.lichess_game.is_our_turn:
+                    await self._cancel_move_task()
+                    self.move_task = asyncio.create_task(self._make_move())
+        finally:
+            try:
+                if self.abortion_task:
+                    self.abortion_task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await self.abortion_task
+
+                self.game_stream_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await self.game_stream_task
+
+                await self._cancel_move_task()
+            finally:
+                await self.lichess_game.close()
+
+    def _on_game_start(self) -> None:
         self._print_game_information()
 
-        if self.info.state["status"] != "started":
-            self._print_result_message(self.info.state)
-            await self.chatter.send_goodbyes()
-            await self.lichess_game.close()
-            return
+    async def _play_initial_move(self) -> None:
+        await self._make_move()
 
-        await self.chatter.send_greetings()
-
-        if self.lichess_game.is_our_turn:
-            await self._make_move()
-
-        max_takebacks = 0 if self.info.opponent_is_bot else self.config.challenge.max_takebacks
+    def _start_abortion_task(self) -> None:
         if self.info.tournament_id is None:
             abortion_seconds = 30 if self.info.opponent_is_bot else 60
             self.abortion_task = asyncio.create_task(self._abortion_task(abortion_seconds))
 
-        while event := await self.game_stream_queue.get():
-            match event["type"]:
-                case "chatLine":
-                    await self.chatter.handle_chat_message(event, self.takeback_count, max_takebacks)
-                    continue
-                case "opponentGone":
-                    if not self.move_task and event.get("claimWinInSeconds") == 0:
-                        if self.lichess_game.has_insufficient_material:
-                            await self.api.claim_draw(self.info.id_)
-                        else:
-                            await self.api.claim_victory(self.info.id_)
-                    continue
-                case "gameFull":
-                    event = event["state"]
+    async def _cancel_move_task(self) -> None:
+        if self.move_task is not None:
+            if not self.move_task.done():
+                self.move_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await self.move_task
+            self.move_task = None
 
-            if event.get("wtakeback") or event.get("btakeback"):
-                if self.takeback_count >= max_takebacks:
-                    await self.api.handle_takeback(self.info.id_, False)
-                    continue
+    async def _handle_takeback(self, game_state: dict[str, Any], max_takebacks: int) -> bool:
+        if not (game_state.get("wtakeback") or game_state.get("btakeback")):
+            return False
 
-                if await self.api.handle_takeback(self.info.id_, True):
-                    if self.move_task:
-                        self.move_task.cancel()
-                        self.move_task = None
-                    await self.lichess_game.takeback()
-                    self.takeback_count += 1
-                continue
+        if self.takeback_count >= max_takebacks:
+            await self.api.handle_takeback(self.info.id_, False)
+            return True
 
-            has_updated = self.lichess_game.update(event)
+        if await self.api.handle_takeback(self.info.id_, True):
+            await self._cancel_move_task()
+            await self.lichess_game.takeback()
+            self.takeback_count += 1
 
-            if event["status"] != "started":
-                if self.move_task:
-                    self.move_task.cancel()
-
-                self._print_result_message(event)
-                await self.chatter.send_goodbyes()
-                break
-
-            if has_updated:
-                self.move_task = asyncio.create_task(self._make_move())
-
-        if self.abortion_task:
-            self.abortion_task.cancel()
-
-        self.game_stream_task.cancel()
-        await self.lichess_game.close()
+        return True
 
     async def _make_move(self) -> None:
         try:
-            lichess_move = await self.lichess_game.make_move()
+            await self._execute_move()
+        finally:
+            if self.move_task is asyncio.current_task():
+                self.move_task = None
+
+    async def _execute_move(self) -> None:
+        if lichess_move := await self._compute_move(self.lichess_game.make_move):
+            self._print_move(lichess_move)
+            await self._send_move(lichess_move)
+
+    async def _compute_move(self, move_fn: Callable[[], Awaitable[LichessMove]]) -> LichessMove | None:
+        try:
+            return await move_fn()
         except EngineTerminatedError:
             if not self.lichess_game.is_abortable:
                 raise
@@ -135,15 +189,20 @@ class Game:
             print("Engine crashed. Aborting game ...")
             await self.api.abort_game(self.info.id_)
             await self.chatter.send_crash_message()
-            self.move_task = None
-            return
 
+    @staticmethod
+    def _print_move(lichess_move: LichessMove, footer: bool = False) -> None:
+        if lichess_move.message:
+            print(lichess_move.message)
+        if footer:
+            print(123 * "‾")
+
+    async def _send_move(self, lichess_move: LichessMove) -> None:
         if lichess_move.resign:
             await self.api.resign_game(self.info.id_)
         else:
             await self.api.send_move(self.info.id_, lichess_move.uci_move, lichess_move.offer_draw)
             await self.chatter.print_eval()
-        self.move_task = None
 
     async def _abortion_task(self, abortion_seconds: int) -> None:
         await asyncio.sleep(abortion_seconds)
@@ -210,7 +269,7 @@ class Game:
                 case "stalemate":
                     message = "Game drawn by stalemate."
                 case "outoftime":
-                    out_of_time_player = self.info.black_name if game_state["wtime"] else self.info.white_name
+                    out_of_time_player = self.info.black_name if game_state.get("wtime") else self.info.white_name
                     message = f"Game drawn. {out_of_time_player} ran out of time."
                 case "insufficientMaterialClaim":
                     message = "Game drawn due to insufficient material claim."

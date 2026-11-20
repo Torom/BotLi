@@ -66,7 +66,13 @@ class EventHandler:
         rating = challenge_event["challenger"]["rating"]
         provisional = "?" if challenge_event["challenger"].get("provisional") else ""
         challenger_str = f"Challenger: {title}{' ' if title else ''}{name} ({rating}{provisional})"
-        tc_str = f"TC: {challenge_event['timeControl'].get('show', 'Correspondence')}"
+        time_control = challenge_event["timeControl"]
+        if "show" in time_control:
+            tc_str = f"TC: {time_control['show']}"
+        elif "daysPerTurn" in time_control:
+            tc_str = f"TC: {time_control['daysPerTurn']}d"
+        else:
+            tc_str = "TC: Unlimited"
         rated_str = "Rated" if challenge_event["rated"] else "Casual"
         color_str = f"Color: {challenge_event['color'].capitalize()}"
         variant_str = f"Variant: {challenge_event['variant']['name']}"
