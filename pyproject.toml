@@ -13,7 +13,7 @@ dependencies = [
     "chess==1.11.2",
     "prompt-toolkit==3.0.53",
     "psutil==7.2.2",
-    "pyyaml==6.0.3",
+    "pyyaml==6.0.4",
     "rich==15.0.0",
     "tenacity==9.2.1",
 ]
